@@ -19,4 +19,7 @@ x-aily-mermaid-viewer/: 流程图 viewer。
 - hardware_port 接口表只从 backend `interaction.options` 下发，任何 viewer 都不允许私自复制一份端口常量或 mock 插入逻辑。
 - 本目录所有 viewer 的卡片、按钮、状态条、代码块与 markdown 壳层统一消费 `spatial-design-ref.scss` 提供的 dark-shell 语义变量；禁止再写浅色卡片或独立赛博渐变主题。
 
+变更日志
+- 2026-04-15: `x-aily-config-guide-viewer` 的选项按钮改为文案列可换行布局，长中文标签会在卡片内换行，右侧“已选”徽标保持独立不再被挤出。
+
 [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md

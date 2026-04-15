@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 mqtt/paho 协议约定、docs/dev/cloud_mqtt_example.py 的消息工厂语义与 docs/dev/heartbeat.log 的状态日志格式
- * [OUTPUT]: 对外提供 MQTT 硬件运行时真相源、heartbeat 解析器、command 封装器、publishRecImg rec_img 图片发送、可订阅状态 store 与 canonical digitalTwinScene
+ * [OUTPUT]: 对外提供 MQTT 硬件运行时真相源、heartbeat 解析器、command 封装器、audio-test/raw publish、publishRecImg rec_img 图片发送、可订阅状态 store 与 canonical digitalTwinScene
  * [POS]: agents 的 MQTT 硬件中枢，负责把云端 workflow/command/status 协议收敛成 backend-first runtime snapshot 与 scene envelope
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -27,6 +27,8 @@ export type MqttHardwareRuntimeCommandKind =
   | 'speaker_play'
   | 'hardware_command';
 
+export type MqttHardwareRuntimeAudioTestMessageType = 'test_mic' | 'test_speaker';
+
 export interface MqttHardwareRuntimeCommand {
   kind: MqttHardwareRuntimeCommandKind;
   requestId: string;
@@ -39,6 +41,13 @@ export interface MqttHardwareRuntimeCommandReceipt extends MqttHardwareRuntimeCo
   status: 'queued' | 'sent' | 'acknowledged' | 'failed';
   response?: Record<string, unknown> | null;
   responseAt?: string | null;
+}
+
+export interface MqttHardwareRuntimeRawPublishReceipt {
+  messageType: MqttHardwareRuntimeAudioTestMessageType;
+  topic: string;
+  payload: Record<string, unknown>;
+  publishedAt: string;
 }
 
 export interface ParsedHeartbeatDevice {
@@ -111,6 +120,10 @@ const HEARTBEAT_PORT_MAP: Record<string, string> = {
   '3-1.4': 'port_3',
   '3-1.6': 'port_4',
   '3-1.7': 'port_7',
+  hdmi: 'port_hdmi',
+  port_hdmi: 'port_hdmi',
+  porthdmi: 'port_hdmi',
+  '/dev/hdmi': 'port_hdmi',
   port_1: 'port_1',
   port_2: 'port_2',
   port_3: 'port_3',
@@ -125,6 +138,9 @@ const HEARTBEAT_DEVICE_TYPE_MAP: Record<string, string> = {
   car: 'wheel',
   wheel: 'wheel',
   chassis: 'wheel',
+  screen: 'screen',
+  display: 'screen',
+  hdmi: 'screen',
   speaker: 'speaker',
   mic: 'microphone',
   microphone: 'microphone',
@@ -198,6 +214,15 @@ export function createHardwareCommandMessage(
       },
     ],
     request_id: requestId,
+  };
+}
+
+export function createAudioTestMessage(
+  messageType: MqttHardwareRuntimeAudioTestMessageType,
+): Record<string, unknown> {
+  return {
+    msg_type: messageType,
+    msg_content: [],
   };
 }
 
@@ -296,14 +321,15 @@ export function parseHeartbeatText(
     );
     if (deviceMatch?.groups) {
       const rawDeviceType = deviceMatch.groups.deviceType.trim();
+      const devicePath = deviceMatch.groups.devicePath.trim();
       const devicePort = deviceMatch.groups.devicePort?.trim() ?? '';
       current.devices.push({
         deviceType: rawDeviceType,
         deviceStatus: deviceMatch.groups.deviceStatus.trim(),
         deviceName: deviceMatch.groups.deviceName.trim(),
-        devicePath: deviceMatch.groups.devicePath.trim(),
+        devicePath,
         devicePort: devicePort || undefined,
-        interfaceId: normalizeHardwarePortId(devicePort || ''),
+        interfaceId: resolveHardwareInterfaceId(devicePort, devicePath),
         vidPid: deviceMatch.groups.vidPid?.trim() || undefined,
       });
     }
@@ -501,6 +527,53 @@ export class MqttHardwareRuntime extends EventEmitter {
         params.extra ?? {}
       ),
     });
+  }
+
+  async publishAudioTestMessage(
+    messageType: MqttHardwareRuntimeAudioTestMessageType,
+  ): Promise<MqttHardwareRuntimeRawPublishReceipt> {
+    if (!this.transport) {
+      logger.warn('MqttHardwareRuntime: audio-test publish skipped because transport is unavailable', {
+        messageType,
+      });
+      throw new Error('设备未连接，请先连接硬件后再测试');
+    }
+    const payload = createAudioTestMessage(messageType);
+    logger.info('MqttHardwareRuntime: publishing audio-test payload', {
+      topic: this.topicSend,
+      messageType,
+    });
+    await new Promise<void>((resolve, reject) => {
+      this.transport!.publish(
+        this.topicSend,
+        JSON.stringify(payload),
+        { qos: this.qos as any },
+        (error) => {
+          if (error) {
+            logger.warn('MqttHardwareRuntime: audio-test publish failed', {
+              topic: this.topicSend,
+              messageType,
+              error: error.message,
+            });
+            reject(error);
+            return;
+          }
+          resolve();
+        }
+      );
+    });
+    const publishedAt = new Date().toISOString();
+    logger.info('MqttHardwareRuntime: audio-test publish succeeded', {
+      topic: this.topicSend,
+      messageType,
+      publishedAt,
+    });
+    return {
+      messageType,
+      topic: this.topicSend,
+      payload,
+      publishedAt,
+    };
   }
 
   // ── 021-mqtt-image-upload: rec_img 协议直发，不经 cmd 封装 ──
@@ -849,6 +922,10 @@ export function normalizeHardwarePortId(raw: string): string {
     return HEARTBEAT_PORT_MAP[compact];
   }
 
+  if (compact.includes('hdmi')) {
+    return 'port_hdmi';
+  }
+
   const portMatch = compact.match(/^port(\d+)$/);
   if (portMatch?.[1]) {
     return `port_${portMatch[1]}`;
@@ -866,7 +943,10 @@ function toDialogueHardwareComponent(
   device: ParsedHeartbeatDevice
 ): DialogueModeHardwareComponent | null {
   const componentId = mapDeviceTypeToComponentId(device.deviceType);
-  const portId = normalizeHardwarePortId(device.interfaceId ?? device.devicePort ?? '');
+  const portId = resolveHardwareInterfaceId(
+    device.interfaceId ?? device.devicePort,
+    device.devicePath,
+  );
   const status = mapDeviceStatus(device.deviceStatus);
 
   if (!componentId) {
@@ -914,6 +994,16 @@ function mapDeviceStatus(raw: string): DialogueModeHardwareComponent['status'] {
   return 'connected';
 }
 
+function resolveHardwareInterfaceId(devicePort?: string, devicePath?: string): string {
+  const normalizedPort = normalizeHardwarePortId(devicePort ?? '');
+  if (normalizedPort) {
+    return normalizedPort;
+  }
+
+  // HDMI 心跳经常只有设备路径，没有独立的 port= 字段。
+  return normalizeHardwarePortId(devicePath ?? '');
+}
+
 function normalizeHeartbeatDevices(devices: unknown[]): ParsedHeartbeatDevice[] {
   const nextDevices: ParsedHeartbeatDevice[] = [];
   for (const device of devices) {
@@ -939,7 +1029,7 @@ function normalizeHeartbeatDevices(devices: unknown[]): ParsedHeartbeatDevice[] 
       deviceName: deviceName || deviceType || 'unknown',
       devicePath: devicePath || '',
       devicePort: devicePort || undefined,
-      interfaceId: normalizeHardwarePortId(devicePort || ''),
+      interfaceId: resolveHardwareInterfaceId(devicePort, devicePath),
       vidPid: vidPid || undefined,
       raw,
     });

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 n8n API Client、SessionService、types
- * [OUTPUT]: 对外提供 ConfigAgent 配置闭环能力
- * [POS]: agents 的第二阶段处理器，负责硬件节点配置状态机
+ * [OUTPUT]: 对外提供 ConfigAgent 配置闭环能力，并在节点确认后把最新 workflow snapshot 回写到 session 真相源；显式拆分软件完成、硬件拼装完成与最终 actionReady
+ * [POS]: agents 的第二阶段处理器，负责硬件节点配置状态机与软件完成 -> 硬件拼装 -> 可操作 三段式语义收口
  * [PROTOCOL]: 变更时更新此头部，然后检查 AGENT.md
  */
 
@@ -87,28 +87,27 @@ export class ConfigAgent {
     workflowSnapshot: WorkflowDefinition
   ): void {
     const configurableNodes = this.extractConfigurableNodes(workflowSnapshot);
-    const completed = configurableNodes.filter((node) => node.status === 'configured').length;
-    const total = configurableNodes.length;
 
     const state: ConfigAgentState = {
       workflowId,
       workflowSnapshot,
       configurableNodes,
-      currentNodeIndex: this.findCurrentNodeIndex(configurableNodes),
-      completed: completed >= total,
-      progress: {
-        total,
-        completed,
-        percentage: this.toPercentage(completed, total),
-      },
+      currentNodeIndex: 0,
+      completed: false,
     };
+
+    this.syncReadinessState(state);
 
     this.sessionService.setConfigAgentState(sessionId, state);
     logger.info('ConfigAgent: initialized', {
       sessionId,
       workflowId,
-      configurableNodeCount: total,
-      completedCount: completed,
+      configurableNodeCount: configurableNodes.length,
+      softwareNodeCount: state.progress?.total ?? 0,
+      softwareCompletedCount: state.progress?.completed ?? 0,
+      softwareCompleted: state.completed,
+      assemblyCompleted: state.assemblyCompleted,
+      actionReady: state.actionReady,
       currentNodeIndex: state.currentNodeIndex,
       currentNode: this.summarizeNodeForLog(state.configurableNodes[state.currentNodeIndex] ?? null),
       nodeNames: state.configurableNodes.map((node) => node.name),
@@ -131,11 +130,11 @@ export class ConfigAgent {
       return { type: 'error', message: '未找到配置状态，请先创建工作流' };
     }
 
-    if (state.configurableNodes.length === 0 || state.completed) {
+    if (state.configurableNodes.length === 0 || this.isActionReady(state)) {
       return {
         type: 'config_complete',
         message: '该工作流无需硬件配置，已准备就绪。',
-        totalConfigured: state.progress?.completed ?? 0,
+        totalConfigured: this.countConfiguredNodes(state.configurableNodes),
         metadata: { workflowId: state.workflowId },
       };
     }
@@ -168,11 +167,11 @@ export class ConfigAgent {
 
   async startConfigureCurrentNode(sessionId: string): Promise<ConfigurableNode | null> {
     const state = this.sessionService.getConfigAgentState(sessionId);
-    if (!state || state.completed) {
+    if (!state || this.isActionReady(state)) {
       logger.info('ConfigAgent: skip startConfigureCurrentNode', {
         sessionId,
         hasState: Boolean(state),
-        completed: state?.completed ?? false,
+        actionReady: state?.actionReady ?? false,
       });
       return null;
     }
@@ -199,11 +198,11 @@ export class ConfigAgent {
       return { type: 'error', message: '未找到配置状态' };
     }
 
-    if (state.completed) {
+    if (this.isActionReady(state)) {
       return {
         type: 'config_complete',
         message: '所有硬件组件已配置完成。',
-        totalConfigured: state.progress?.completed ?? state.configurableNodes.length,
+        totalConfigured: this.countConfiguredNodes(state.configurableNodes),
         metadata: { workflowId: state.workflowId },
       };
     }
@@ -213,13 +212,11 @@ export class ConfigAgent {
       return { type: 'error', message: '当前没有可配置节点' };
     }
 
+    const fallbackSw = this.computeSoftwareCompletion(state.configurableNodes);
     const currentProgress = state.progress ?? {
-      total: state.configurableNodes.length,
-      completed: state.configurableNodes.filter((node) => node.status === 'configured').length,
-      percentage: this.toPercentage(
-        state.configurableNodes.filter((node) => node.status === 'configured').length,
-        state.configurableNodes.length
-      ),
+      total: fallbackSw.total,
+      completed: fallbackSw.completed,
+      percentage: this.toPercentage(fallbackSw.completed, fallbackSw.total),
     };
 
     const introPrefix =
@@ -450,8 +447,7 @@ export class ConfigAgent {
       SPEAKER: { componentId: 'speaker',           displayName: '扬声器' },
       SCREEN:  { componentId: 'screen',            displayName: '屏幕'   },
     };
-    const remainingHardwareNodes = state.configurableNodes
-      .slice(state.currentNodeIndex)
+    const remainingHardwareNodes = this.getPendingHardwareNodes(state.configurableNodes)
       .filter((n): n is ConfigurableNode & { category: NodeCategory } => {
         const category = n.category;
         return category !== undefined && HARDWARE_CATEGORIES.includes(category);
@@ -501,12 +497,12 @@ export class ConfigAgent {
       return { type: 'error', message: '未找到配置状态，请先创建并启动配置流程。' };
     }
 
-    if (state.completed) {
+    if (this.isActionReady(state)) {
       this.sessionService.setPhase(sessionId, 'deploying');
       return {
         type: 'config_complete',
         message: '所有硬件组件已配置完成。',
-        totalConfigured: state.progress?.completed ?? state.configurableNodes.length,
+        totalConfigured: this.countConfiguredNodes(state.configurableNodes),
         metadata: { workflowId: state.workflowId },
       };
     }
@@ -678,45 +674,46 @@ export class ConfigAgent {
       sub: normalizedConfig.sub,
     } as const;
     const isSingleAssembleCategory = this.isSingleAssembleCategory(currentNode.category);
-    await this.persistNodeStatus(state.workflowId, nodeName, persistConfig, {
+    const updatedWorkflow = await this.persistNodeStatus(state.workflowId, nodeName, persistConfig, {
       category: currentNode.category,
       applyToCategory: isSingleAssembleCategory,
     });
+    state.workflowSnapshot = updatedWorkflow;
 
     if (isSingleAssembleCategory && currentNode.category) {
       this.markCategoryConfigured(state, currentNode.category, nodeName, normalizedConfig);
     } else {
       this.markNodeConfigured(currentNode, normalizedConfig);
     }
-    state.currentNodeIndex = this.findCurrentNodeIndex(state.configurableNodes);
     state.pendingPrompt = undefined;
+    this.syncReadinessState(state);
 
     const nextNode = state.configurableNodes[state.currentNodeIndex] ?? null;
-    const completed = state.configurableNodes.filter((node) => node.status === 'configured').length;
-    const total = state.configurableNodes.length;
-    state.progress = {
-      total,
-      completed,
-      percentage: this.toPercentage(completed, total),
+    const progress = state.progress ?? {
+      total: 0,
+      completed: 0,
+      percentage: 0,
     };
-    state.completed = completed >= total;
 
     this.sessionService.setConfigAgentState(sessionId, state);
+    this.sessionService.setWorkflow(sessionId, updatedWorkflow);
 
     logger.info('ConfigAgent: confirm node success', {
       sessionId,
       workflowId: state.workflowId,
       configuredNode: nodeName,
       nextNode: nextNode?.name ?? null,
-      progress: state.progress,
-      isComplete: state.completed,
+      progress,
+      softwareCompleted: state.completed,
+      assemblyCompleted: state.assemblyCompleted,
+      isComplete: state.actionReady,
     });
 
     return {
       success: true,
       nextNode,
-      isComplete: state.completed,
-      progress: state.progress,
+      isComplete: this.isActionReady(state),
+      progress,
     };
   }
 
@@ -726,11 +723,11 @@ export class ConfigAgent {
       return { type: 'error', message: '未找到配置状态' };
     }
 
-    if (state.completed) {
+    if (this.isActionReady(state)) {
       return {
         type: 'config_complete',
         message: '所有硬件组件已配置完成。',
-        totalConfigured: state.progress?.completed ?? state.configurableNodes.length,
+        totalConfigured: this.countConfiguredNodes(state.configurableNodes),
         metadata: { workflowId: state.workflowId },
       };
     }
@@ -772,7 +769,7 @@ export class ConfigAgent {
 
   getCurrentNode(sessionId: string): ConfigurableNode | null {
     const state = this.sessionService.getConfigAgentState(sessionId);
-    if (!state || state.completed) {
+    if (!state || this.isActionReady(state)) {
       return null;
     }
     return state.configurableNodes[state.currentNodeIndex] ?? null;
@@ -1103,8 +1100,14 @@ export class ConfigAgent {
     const allowed: NodeCategory[] = [
       'BASE',
       'CAM',
+      'MIC',
+      'WHEEL',
       'FACE-NET',
+      'YOLO-HAND',
       'YOLO-RPS',
+      'ASR',
+      'LLM',
+      'LLM-EMO',
       'TTS',
       'RAM',
       'ASSIGN',
@@ -1241,7 +1244,10 @@ export class ConfigAgent {
   private markNodeConfiguring(state: ConfigAgentState, node: ConfigurableNode): void {
     node.extra = 'configuring';
     node.status = 'configuring';
-    state.completed = false;
+    // 纯硬件节点进入 configuring 不影响软件配置完成度
+    if (!this.isPureHardwareNode(node)) {
+      state.completed = false;
+    }
   }
 
   private markNodeConfigured(node: ConfigurableNode, config: NodeConfigInput): void {
@@ -1333,6 +1339,40 @@ export class ConfigAgent {
     return index === -1 ? nodes.length : index;
   }
 
+  private syncReadinessState(state: ConfigAgentState): void {
+    const software = this.computeSoftwareCompletion(state.configurableNodes);
+    const pendingHardwareNodeNames = this.getPendingHardwareNodeNames(state.configurableNodes);
+
+    state.currentNodeIndex = this.findCurrentNodeIndex(state.configurableNodes);
+    state.progress = {
+      total: software.total,
+      completed: software.completed,
+      percentage: this.toPercentage(software.completed, software.total),
+    };
+    state.completed = software.completed >= software.total;
+    state.pendingHardwareNodeNames = pendingHardwareNodeNames;
+    state.assemblyCompleted = pendingHardwareNodeNames.length === 0;
+    state.actionReady = state.completed && state.assemblyCompleted;
+  }
+
+  private isActionReady(state: ConfigAgentState | null | undefined): boolean {
+    if (!state) {
+      return false;
+    }
+
+    if (typeof state.actionReady === 'boolean') {
+      return state.actionReady;
+    }
+
+    const pendingHardwareNodeNames = Array.isArray(state.pendingHardwareNodeNames)
+      ? state.pendingHardwareNodeNames
+      : this.getPendingHardwareNodeNames(state.configurableNodes);
+    const assemblyCompleted = typeof state.assemblyCompleted === 'boolean'
+      ? state.assemblyCompleted
+      : pendingHardwareNodeNames.length === 0;
+    return state.completed && assemblyCompleted;
+  }
+
   private toPercentage(completed: number, total: number): number {
     if (total === 0) {
       return 100;
@@ -1357,10 +1397,11 @@ export class ConfigAgent {
 
     if (result.isComplete) {
       this.sessionService.setPhase(sessionId, 'deploying');
+      const configuredCount = this.countConfiguredNodes(state.configurableNodes);
       return {
         type: 'config_complete',
-        message: `硬件拼装完成！共配置了 ${result.progress.total} 个组件，工作流已准备就绪。`,
-        totalConfigured: result.progress.completed,
+        message: `硬件拼装完成！共配置了 ${configuredCount} 个组件，工作流已准备就绪。`,
+        totalConfigured: configuredCount,
         metadata: { workflowId: state.workflowId },
       };
     }
@@ -1396,6 +1437,38 @@ export class ConfigAgent {
 
   private isFaceNetNode(node: ConfigurableNode): boolean {
     return node.category === 'FACE-NET';
+  }
+
+  /**
+   * 纯硬件节点：属于 HARDWARE_CATEGORIES，且不需要任何软件侧用户输入（TTS 文字、表情选择等）。
+   * 这类节点的热插拔由数字孪生组装面板管理，不阻塞 ConfigAgent 的 completed 判定。
+   */
+  private isPureHardwareNode(node: ConfigurableNode): boolean {
+    const category = node.category;
+    if (!category || !HARDWARE_CATEGORIES.includes(category)) return false;
+    return !node.configFields?.needsTtsInput && !node.configFields?.needsExecuteEmoji;
+  }
+
+  private getPendingHardwareNodes(nodes: ConfigurableNode[]): ConfigurableNode[] {
+    return nodes.filter((node) => this.isPureHardwareNode(node) && node.status !== 'configured');
+  }
+
+  private getPendingHardwareNodeNames(nodes: ConfigurableNode[]): string[] {
+    return this.getPendingHardwareNodes(nodes).map((node) => node.name);
+  }
+
+  private countConfiguredNodes(nodes: ConfigurableNode[]): number {
+    return nodes.filter((node) => node.status === 'configured').length;
+  }
+
+  /**
+   * 计算软件配置维度的完成度——排除纯硬件节点后，已 configured 的比例。
+   * 当所有需要用户输入的节点都已配置完毕，即视为 completed。
+   */
+  private computeSoftwareCompletion(nodes: ConfigurableNode[]): { completed: number; total: number } {
+    const softwareNodes = nodes.filter((n) => !this.isPureHardwareNode(n));
+    const configured = softwareNodes.filter((n) => n.status === 'configured').length;
+    return { completed: configured, total: softwareNodes.length };
   }
 
   private buildFaceProfileOptions(
@@ -1748,7 +1821,7 @@ export class ConfigAgent {
       category?: NodeCategory;
       applyToCategory?: boolean;
     } = {}
-  ): Promise<void> {
+  ): Promise<WorkflowDefinition> {
     logger.info('ConfigAgent: persist node status begin', {
       workflowId,
       nodeName,
@@ -1833,6 +1906,8 @@ export class ConfigAgent {
       device_ID: config.device_ID ?? null,
       subKeys: Object.keys(config.sub ?? {}),
     });
+
+    return updatedWorkflow as unknown as WorkflowDefinition;
   }
 
   private summarizeNodeForLog(node: ConfigurableNode | null): Record<string, unknown> | null {

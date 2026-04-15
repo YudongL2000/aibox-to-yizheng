@@ -136,7 +136,9 @@ export class WorkflowJsonExtractor {
       }
     }
 
-    const balanced = this.extractBalancedJson(response);
+    // 当围栏提取未命中（例如 LLM 输出被 max_tokens 截断导致 ``` 缺失），
+    // 取最大平衡 JSON 块，跳过推理文本中的短小花括号片段如 {1,2,3}
+    const balanced = this.extractLargestBalancedJson(response);
     if (balanced && !seen.has(balanced)) {
       seen.add(balanced);
       candidates.push(balanced);
@@ -144,7 +146,26 @@ export class WorkflowJsonExtractor {
     return candidates;
   }
 
+  /**
+   * 返回响应中最大的平衡 JSON 块。
+   * 之前取第一个平衡块会误命中推理文本中的 {1,2,3} 等短小片段。
+   */
+  private extractLargestBalancedJson(response: string): string | null {
+    const blocks = this.extractAllBalancedJsonBlocks(response);
+    if (blocks.length === 0) {
+      return null;
+    }
+    return blocks.reduce((longest, current) =>
+      current.length > longest.length ? current : longest
+    );
+  }
+
   private extractBalancedJson(response: string): string | null {
+    return this.extractAllBalancedJsonBlocks(response)[0] ?? null;
+  }
+
+  private extractAllBalancedJsonBlocks(response: string): string[] {
+    const blocks: string[] = [];
     let inString = false;
     let escape = false;
     let depth = 0;
@@ -181,15 +202,22 @@ export class WorkflowJsonExtractor {
       if (char === '}' && depth > 0) {
         depth -= 1;
         if (depth === 0 && start >= 0) {
-          return response.slice(start, index + 1);
+          blocks.push(response.slice(start, index + 1));
+          start = -1;
         }
       }
     }
 
+    // 未闭合块（LLM 截断）：只有当它远大于任何完整块时才作为候选
     if (start >= 0) {
-      return response.slice(start);
+      const unclosed = response.slice(start);
+      const maxClosed = blocks.reduce((max, b) => Math.max(max, b.length), 0);
+      if (unclosed.length > maxClosed && unclosed.length > 200) {
+        blocks.push(unclosed);
+      }
     }
-    return null;
+
+    return blocks;
   }
 
   private parseWorkflow(rawJson: string): WorkflowDefinition {

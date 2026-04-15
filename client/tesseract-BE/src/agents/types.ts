@@ -32,11 +32,18 @@ export type InteractionField =
   | 'emotion_labels'
   | 'arm_actions'
   | 'face_profiles';
+export type ClarificationCategory =
+  | 'trigger'
+  | 'action'
+  | 'condition'
+  | 'feedback'
+  | 'logic';
 
 export interface InteractionOption {
   label: string;
   value: string;
   reason?: string;
+  category?: ClarificationCategory;
 }
 
 export interface InteractionRequest {
@@ -295,8 +302,14 @@ export interface ConfigAgentState {
   configurableNodes: ConfigurableNode[];
   /** 当前正在配置的节点索引 */
   currentNodeIndex: number;
-  /** 是否全部完成 */
+  /** 软件侧配置是否完成 */
   completed: boolean;
+  /** 纯硬件拼装是否全部完成 */
+  assemblyCompleted?: boolean;
+  /** 是否已经进入可下发/可存储的最终可操作态 */
+  actionReady?: boolean;
+  /** 尚未完成拼装确认的硬件节点名称 */
+  pendingHardwareNodeNames?: string[];
   /** 进度 */
   progress?: {
     total: number;
@@ -354,6 +367,7 @@ export interface OrchestratorState {
   confidence: number;
   complete: boolean;
   canProceed: boolean;
+  confirmedCategories?: string[];
 }
 
 export type AgentTracePhase =

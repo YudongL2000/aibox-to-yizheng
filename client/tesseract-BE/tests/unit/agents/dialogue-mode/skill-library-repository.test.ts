@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AgentSession, WorkflowDefinition } from '../../../../src/agents/types';
 import {
+  buildSkillSaveCandidateFromSnapshot,
   buildSkillSaveCandidateFromSession,
   SkillLibraryRepository,
   toDialogueModeLibrarySkillPreview,
@@ -78,6 +79,9 @@ function createSession(): AgentSession {
       ],
       currentNodeIndex: 2,
       completed: true,
+      assemblyCompleted: true,
+      actionReady: true,
+      pendingHardwareNodeNames: [],
       progress: {
         total: 2,
         completed: 2,
@@ -112,6 +116,18 @@ describe('SkillLibraryRepository', () => {
     });
   });
 
+  it('does not build a save candidate while hardware assembly is still pending', () => {
+    const session = createSession();
+    session.configAgentState = {
+      ...session.configAgentState!,
+      assemblyCompleted: false,
+      actionReady: false,
+      pendingHardwareNodeNames: ['机械手出拳'],
+    };
+
+    expect(buildSkillSaveCandidateFromSession(session)).toBeNull();
+  });
+
   it('persists saved skills as json files and exports dialogue previews', () => {
     const rootDir = mkdtempSync(join(tmpdir(), 'skill-library-'));
     try {
@@ -139,5 +155,45 @@ describe('SkillLibraryRepository', () => {
     } finally {
       rmSync(rootDir, { recursive: true, force: true });
     }
+  });
+
+  it('rebuilds a save candidate from persisted workflow snapshot after backend restart', () => {
+    const candidate = buildSkillSaveCandidateFromSnapshot({
+      sessionId: 'session-snapshot',
+      workflowId: 'wf-rps',
+      workflow: createWorkflow(),
+      workflowSummary: '通过摄像头识别手势并驱动机械手回应。',
+      skillSaveCandidate: {
+        skillId: 'skill-rps',
+        displayName: '石头剪刀布',
+        summary: '通过摄像头识别手势并驱动机械手回应。',
+        keywords: ['石头剪刀布', '猜拳'],
+        gameplayGuide: '先出拳，我会立刻识别并回应。',
+        requiredHardware: [
+          {
+            componentId: 'camera',
+            displayName: '摄像头',
+            requiredCapability: 'camera_capture',
+            acceptablePorts: ['port_7'],
+            requiredModelIds: [],
+            isOptional: false,
+          },
+        ],
+        workflowId: 'wf-rps',
+        workflowName: '猜拳互动',
+        sourceSessionId: 'session-snapshot',
+      },
+    }, 'session-snapshot');
+
+    expect(candidate).toEqual(expect.objectContaining({
+      skillId: 'skill-rps',
+      workflowId: 'wf-rps',
+      sourceSessionId: 'session-snapshot',
+      displayName: '石头剪刀布',
+    }));
+    expect(candidate?.requiredHardware[0]).toEqual(expect.objectContaining({
+      componentId: 'camera',
+      acceptablePorts: ['port_7'],
+    }));
   });
 });

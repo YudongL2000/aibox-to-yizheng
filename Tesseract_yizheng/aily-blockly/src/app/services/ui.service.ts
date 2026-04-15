@@ -408,6 +408,10 @@ export class UiService {
     this.openTool(panelId, payload);
   }
 
+  clearWorkbenchPayload(panelId: WorkbenchPanelId) {
+    this.workbenchPayloadMap.delete(panelId);
+  }
+
   openSupportPanel(state?: Partial<SupportPanelState>) {
     const nextState = this.normalizeSupportPanelState(state);
     this.workbenchPayloadMap.set('support-panel', nextState);

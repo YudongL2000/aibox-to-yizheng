@@ -23,12 +23,18 @@ import { Subscription } from 'rxjs';
 import { DigitalTwinPanelComponent } from '../../components/digital-twin-panel/digital-twin-panel.component';
 import { ProjectService } from '../../services/project.service';
 import {
+  TesseractAssemblyResumeState,
   TesseractManifest,
   TesseractProjectService,
+  TesseractWorkflowMetadata,
   TesseractWorkflowSnapshot,
   TesseractWorkflowViewTarget,
+  TesseractHardwareDispatchState,
 } from '../../services/tesseract-project.service';
 import { UiService } from '../../services/ui.service';
+import { AssemblyOrchestratorService } from '../../services/assembly-orchestrator.service';
+import { DesktopDigitalTwinStateService } from '../../services/desktop-digital-twin-state.service';
+import { TesseractChatService } from '../../tools/aily-chat/services/tesseract-chat.service';
 
 const STUDIO_SURFACE_STORAGE_PREFIX = 'tesseract-studio.surface.';
 type StudioSurface = 'workflow' | 'digital-twin';
@@ -57,10 +63,13 @@ export class TesseractStudioComponent implements OnInit, OnDestroy, AfterViewChe
   embeddedAutoLoginAttempted = false;
   pendingWorkflowTarget: TesseractWorkflowViewTarget | null = null;
   activeSurface: StudioSurface = 'workflow';
+  hardwareFlowBusy = false;
 
   private boundWorkspaceFrame: any = null;
   private routeSubscription?: Subscription;
   private workflowViewSyncSubscription?: Subscription;
+  private assemblyCompletionSubscription?: Subscription;
+  private studioAssemblySessionId: string | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -69,7 +78,10 @@ export class TesseractStudioComponent implements OnInit, OnDestroy, AfterViewChe
     private message: NzMessageService,
     private projectService: ProjectService,
     private tesseractProjectService: TesseractProjectService,
-    private uiService: UiService
+    private uiService: UiService,
+    private assemblyOrchestrator: AssemblyOrchestratorService,
+    private desktopDigitalTwinState: DesktopDigitalTwinStateService,
+    private tesseractChatService: TesseractChatService,
   ) {}
 
   private get electronAPI() {
@@ -132,6 +144,40 @@ export class TesseractStudioComponent implements OnInit, OnDestroy, AfterViewChe
     return !this.loading && !this.showWorkflowPlaceholder && !this.safeEditorUrl && !this.hasRuntimeFailure;
   }
 
+  get workflowMetadata(): TesseractWorkflowMetadata | null {
+    return this.snapshot?.metadata || null;
+  }
+
+  get hardwareDispatchState(): TesseractHardwareDispatchState | null {
+    return this.workflowMetadata?.hardwareDispatch || null;
+  }
+
+  get isWorkflowDispatchedToHardware(): boolean {
+    return this.hardwareDispatchState?.lastAction === 'upload'
+      && this.hardwareDispatchState?.successful === true
+      && this.hardwareDispatchState?.responseStatus === 'started';
+  }
+
+  get showHardwareAssemblyEntry(): boolean {
+    return Boolean(
+      this.hasProjectWorkspace
+      && this.snapshot?.workflow
+      && this.snapshot?.sessionId
+      && !this.isWorkflowDispatchedToHardware
+    );
+  }
+
+  get hardwareAssemblyActionLabel(): string {
+    const phase = String(this.workflowMetadata?.phase || '').trim().toLowerCase();
+    if (phase === 'hot_plugging') {
+      return '继续硬件组装';
+    }
+    if (phase === 'config_complete') {
+      return '下发到硬件';
+    }
+    return '进入组装下发';
+  }
+
   get hasRuntimeFailure(): boolean {
     return Boolean(this.agentStatus?.healthy === false || this.n8nStatus?.healthy === false);
   }
@@ -190,6 +236,9 @@ export class TesseractStudioComponent implements OnInit, OnDestroy, AfterViewChe
     this.workflowViewSyncSubscription = this.tesseractProjectService.workflowViewTarget$.subscribe((target) => {
       void this.handleWorkflowViewTarget(target);
     });
+    this.assemblyCompletionSubscription = this.assemblyOrchestrator.lastCompletion$.subscribe((payload) => {
+      void this.handleAssemblyCompletion(payload);
+    });
 
     this.routeSubscription = this.route.queryParams.subscribe(async (params) => {
       const nextProjectPath = this.resolveRouteProjectPath(params['path']);
@@ -227,6 +276,7 @@ export class TesseractStudioComponent implements OnInit, OnDestroy, AfterViewChe
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
     this.workflowViewSyncSubscription?.unsubscribe();
+    this.assemblyCompletionSubscription?.unsubscribe();
   }
 
   ngAfterViewChecked(): void {
@@ -427,6 +477,96 @@ export class TesseractStudioComponent implements OnInit, OnDestroy, AfterViewChe
     }
   }
 
+  async continueHardwareAssemblyFlow(): Promise<void> {
+    if (this.hardwareFlowBusy) {
+      return;
+    }
+
+    if (!this.canUseAgentActions) {
+      this.message.warning('Agent offline，当前不可进入硬件组装下发流程。');
+      return;
+    }
+
+    if (!this.hasProjectWorkspace) {
+      this.message.warning('请先打开一个 Tesseract 项目。');
+      return;
+    }
+
+    const sessionId = String(this.snapshot?.sessionId || '').trim();
+    if (!sessionId || !this.snapshot?.workflow) {
+      this.message.warning('当前项目缺少可恢复的工作流会话，请先通过 Assistant 重新生成或继续配置。');
+      return;
+    }
+
+    this.hardwareFlowBusy = true;
+    try {
+      await this.electronAPI.tesseract.start({
+        projectPath: this.projectPath,
+        port: this.manifest?.runtime.agentPort,
+      });
+
+      const configState = await this.readConfigState(sessionId);
+      if (configState?.digitalTwinScene) {
+        await this.syncDigitalTwinScene(
+          sessionId,
+          configState?.actionReady ? 'config_complete' : 'hot_plugging',
+          configState.digitalTwinScene,
+        );
+      }
+
+      if (configState?.actionReady === true) {
+        this.persistAssemblyResumeState('config_complete', null);
+        await this.uploadWorkflowToHardware(sessionId);
+        return;
+      }
+
+      const resumeState = this.resolveAssemblyResumeState(configState);
+      if (resumeState) {
+        this.startStudioAssemblySession(sessionId, resumeState);
+        return;
+      }
+
+      const configResult = await this.electronAPI.tesseract.startConfig({
+        projectPath: this.projectPath,
+        sessionId,
+        workflowId: this.snapshot?.workflowId || undefined,
+        workflowJson: this.snapshot?.workflow,
+      });
+      const response = configResult?.response || null;
+      if (response?.digitalTwinScene) {
+        await this.syncDigitalTwinScene(sessionId, String(response?.type || 'configuring'), response.digitalTwinScene);
+      }
+
+      if (response?.type === 'hot_plugging') {
+        const nextResumeState = this.buildAssemblyResumeState({
+          nodeName: response?.currentNode?.name,
+          components: response?.metadata?.allHardwareComponents,
+          allPendingHardwareNodeNames: response?.metadata?.allPendingHardwareNodeNames,
+        });
+        if (!nextResumeState) {
+          this.message.warning('当前组装流程缺少组件清单，无法直接恢复，请在 Assistant 中继续配置。');
+          return;
+        }
+        this.persistAssemblyResumeState('hot_plugging', nextResumeState);
+        this.startStudioAssemblySession(sessionId, nextResumeState);
+        return;
+      }
+
+      if (response?.type === 'config_complete') {
+        this.persistAssemblyResumeState('config_complete', null);
+        await this.uploadWorkflowToHardware(sessionId);
+        return;
+      }
+
+      this.persistAssemblyResumeState(String(response?.type || 'configuring'), null);
+      this.message.info('当前工作流仍有软件配置步骤，请先在 Assistant 中继续完成后再进入硬件组装。');
+    } catch (error: any) {
+      this.message.error(error?.message || '进入硬件组装下发流程失败');
+    } finally {
+      this.hardwareFlowBusy = false;
+    }
+  }
+
   private async refreshEditorUrl(): Promise<void> {
     const workflowId = this.activeWorkflowId || undefined;
     if (!workflowId) {
@@ -568,6 +708,292 @@ export class TesseractStudioComponent implements OnInit, OnDestroy, AfterViewChe
       console.warn('[TesseractStudio] Failed to read embedded n8n credentials', error);
       return null;
     }
+  }
+
+  private async readConfigState(sessionId: string): Promise<any | null> {
+    try {
+      const result = await this.electronAPI.tesseract.getConfigState({
+        projectPath: this.projectPath,
+        sessionId,
+      });
+      return result?.data || null;
+    } catch (error) {
+      console.warn('[TesseractStudio] Failed to read config state', error);
+      return null;
+    }
+  }
+
+  private buildAssemblyResumeState(payload: {
+    nodeName?: unknown;
+    components?: unknown;
+    allPendingHardwareNodeNames?: unknown;
+  }): TesseractAssemblyResumeState | null {
+    const components = Array.isArray(payload.components)
+      ? payload.components
+        .map((component) => ({
+          componentId: String((component as Record<string, unknown>)?.['componentId'] || '').trim(),
+          displayName: String(
+            (component as Record<string, unknown>)?.['displayName']
+            || (component as Record<string, unknown>)?.['componentId']
+            || ''
+          ).trim(),
+        }))
+        .filter((component) => component.componentId && component.displayName)
+      : [];
+    if (components.length === 0) {
+      return null;
+    }
+
+    return {
+      nodeName: String(payload.nodeName || '').trim() || null,
+      components,
+      allPendingHardwareNodeNames: Array.isArray(payload.allPendingHardwareNodeNames)
+        ? payload.allPendingHardwareNodeNames
+          .map((value) => String(value || '').trim())
+          .filter(Boolean)
+        : [],
+    };
+  }
+
+  private resolveAssemblyResumeState(configState: any): TesseractAssemblyResumeState | null {
+    if (configState?.pendingHardwareCount === 0) {
+      return null;
+    }
+
+    const persistedResume = this.buildAssemblyResumeState({
+      nodeName: configState?.currentNode?.name || this.workflowMetadata?.assemblyResume?.nodeName,
+      components: this.workflowMetadata?.assemblyResume?.components,
+      allPendingHardwareNodeNames:
+        configState?.pendingHardwareNodeNames
+        || this.workflowMetadata?.assemblyResume?.allPendingHardwareNodeNames,
+    });
+    if (persistedResume) {
+      return persistedResume;
+    }
+
+    return null;
+  }
+
+  private startStudioAssemblySession(
+    sessionId: string,
+    assemblyResume: TesseractAssemblyResumeState,
+  ): void {
+    this.studioAssemblySessionId = sessionId;
+    const session = this.assemblyOrchestrator.startSession({
+      mode: 'hardware-assembly',
+      sessionId,
+      nodeName: assemblyResume.nodeName || null,
+      components: assemblyResume.components,
+      allPendingHardwareNodeNames: assemblyResume.allPendingHardwareNodeNames || [],
+    });
+    this.uiService.openWorkbenchPanel('digital-twin', session as unknown as Record<string, unknown>);
+  }
+
+  private async handleAssemblyCompletion(payload: Record<string, unknown> | null): Promise<void> {
+    const sessionId = String(payload?.['sessionId'] || '').trim();
+    if (!sessionId || !this.studioAssemblySessionId || sessionId !== this.studioAssemblySessionId) {
+      return;
+    }
+
+    this.studioAssemblySessionId = null;
+    this.uiService.clearWorkbenchPayload('digital-twin');
+    if (this.uiService.isToolOpen('aily-chat')) {
+      return;
+    }
+
+    const nodeName = String(payload?.['nodeName'] || '').trim();
+    const remainingNodeNames = Array.isArray(payload?.['allPendingHardwareNodeNames'])
+      ? payload?.['allPendingHardwareNodeNames']
+        .map((value) => String(value || '').trim())
+        .filter(Boolean)
+        .filter((value) => value !== nodeName)
+      : [];
+
+    this.hardwareFlowBusy = true;
+    try {
+      let latestResult = await this.tesseractChatService.confirmNode({
+        sessionId,
+        nodeName,
+      }, this.projectPath);
+
+      for (const pendingNodeName of remainingNodeNames) {
+        try {
+          latestResult = await this.tesseractChatService.confirmNode({
+            sessionId,
+            nodeName: pendingNodeName,
+          }, this.projectPath);
+        } catch (error) {
+          console.warn('[TesseractStudio] Failed to auto-confirm remaining hardware node', {
+            sessionId,
+            pendingNodeName,
+            error,
+          });
+        }
+      }
+
+      this.snapshot = this.tesseractProjectService.readWorkflowSnapshot(this.projectPath);
+      if (latestResult?.response?.type === 'config_complete') {
+        await this.uploadWorkflowToHardware(sessionId);
+        return;
+      }
+
+      this.message.info('硬件组装已完成，流程已推进到下一阶段。若还有软件配置项，请在 Assistant 中继续完成。');
+    } catch (error: any) {
+      this.message.error(error?.message || '组装完成后的工作流推进失败');
+    } finally {
+      this.hardwareFlowBusy = false;
+    }
+  }
+
+  private persistAssemblyResumeState(
+    phase: string,
+    assemblyResume: TesseractAssemblyResumeState | null,
+  ): void {
+    if (!this.hasProjectWorkspace) {
+      return;
+    }
+
+    this.snapshot = this.tesseractProjectService.persistWorkflowSnapshot(this.projectPath, {
+      metadata: {
+        phase,
+        assemblyResume,
+      },
+    });
+  }
+
+  private async syncDigitalTwinScene(
+    sessionId: string,
+    responseType: string,
+    scene: unknown,
+  ): Promise<void> {
+    if (!scene) {
+      return;
+    }
+
+    await this.desktopDigitalTwinState.applyScene({
+      sessionId,
+      projectPath: this.projectPath || null,
+      sourcePhase: 'configuring',
+      responseType,
+      scene,
+    });
+  }
+
+  private async uploadWorkflowToHardware(sessionId: string): Promise<void> {
+    if (!this.electronAPI?.tesseract?.hardwareUpload) {
+      this.message.warning('当前环境未启用硬件下发能力。');
+      return;
+    }
+
+    const result = await this.electronAPI.tesseract.hardwareUpload({ sessionId });
+    const dispatchState = this.buildHardwareDispatchState(result, 'upload');
+    if (this.hasProjectWorkspace) {
+      this.snapshot = this.tesseractProjectService.persistHardwareDispatch(this.projectPath, dispatchState);
+    }
+
+    const responseTone = dispatchState.successful
+      ? 'success'
+      : dispatchState.receiptStatus === 'queued' || dispatchState.receiptStatus === 'sent'
+        ? 'warning'
+        : 'error';
+    if (responseTone === 'success') {
+      this.message.success(dispatchState.message || '工作流已下发到硬件');
+      return;
+    }
+    if (responseTone === 'warning') {
+      this.message.warning(dispatchState.message || '工作流下发中，请稍后查看端侧状态');
+      return;
+    }
+    this.message.error(dispatchState.message || '工作流下发失败');
+  }
+
+  private buildHardwareDispatchState(
+    result: any,
+    action: 'upload' | 'stop',
+  ): TesseractHardwareDispatchState {
+    if (!result?.success) {
+      return {
+        lastAction: action,
+        receiptStatus: 'failed',
+        responseStatus: null,
+        workflowFile: null,
+        message: result?.error || (action === 'upload' ? '工作流下发失败' : '停止工作流失败'),
+        successful: false,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    const receipt = result?.data || {};
+    const response = receipt?.response || {};
+    const receiptStatus = String(receipt?.status || '').trim().toLowerCase() || null;
+    const responseStatus = String(response?.status || '').trim().toLowerCase() || null;
+    const workflowFile = String(response?.workflow_file || '').trim() || null;
+    const responseMessage = String(response?.message || '').trim();
+
+    if (action === 'upload') {
+      if (receiptStatus === 'acknowledged' && responseStatus === 'started') {
+        return {
+          lastAction: action,
+          receiptStatus,
+          responseStatus,
+          workflowFile,
+          message: workflowFile
+            ? `工作流已下发到端侧并启动，端侧文件：${workflowFile}`
+            : '工作流已下发到端侧并启动',
+          successful: true,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+
+      if (receiptStatus === 'acknowledged') {
+        return {
+          lastAction: action,
+          receiptStatus,
+          responseStatus,
+          workflowFile,
+          message: responseMessage || '端侧已确认收到工作流',
+          successful: true,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+
+      if (receiptStatus === 'sent') {
+        return {
+          lastAction: action,
+          receiptStatus,
+          responseStatus,
+          workflowFile,
+          message: '工作流已发送到端侧，正在等待设备确认',
+          successful: false,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+
+      if (receiptStatus === 'queued') {
+        const isDisabled = receipt?.requestId === 'disabled' || !receipt?.topic;
+        return {
+          lastAction: action,
+          receiptStatus,
+          responseStatus,
+          workflowFile,
+          message: isDisabled
+            ? '后端未启用硬件下发能力，请先检查 MQTT/运行时配置'
+            : '工作流已入队，等待端侧链路可用',
+          successful: false,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+    }
+
+    return {
+      lastAction: action,
+      receiptStatus,
+      responseStatus,
+      workflowFile,
+      message: responseMessage || (action === 'upload' ? '工作流下发失败' : '停止工作流失败'),
+      successful: false,
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   private resolveRequestedSurface(

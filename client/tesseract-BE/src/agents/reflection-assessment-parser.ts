@@ -179,17 +179,17 @@ function normalizeSuggestedActions(
     const record = item as Record<string, unknown>;
     const category = normalizeSuggestedActionCategory(record.category, allowedCategories);
     const valueText = normalizeQuestionText(String(record.value ?? ''));
-    if (!category || !isUsableChoiceText(valueText) || seen.has(valueText)) {
+    if (!category || !isUsableSuggestedActionValue(valueText) || seen.has(valueText)) {
       return;
     }
 
     seen.add(valueText);
-    const fallbackLabel = `${REFLECTION_CATEGORY_LABELS[category]}: ${valueText}`;
-    const label = normalizeQuestionText(String(record.label ?? fallbackLabel));
+    const rawLabel = normalizeQuestionText(String(record.label ?? ''));
+    const label = isUsableChoiceText(rawLabel) ? rawLabel : valueText;
     suggestions.push({
       category,
       value: valueText,
-      label: isUsableChoiceText(label) ? label : fallbackLabel,
+      label,
       reason: normalizeSummary(record.reason),
     });
   });
@@ -416,15 +416,27 @@ function isUsableChoiceText(text: string): boolean {
     return false;
   }
 
-  if (text.length <= 1) {
+  if (text.length <= 2) {
     return false;
   }
 
-  if (/^(用|先|再|都行|都可以|任意|默认|其他)$/.test(text)) {
+  if (/^(用|先|再|都行|都可以|任意|默认|其他|它看|它听|它说|看它|听它)$/.test(text)) {
     return false;
   }
 
   return /[\p{L}\p{N}]/u.test(text);
+}
+
+function isUsableSuggestedActionValue(text: string): boolean {
+  if (!isUsableChoiceText(text)) {
+    return false;
+  }
+
+  if (text.length < 6) {
+    return false;
+  }
+
+  return /我|机器人|通过|用|看到|听到|识别|屏幕|语音|动作|表情|触发/u.test(text);
 }
 
 function clamp(value: number, min: number, max: number): number {

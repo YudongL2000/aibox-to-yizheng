@@ -31,11 +31,27 @@ export class DigitalTwinPanelComponent {
   }
 
   get frameData(): Record<string, unknown> | AssemblySessionState | undefined {
-    if (this.panelState && Object.keys(this.panelState).length > 0) {
-      return this.panelState;
+    const panelState = this.panelState && Object.keys(this.panelState).length > 0
+      ? { ...this.panelState }
+      : undefined;
+    const assemblySession = this.assemblyOrchestrator.session;
+
+    if (assemblySession) {
+      return {
+        ...(panelState ?? {}),
+        ...assemblySession,
+      };
     }
 
-    return this.assemblyOrchestrator.session || undefined;
+    if (!panelState) {
+      return undefined;
+    }
+
+    if (panelState['mode'] !== 'hardware-assembly') {
+      return panelState;
+    }
+
+    return this.stripStaleAssemblyPayload(panelState);
   }
 
   get iframeUrl(): string {
@@ -75,14 +91,30 @@ export class DigitalTwinPanelComponent {
   }
 
   get isAssemblyMode(): boolean {
-    const mode =
-      this.panelState?.['mode'] ?? this.assemblyOrchestrator.session?.mode;
-    return mode === 'hardware-assembly';
+    return this.assemblyOrchestrator.session?.mode === 'hardware-assembly';
   }
 
   get shouldUseFlutterWorkspace(): boolean {
     const mode =
       window.electronAPI?.runtimeFlags?.desktopTwinMode || 'flutter-workspace';
     return mode === 'flutter-workspace';
+  }
+
+  private stripStaleAssemblyPayload(
+    payload: Record<string, unknown>,
+  ): Record<string, unknown> | undefined {
+    const nextPayload = { ...payload };
+    for (const key of [
+      'mode',
+      'components',
+      'sessionId',
+      'nodeName',
+      'allPendingHardwareNodeNames',
+      'startedAt',
+    ]) {
+      delete nextPayload[key];
+    }
+
+    return Object.keys(nextPayload).length > 0 ? nextPayload : undefined;
   }
 }

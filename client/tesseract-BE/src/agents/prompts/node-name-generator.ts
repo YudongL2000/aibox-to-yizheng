@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖节点原始名称、类型与分类信息
  * [OUTPUT]: 对外提供 generateNodeName/normalizeNodeName 节点命名标准化能力
- * [POS]: prompts 的命名规范器，统一 {type}_{category}_{action}_{detail}
+ * [POS]: prompts 的命名规范器，统一中文业务语义节点名并为运行时归一化提供兜底
  * [PROTOCOL]: 变更时更新此头部，然后检查 AGENT.md
  */
 
@@ -15,167 +15,147 @@ interface NodeNameInput {
 }
 
 const TYPE_PREFIX: Record<string, string> = {
-  'n8n-nodes-base.scheduleTrigger': 'schedule_trigger',
-  'n8n-nodes-base.httpRequest': 'http_request',
-  'n8n-nodes-base.set': 'set',
-  'n8n-nodes-base.code': 'code',
-  'n8n-nodes-base.if': 'if',
-  'n8n-nodes-base.switch': 'switch',
-  'n8n-nodes-base.merge': 'merge',
+  'n8n-nodes-base.scheduleTrigger': '定时触发',
+  'n8n-nodes-base.httpRequest': '接口请求',
+  'n8n-nodes-base.set': '数据设置',
+  'n8n-nodes-base.code': '逻辑处理',
+  'n8n-nodes-base.if': '条件判断',
+  'n8n-nodes-base.switch': '条件分流',
+  'n8n-nodes-base.merge': '结果汇总',
 };
 
-const CN_TO_EN: Array<[RegExp, string]> = [
-  [/摄像头/g, 'camera'],
-  [/人脸/g, 'face'],
-  [/身份/g, 'identity'],
-  [/抓拍/g, 'snapshot'],
-  [/手势/g, 'gesture'],
-  [/麦克风/g, 'microphone'],
-  [/语音/g, 'voice'],
-  [/识别/g, 'recognition'],
-  [/情绪/g, 'emotion'],
-  [/微笑/g, 'smile'],
-  [/倒数/g, 'countdown'],
-  [/喇叭/g, 'speaker'],
-  [/播放/g, 'play'],
-  [/机械手/g, 'hand'],
-  [/屏幕/g, 'screen'],
-  [/开心/g, 'happy'],
-  [/难过/g, 'sad'],
-  [/愤怒/g, 'angry'],
-  [/平局/g, 'draw'],
-  [/输/g, 'lose'],
-  [/赢/g, 'win'],
-  [/石头/g, 'rock'],
-  [/剪刀/g, 'scissors'],
-  [/布/g, 'paper'],
-  [/随机/g, 'random'],
-  [/结果/g, 'result'],
-  [/提取/g, 'extract'],
-  [/配置/g, 'config'],
-  [/生成/g, 'generate'],
-  [/赋值/g, 'assign'],
-];
+const CATEGORY_PREFIX: Record<NodeCategory, string> = {
+  BASE: '基础流程',
+  CAM: '摄像头',
+  MIC: '麦克风',
+  WHEEL: '底盘',
+  'FACE-NET': '人脸识别',
+  'YOLO-HAND': '视觉识别',
+  'YOLO-RPS': '猜拳识别',
+  ASR: '语音识别',
+  LLM: '语义生成',
+  'LLM-EMO': '情绪分析',
+  TTS: '语音播报',
+  RAM: '随机生成',
+  ASSIGN: '动作设定',
+  HAND: '机械手',
+  SPEAKER: '扬声器',
+  SCREEN: '屏幕',
+};
 
 function sanitize(text: string): string {
-  let normalized = text;
-  CN_TO_EN.forEach(([pattern, replacement]) => {
-    normalized = normalized.replace(pattern, ` ${replacement} `);
-  });
-
-  normalized = normalized
+  return text
     .replace(/([a-z])([A-Z])/g, '$1_$2')
-    .replace(/[^a-zA-Z0-9]+/g, '_')
-    .toLowerCase()
+    .replace(/[\\/:*?"<>|]+/g, '_')
+    .replace(/\s+/g, '_')
     .replace(/^_+|_+$/g, '')
     .replace(/_+/g, '_');
-
-  return normalized;
 }
 
-function inferVariant(name: string): string {
-  if (name.includes('countdown')) {
-    return 'countdown';
-  }
-  if (name.includes('win')) {
-    return 'win';
-  }
-  if (name.includes('lose')) {
-    return 'lose';
-  }
-  if (name.includes('draw')) {
-    return 'draw';
-  }
-  if (name.includes('empty')) {
-    return 'empty';
-  }
-  if (name.includes('result')) {
-    return 'result';
-  }
-  return 'step';
+function pickChineseText(...values: Array<string | undefined>): string {
+  return values.find((value) => typeof value === 'string' && /[\u4e00-\u9fff]/.test(value))?.trim() || '';
 }
 
-function inferActionDetail(category: NodeCategory, normalizedName: string, sub?: NodeSubParams): string {
+function inferVariantLabel(name: string): string {
+  if (name.includes('倒数')) {
+    return '倒计时';
+  }
+  if (name.includes('赢')) {
+    return '胜利反馈';
+  }
+  if (name.includes('输')) {
+    return '失败反馈';
+  }
+  if (name.includes('平局')) {
+    return '平局反馈';
+  }
+  if (name.includes('结果')) {
+    return '结果播报';
+  }
+  return '语音播报';
+}
+
+function inferActionDetail(category: NodeCategory, currentName: string, sub?: NodeSubParams): string {
+  const chineseName = pickChineseText(
+    currentName,
+    sub?.robotGesture,
+    sub?.execute_gesture,
+    sub?.execute_emoji,
+    sub?.face_info,
+    sub?.audio_name,
+    sub?.prompt
+  );
+
   switch (category) {
     case 'BASE':
-      if (normalizedName.includes('trigger')) {
+      if (currentName.includes('trigger') || currentName.includes('触发')) {
         const seconds = sub?.seconds ?? 0.5;
-        return `start_${seconds}s`;
+        return `每${seconds}秒触发`;
       }
-      if (normalizedName.includes('n_eq_1') || normalizedName.includes('n_1')) {
-        return 'robot_n_eq_1';
-      }
-      if (normalizedName.includes('n_eq_2') || normalizedName.includes('n_2')) {
-        return 'robot_n_eq_2';
-      }
-      if (normalizedName.includes('n_eq_3') || normalizedName.includes('n_3')) {
-        return 'robot_n_eq_3';
-      }
-      return 'condition_route';
+      return chineseName || '条件路由';
 
     case 'CAM':
-      return 'camera_snapshot';
+      return chineseName || '抓拍输入';
 
     case 'MIC':
-      return 'microphone_capture';
+      return chineseName || '音频采集';
 
     case 'FACE-NET':
-      return 'face_net_recognition';
+      return chineseName || '目标识别';
 
     case 'YOLO-HAND':
-      return 'yolov8_expression';
+      return chineseName || '表情识别';
 
     case 'YOLO-RPS':
-      return normalizedName.includes('set') ? 'result_register' : 'gesture_recognition';
+      return currentName.includes('set') || currentName.includes('写入') ? '结果写入' : chineseName || '手势识别';
 
     case 'ASR':
-      return 'asr_recognition';
+      return chineseName || '语音转写';
 
     case 'LLM':
-      return 'llm_reply';
+      return chineseName || '生成回复';
 
     case 'LLM-EMO':
-      return 'llm_emotion';
+      return chineseName || '情绪判断';
 
     case 'TTS':
-      return `audio_generate_${inferVariant(normalizedName)}`;
+      return chineseName || inferVariantLabel(currentName);
 
     case 'RAM':
-      return 'generate_random_n';
+      return chineseName || '随机数生成';
 
     case 'ASSIGN':
-      return `robot_gesture_${sanitize(sub?.robotGesture || normalizedName).replace(/^_+|_+$/g, '') || 'assign'}`;
+      return chineseName || '动作赋值';
 
     case 'HAND':
-      return `hand_execute_${sanitize(sub?.execute_gesture || normalizedName) || 'gesture'}`;
+      return chineseName ? `执行${chineseName}` : '执行动作';
 
     case 'WHEEL':
-      return 'wheel_execute_motion';
+      return chineseName || '移动控制';
 
     case 'SPEAKER':
-      return `speaker_execute_${inferVariant(normalizedName)}`;
+      return chineseName || inferVariantLabel(currentName);
 
     case 'SCREEN':
-      return `screen_execute_${sanitize(sub?.execute_emoji || normalizedName) || 'emoji'}`;
+      return chineseName ? `显示${chineseName}` : '表情显示';
 
     default:
-      return 'step';
+      return chineseName || '处理步骤';
   }
 }
 
 export function normalizeNodeName(name: string): string {
-  return sanitize(name || 'node');
+  return sanitize(name || '节点');
 }
 
 export function generateNodeName(input: NodeNameInput): string {
   const { nodeType, currentName, category, sub } = input;
-  const existing = normalizeNodeName(currentName);
-  if (/^[A-Za-z0-9_]+$/.test(currentName) && currentName.length > 0) {
-    return currentName;
+  const trimmedCurrentName = currentName.trim();
+  if (trimmedCurrentName.length > 0 && /[\u4e00-\u9fff]/.test(trimmedCurrentName)) {
+    return normalizeNodeName(trimmedCurrentName);
   }
 
-  const prefix = TYPE_PREFIX[nodeType] ?? 'node';
-  const detail = inferActionDetail(category, existing, sub);
-  const generated = `${prefix}_${category.toLowerCase()}_${detail}`;
-  return normalizeNodeName(generated);
+  const prefix = TYPE_PREFIX[nodeType] ?? CATEGORY_PREFIX[category] ?? '处理节点';
+  const detail = inferActionDetail(category, trimmedCurrentName, sub);
+  return normalizeNodeName(detail === prefix ? detail : `${prefix}_${detail}`);
 }

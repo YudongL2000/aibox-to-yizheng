@@ -46,6 +46,11 @@ export class ConfigWorkflowOrchestrator {
       throw new Error('workflowJson is required');
     }
 
+    // 确保 session.workflow 始终可用 — 无论是教学流还是技能回放
+    if (!session.workflow) {
+      this.sessionService.setWorkflow(sessionId, workflowJson);
+    }
+
     const configState = await this.configAgent.initializeFromWorkflow(
       sessionId,
       workflowId,
@@ -109,15 +114,17 @@ export class ConfigWorkflowOrchestrator {
     if (result.isComplete) {
       const state = this.getConfigState(sessionId);
       const workflowId = state?.workflowId;
+      const totalConfigured = state?.configurableNodes.filter((node) => node.status === 'configured').length
+        ?? result.progress.total;
       logger.info('ConfigWorkflowOrchestrator: configuration completed', {
         sessionId,
         workflowId: workflowId ?? null,
-        totalConfigured: result.progress.total,
+        totalConfigured,
       });
       return {
         type: 'config_complete',
         message: '所有节点配置完成！工作流已就绪。',
-        totalConfigured: result.progress.total,
+        totalConfigured,
         ...(workflowId ? { metadata: { workflowId } } : {}),
       };
     }

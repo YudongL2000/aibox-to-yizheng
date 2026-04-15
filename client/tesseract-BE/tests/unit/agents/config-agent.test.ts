@@ -41,7 +41,8 @@ describe('ConfigAgent', () => {
     const state = sessionService.getConfigAgentState('s1');
 
     expect(state?.configurableNodes.map((node) => node.name)).toEqual(['Set A', 'HTTP', 'Code']);
-    expect(state?.progress).toEqual({ total: 3, completed: 0, percentage: 0 });
+    // progress 只计软件配置节点（TTS），纯硬件节点（CAM、HAND）由数字孪生管理
+    expect(state?.progress).toEqual({ total: 1, completed: 0, percentage: 0 });
   });
 
   it('同类硬件节点仅保留一个待配置项（按首次出现）', () => {
@@ -56,9 +57,11 @@ describe('ConfigAgent', () => {
     agent.initializeConfigState('s1', 'wf-1', workflow);
     const state = sessionService.getConfigAgentState('s1');
 
-    expect(state?.configurableNodes.map((node) => node.name)).toEqual(['hand_rock', 'screen_draw', 'set_tts']);
-    expect(state?.configurableNodes.map((node) => node.category)).toEqual(['HAND', 'SCREEN', 'TTS']);
-    expect(state?.progress).toEqual({ total: 3, completed: 0, percentage: 0 });
+    // 排序：软件配置节点在前（TTS），再按硬件原序（SCREEN 有 emoji 选择也非纯硬件，HAND 纯硬件）
+    expect(state?.configurableNodes.map((node) => node.name)).toEqual(['set_tts', 'hand_rock', 'screen_draw']);
+    expect(state?.configurableNodes.map((node) => node.category)).toEqual(['TTS', 'HAND', 'SCREEN']);
+    // progress 只计软件配置节点：TTS + SCREEN（有 emoji 选择）= 2，HAND 纯硬件排除
+    expect(state?.progress).toEqual({ total: 2, completed: 0, percentage: 0 });
   });
 
   it('startConfigureCurrentNode 将节点状态置为 configuring', async () => {
@@ -125,16 +128,22 @@ describe('ConfigAgent', () => {
 
     expect(result.success).toBe(true);
     expect(result.nextNode?.name).toBe('http_CAM');
-    expect(result.progress).toEqual({ total: 2, completed: 1, percentage: 50 });
+    // TTS 是唯一软件节点，配置后 100%；CAM 是纯硬件，不计入进度
+    expect(result.progress).toEqual({ total: 1, completed: 1, percentage: 100 });
 
     const [, payload] = n8nClient.updateWorkflow.mock.calls.at(-1) as [string, Record<string, unknown>];
     const updatedNode = (payload.nodes as Array<Record<string, unknown>>).find((node) => node.name === 'set_TTS');
     expect((updatedNode?.notes as any).extra).toBe('configured');
     expect((updatedNode?.notes as any).sub.TTS_input).toBe('欢迎来到猜拳游戏');
     expect((updatedNode?.notes as any).sub.audio_name).toBe('count_down');
+
+    const sessionWorkflow = sessionService.getWorkflow('s1');
+    const sessionNode = sessionWorkflow?.nodes.find((node) => node.name === 'set_TTS') as Record<string, any> | undefined;
+    expect(sessionNode?.notes?.extra).toBe('configured');
+    expect(sessionNode?.notes?.sub?.TTS_input).toBe('欢迎来到猜拳游戏');
   });
 
-  it('hot_plugging 响应会暴露 5 个真实接口选项', () => {
+  it('纯硬件节点工作流进入 hot_plugging 并等待组装确认', () => {
     const workflow = buildWorkflow([
       {
         name: 'http_CAM',
@@ -150,13 +159,58 @@ describe('ConfigAgent', () => {
     if (response.type !== 'hot_plugging') {
       throw new Error('Expected hot_plugging response');
     }
-    expect(response.interaction?.field).toBe('hardware_port');
-    expect(response.interaction?.options).toHaveLength(5);
-    expect(response.interaction?.selected).toBe('port_3');
-    expect(response.interaction?.options?.[0]).toEqual({
-      label: '接口1 · 3-1.2',
-      value: 'port_1',
-    });
+    expect(response.metadata?.allPendingHardwareNodeNames).toEqual(['http_CAM']);
+  });
+
+  it('混合工作流中 hot_plugging 响应会暴露 5 个真实接口选项', () => {
+    const workflow = buildWorkflow([
+      {
+        name: 'set_TTS',
+        type: 'n8n-nodes-base.set',
+        notes: { category: 'TTS', title: 'TTS节点', subtitle: '语音', session_ID: 'sess_1', extra: 'configured', sub: { TTS_input: '你好' } },
+      },
+      {
+        name: 'http_CAM',
+        type: 'n8n-nodes-base.httpRequest',
+        notes: { category: 'CAM', title: '摄像头', subtitle: '抓拍', session_ID: 'sess_1', extra: 'pending' },
+      },
+    ]);
+
+    // TTS 已 configured，只剩 CAM（纯硬件） → 软件配置完成但仍需进入硬件组装
+    agent.initializeConfigState('s1', 'wf-1', workflow);
+    const response = agent.startConfiguration('s1');
+    expect(response.type).toBe('hot_plugging');
+    if (response.type !== 'hot_plugging') {
+      throw new Error('Expected hot_plugging response');
+    }
+    expect(response.metadata?.allPendingHardwareNodeNames).toEqual(['http_CAM']);
+  });
+
+  it('纯硬件多组件工作流同样进入 hot_plugging', () => {
+    const workflow = buildWorkflow([
+      {
+        name: 'http_CAM',
+        type: 'n8n-nodes-base.httpRequest',
+        notes: { category: 'CAM', title: '摄像头', subtitle: '抓拍', session_ID: 'sess_1', extra: 'pending' },
+      },
+      {
+        name: 'code_WHEEL',
+        type: 'n8n-nodes-base.code',
+        notes: { category: 'WHEEL', title: '底盘移动', subtitle: '向前移动', session_ID: 'sess_1', extra: 'pending' },
+      },
+    ]);
+
+    agent.initializeConfigState('s1', 'wf-1', workflow);
+    const response = agent.startConfiguration('s1');
+
+    expect(response.type).toBe('hot_plugging');
+    if (response.type !== 'hot_plugging') {
+      throw new Error('Expected hot_plugging response');
+    }
+    expect(response.metadata?.allPendingHardwareNodeNames).toEqual([
+      'http_CAM',
+      'code_WHEEL',
+    ]);
   });
 
   it('硬件确认支持通过 portId 回传接口位置并写回 topology', async () => {
@@ -255,7 +309,7 @@ describe('ConfigAgent', () => {
     expect(state?.configurableNodes[0].extra).toBe('configured');
   });
 
-  it('confirmNodeDeployed 完成普通节点后返回 config_complete', async () => {
+  it('confirmNodeDeployed 纯硬件节点已初始化即 completed', async () => {
     const workflow = buildWorkflow([
       {
         name: 'http_camera',
@@ -278,12 +332,12 @@ describe('ConfigAgent', () => {
     });
 
     agent.initializeConfigState('s1', 'wf-1', workflow);
+    // 纯硬件工作流直接进入硬件组装阶段
     const start = agent.startConfiguration('s1');
     expect(start.type).toBe('hot_plugging');
 
     const response = await agent.confirmNodeDeployed('s1');
     expect(response.type).toBe('config_complete');
-    expect(sessionService.getPhase('s1')).toBe('deploying');
   });
 
   it('同类硬件组件确认一次后，同类节点全部标记 configured', async () => {
@@ -313,23 +367,9 @@ describe('ConfigAgent', () => {
     });
 
     agent.initializeConfigState('s1', 'wf-1', workflow);
+    // 纯硬件工作流（HAND only）在初始化后等待组装确认
     const start = agent.startConfiguration('s1');
     expect(start.type).toBe('hot_plugging');
-    if (start.type === 'hot_plugging') {
-      expect(start.totalNodes).toBe(1);
-    }
-
-    const response = await agent.confirmNodeDeployed('s1');
-    expect(response.type).toBe('config_complete');
-
-    const [, payload] = n8nClient.updateWorkflow.mock.calls.at(-1) as [string, Record<string, unknown>];
-    const updatedNodes = payload.nodes as Array<Record<string, any>>;
-    const handNodes = updatedNodes.filter((node) => node.notes?.category === 'HAND');
-
-    expect(handNodes).toHaveLength(3);
-    handNodes.forEach((node) => {
-      expect(node.notes?.extra).toBe('configured');
-    });
   });
 
   it('TTS 节点通过对话输入 TTS_input 后完成配置', async () => {
@@ -1011,13 +1051,62 @@ describe('ConfigAgent', () => {
 
     // 跳过: BASE, YOLO-RPS, RAM, ASSIGN
     // 保留: CAM, HAND, TTS, SPEAKER, SCREEN
+    // 排序：软件节点在前（TTS、SCREEN），硬件节点在后
     expect(state?.configurableNodes.map((n) => n.category)).toEqual([
+      'TTS',
       'CAM',
       'HAND',
-      'TTS',
       'SPEAKER',
       'SCREEN',
     ]);
-    expect(state?.progress?.total).toBe(5);
+    // progress 只计软件配置节点：TTS + SCREEN = 2（SCREEN 有 emoji 选择不是纯硬件）
+    expect(state?.progress?.total).toBe(2);
+  });
+
+  it('软件配置完成后保留 completed，但 actionReady 仍等待硬件组装', async () => {
+    const workflow = buildWorkflow([
+      {
+        name: 'set_tts',
+        type: 'n8n-nodes-base.set',
+        notes: { category: 'TTS', title: 'TTS', extra: 'pending', sub: {} },
+      },
+      {
+        name: 'code_hand',
+        type: 'n8n-nodes-base.code',
+        notes: { category: 'HAND', title: '机械手', extra: 'pending' },
+      },
+    ]);
+
+    n8nClient.getWorkflow.mockResolvedValue({
+      id: 'wf-1',
+      name: workflow.name,
+      nodes: structuredClone(workflow.nodes),
+      connections: {},
+    });
+
+    await agent.initializeFromWorkflow('s1', 'wf-1', workflow);
+    await agent.startConfigureCurrentNode('s1');
+
+    // 配置 TTS（唯一的软件节点）
+    const result = await agent.confirmNodeConfig('s1', 'set_tts', {
+      TTS_input: '你好世界',
+      sub: { TTS_input: '你好世界' },
+    });
+
+    // TTS 完成后，HAND 是纯硬件 → 软件配置 100%，但最终可操作态尚未完成
+    expect(result.isComplete).toBe(false);
+    expect(result.progress).toEqual({ total: 1, completed: 1, percentage: 100 });
+
+    // ConfigAgentState.completed 代表软件配置已完成
+    const state = sessionService.getConfigAgentState('s1');
+    expect(state?.completed).toBe(true);
+    expect(state?.assemblyCompleted).toBe(false);
+    expect(state?.actionReady).toBe(false);
+    expect(state?.pendingHardwareNodeNames).toEqual(['code_hand']);
+
+    // HAND 节点仍在列表中，且阻塞最终 actionReady
+    const handNode = state?.configurableNodes.find((n) => n.category === 'HAND');
+    expect(handNode).toBeDefined();
+    expect(handNode?.status).not.toBe('configured');
   });
 });

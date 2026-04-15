@@ -191,11 +191,21 @@ export class OpenAILLMClient implements LLMClient {
       });
 
       const content = response.choices?.[0]?.message?.content || '';
+      const finishReason = response.choices?.[0]?.finish_reason ?? 'unknown';
       const elapsedMs = Date.now() - startedAt;
+      if (finishReason === 'length') {
+        logger.warn('OpenAILLMClient: response truncated by max_tokens limit', {
+          model: this.model,
+          elapsedMs,
+          contentLength: content.length,
+          finishReason,
+        });
+      }
       logger.info('OpenAILLMClient: chat response received', {
         model: this.model,
         elapsedMs,
         contentLength: content.length,
+        finishReason,
         content,
       });
       emitTrace(options, {

@@ -13,7 +13,7 @@ import { LLMClient } from './llm-client';
 import type { MCPClient } from './mcp-client';
 import { Orchestrator } from './orchestrator';
 import { SessionService } from './session-service';
-import { AgentResponse } from './types';
+import { AgentResponse, ClarificationCategory } from './types';
 import { WorkflowArchitect } from './workflow-architect';
 
 type WorkflowValidationClient = Pick<MCPClient, 'validateWorkflow' | 'autofixWorkflow'>;
@@ -45,8 +45,12 @@ export class IntakeAgent {
     void this.componentSelector;
   }
 
-  async processUserInput(userMessage: string, sessionId: string): Promise<AgentResponse> {
-    return this.orchestrator.process(userMessage, sessionId);
+  async processUserInput(
+    userMessage: string,
+    sessionId: string,
+    options?: { clarificationContext?: { category: ClarificationCategory } }
+  ): Promise<AgentResponse> {
+    return this.orchestrator.process(userMessage, sessionId, options);
   }
 
   async confirmBlueprint(sessionId: string): Promise<AgentResponse> {

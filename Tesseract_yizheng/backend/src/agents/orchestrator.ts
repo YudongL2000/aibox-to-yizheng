@@ -321,6 +321,13 @@ export class Orchestrator {
     });
 
     if (validation.valid) {
+      if (composedWorkflow.source !== 'component_composer') {
+        this.sessionService.setLastComplexWorkflow(sessionId, validation.workflow, {
+          capabilityIds: state.capabilityIds,
+          userIntent: state.userIntent,
+          topologyHint: state.topologyHint,
+        });
+      }
       this.sessionService.setWorkflow(sessionId, validation.workflow);
       this.sessionService.setConfirmed(sessionId, true);
       this.sessionService.setPhase(sessionId, 'deploying');
@@ -494,7 +501,11 @@ export class Orchestrator {
     blueprint: WorkflowBlueprint | undefined,
     state: OrchestratorState,
     capabilities: HardwareCapability[]
-  ): Promise<{ workflow: WorkflowDefinition; reasoning: string }> {
+  ): Promise<{
+    workflow: WorkflowDefinition;
+    reasoning: string;
+    source: 'workflow_architect' | 'last_complex_workflow' | 'component_composer';
+  }> {
     const architectWorkflow = await this.tryComposeWithWorkflowArchitect(
       sessionId,
       history,
@@ -505,6 +516,11 @@ export class Orchestrator {
       return architectWorkflow;
     }
 
+    const reusableComplexWorkflow = this.reuseLastComplexWorkflow(sessionId, state);
+    if (reusableComplexWorkflow) {
+      return reusableComplexWorkflow;
+    }
+
     return {
       workflow: await this.componentComposer.compose(
         capabilities,
@@ -512,6 +528,7 @@ export class Orchestrator {
         (event) => this.emitTrace(sessionId, event)
       ),
       reasoning: `component-composer fallback (${capabilities.length} capabilities)`,
+      source: 'component_composer',
     };
   }
 
@@ -520,7 +537,11 @@ export class Orchestrator {
     history: ConversationTurn[],
     blueprint: WorkflowBlueprint | undefined,
     state: OrchestratorState
-  ): Promise<{ workflow: WorkflowDefinition; reasoning: string } | null> {
+  ): Promise<{
+    workflow: WorkflowDefinition;
+    reasoning: string;
+    source: 'workflow_architect';
+  } | null> {
     if (!this.workflowArchitect) {
       return null;
     }
@@ -587,10 +608,10 @@ export class Orchestrator {
           iterations: result.iterations,
         },
       });
-
       return {
         workflow: result.workflow,
         reasoning: result.reasoning || 'workflow-architect primary path',
+        source: 'workflow_architect',
       };
     } catch (error) {
       this.emitTrace(sessionId, {
@@ -603,6 +624,58 @@ export class Orchestrator {
       });
       return null;
     }
+  }
+
+  private reuseLastComplexWorkflow(
+    sessionId: string,
+    state: OrchestratorState
+  ): {
+    workflow: WorkflowDefinition;
+    reasoning: string;
+    source: 'last_complex_workflow';
+  } | null {
+    const cached = this.sessionService.getLastComplexWorkflow(sessionId);
+    if (!cached) {
+      return null;
+    }
+
+    const currentCapabilityIds = [...new Set(state.capabilityIds)];
+    const cachedCapabilityIds = new Set(cached.capabilityIds);
+    const missingCapabilityIds = currentCapabilityIds.filter((id) => !cachedCapabilityIds.has(id));
+    if (missingCapabilityIds.length > 0) {
+      this.emitTrace(sessionId, {
+        source: 'orchestrator',
+        phase: 'composition',
+        kind: 'result',
+        status: 'info',
+        title: '跳过历史复杂工作流复用',
+        detail: '历史复杂工作流无法覆盖当前能力集合，继续退回 ComponentComposer',
+        data: {
+          missingCapabilityIds,
+          cachedCapabilityIds: cached.capabilityIds,
+        },
+      });
+      return null;
+    }
+
+    this.emitTrace(sessionId, {
+      source: 'orchestrator',
+      phase: 'composition',
+      kind: 'result',
+      status: 'fallback',
+      title: '复用上次复杂工作流',
+      detail: `WorkflowArchitect 未产出可用结果，复用 ${cached.savedAt} 缓存的复杂工作流`,
+      data: {
+        nodeCount: cached.workflow.nodes.length,
+        cachedCapabilityIds: cached.capabilityIds,
+      },
+    });
+
+    return {
+      workflow: cached.workflow,
+      reasoning: `reuse-last-complex-workflow fallback (${cached.workflow.nodes.length} nodes)`,
+      source: 'last_complex_workflow',
+    };
   }
 
   private buildComposerRequirements(

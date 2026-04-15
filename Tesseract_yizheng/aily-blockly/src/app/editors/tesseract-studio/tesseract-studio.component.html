@@ -11,6 +11,15 @@
         <button nz-button nzType="default" (click)="refreshWorkspace()">刷新运行时</button>
         <button nz-button nzType="default" [disabled]="!canUseAgentActions" (click)="saveSnapshot()">保存 Workflow 快照</button>
         <button nz-button nzType="primary" [disabled]="!canUseAgentActions" (click)="deployWorkflow()">部署 Workflow 到 n8n</button>
+        @if (showHardwareAssemblyEntry) {
+          <button
+            nz-button
+            nzType="default"
+            [disabled]="!canUseAgentActions || hardwareFlowBusy"
+            (click)="continueHardwareAssemblyFlow()">
+            {{ hardwareAssemblyActionLabel }}
+          </button>
+        }
         <button nz-button nzType="default" (click)="openExternally()">浏览器打开 Workflow</button>
       </div>
     </div>

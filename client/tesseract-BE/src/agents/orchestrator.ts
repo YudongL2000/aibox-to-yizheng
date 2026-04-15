@@ -36,6 +36,7 @@ import { SessionService } from './session-service';
 import {
   AgentTraceEventInput,
   AgentResponse,
+  ClarificationCategory,
   ConversationTurn,
   HardwareCapability,
   OrchestratorState,
@@ -87,7 +88,11 @@ export class Orchestrator {
     this.workflowConfigNormalizer = new WorkflowConfigNormalizer();
   }
 
-  async process(userMessage: string, sessionId: string): Promise<AgentResponse> {
+  async process(
+    userMessage: string,
+    sessionId: string,
+    options?: { clarificationContext?: { category: ClarificationCategory } }
+  ): Promise<AgentResponse> {
     this.emitTrace(sessionId, {
       source: 'orchestrator',
       phase: 'capability_discovery',
@@ -143,6 +148,28 @@ export class Orchestrator {
       this.capabilityRegistry.listCapabilities(),
       (event) => this.emitTrace(sessionId, event)
     );
+
+    // ---- 澄清上下文：累积已确认的 category，从 missing_info 中剔除 ----
+    const confirmedCategories = new Set(previousState?.confirmedCategories ?? []);
+    const effectiveClarificationCategory = this.resolveClarificationCategory(
+      previousState,
+      options?.clarificationContext?.category
+    );
+    if (effectiveClarificationCategory) {
+      confirmedCategories.add(effectiveClarificationCategory);
+    }
+    if (confirmedCategories.size > 0) {
+      reflection.missing_info = reflection.missing_info.filter(
+        (item) => !confirmedCategories.has(item.category)
+      );
+      const hasBlocking = reflection.missing_info.some((item) => item.blocking);
+      if (!hasBlocking && reflection.decision === 'clarify_needed') {
+        reflection.decision = 'direct_accept';
+        reflection.complete = true;
+        reflection.can_proceed = true;
+      }
+    }
+
     const supportedCapabilities = this.capabilityDiscovery.resolveSupportedCapabilities(
       discoveredCapabilities,
       reflection.supported_capability_ids
@@ -168,6 +195,9 @@ export class Orchestrator {
         topologyHint: discovery.topologyHint,
       }
     );
+    if (confirmedCategories.size > 0) {
+      state.confirmedCategories = [...confirmedCategories];
+    }
 
     this.persistUnderstandingState(sessionId, state, blueprint);
 
@@ -375,6 +405,41 @@ export class Orchestrator {
       this.sessionService.appendTurn(sessionId, 'assistant', response.message);
       return response;
     }
+  }
+
+  private resolveClarificationCategory(
+    previousState: OrchestratorState | null | undefined,
+    explicitCategory?: ClarificationCategory
+  ): ClarificationCategory | null {
+    if (explicitCategory) {
+      return explicitCategory;
+    }
+
+    if (!previousState) {
+      return null;
+    }
+
+    const confirmed = new Set(previousState.confirmedCategories ?? []);
+    const pendingCategories = (previousState.pendingActions ?? [])
+      .map((action) => action.category)
+      .filter((category): category is ClarificationCategory => Boolean(category))
+      .filter((category) => !confirmed.has(category));
+
+    const uniquePendingCategories = [...new Set(pendingCategories)];
+    if (uniquePendingCategories.length === 1) {
+      return uniquePendingCategories[0];
+    }
+
+    const unresolvedMissingCategories = previousState.missingFields
+      .filter((field): field is ClarificationCategory => this.isClarificationCategory(field))
+      .filter((category) => !confirmed.has(category));
+
+    const uniqueMissingCategories = [...new Set(unresolvedMissingCategories)];
+    return uniqueMissingCategories.length === 1 ? uniqueMissingCategories[0] : null;
+  }
+
+  private isClarificationCategory(value: string): value is ClarificationCategory {
+    return ['trigger', 'action', 'condition', 'feedback', 'logic'].includes(value);
   }
 
   private emitTrace(sessionId: string, event: AgentTraceEventInput): void {

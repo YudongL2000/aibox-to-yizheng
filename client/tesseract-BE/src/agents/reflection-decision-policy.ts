@@ -143,8 +143,8 @@ export function buildFallbackReflectionAssessment(
     missingInfo.push({
       category: 'action',
       description: '执行动作未明确，无法生成核心执行节点。',
-      priority: 1,
-      blocking: true,
+      priority: 2,
+      blocking: false,
     });
   }
 
@@ -161,8 +161,8 @@ export function buildFallbackReflectionAssessment(
     missingInfo.push({
       category: 'logic',
       description: '回复机制仍不明确，需要确认是固定话术还是 AI 智能对话。',
-      priority: 1,
-      blocking: true,
+      priority: 2,
+      blocking: false,
     });
   }
 
@@ -173,12 +173,12 @@ export function buildFallbackReflectionAssessment(
     missingInfo.push({
       category: 'logic',
       description: '石头剪刀布的出拳逻辑仍不明确，需要确认是根据识别结果回应，还是随机出拳。',
-      priority: 1,
-      blocking: true,
+      priority: 2,
+      blocking: false,
     });
   }
 
-  const decision: ReflectionPolicyDecision = missingInfo.length === 0
+  const decision: ReflectionPolicyDecision = missingInfo.filter((item) => item.blocking).length === 0
     ? 'direct_accept'
     : 'clarify_needed';
 

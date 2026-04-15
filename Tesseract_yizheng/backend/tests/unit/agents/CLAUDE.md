@@ -41,6 +41,7 @@ tests/unit/agents/
 - 新增/删除/移动测试文件必须同步本文件。
 
 变更日志
+- 2026-04-15: `digital-twin-scene.test.ts` 补充 raw `3-1.x` / HDMI 物理口别名规范化断言，锁住 backend 正式 scene 的 canonical interface 映射。
 - 2026-01-17: 新增 component-selector.test.ts。
 - 2026-02-04: 新增 config-workflow-orchestrator.test.ts，补齐编排层单元测试。
 - 2026-02-04: 新增 node-dependency-rules.test.ts，验证节点依赖规则；扩展 config-agent.test.ts 覆盖跳过逻辑。

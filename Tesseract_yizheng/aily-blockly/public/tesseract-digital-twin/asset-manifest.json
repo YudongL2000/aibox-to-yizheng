@@ -1,41 +1,41 @@
 {
-  "preparedAt": "2026-04-15T07:20:06.741Z",
+  "preparedAt": "2026-04-15T10:36:08.793Z",
   "mode": "build-time-copy",
   "entries": [
     {
       "name": "viewer",
-      "source": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/frontend/web/model_viewer",
-      "target": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/public/tesseract-digital-twin",
+      "source": "/Users/yizhengwang/Documents/aibox-to-yizheng/Tesseract_yizheng/frontend/web/model_viewer",
+      "target": "/Users/yizhengwang/Documents/aibox-to-yizheng/Tesseract_yizheng/aily-blockly/public/tesseract-digital-twin",
       "fileCount": 549,
-      "hash": "fd7b98444e399b0cbe50452d74333ba6069dde6dc9b3378305fc5195fe07b3ab"
+      "hash": "f37dd0912a370b14653e0a89a5c4461c0ecd70332d84793c098478345d61b785"
     },
     {
       "name": "viewer-host-shell",
-      "source": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/scripts/templates/tesseract-digital-twin-host",
-      "target": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/public/tesseract-digital-twin",
+      "source": "/Users/yizhengwang/Documents/aibox-to-yizheng/Tesseract_yizheng/aily-blockly/scripts/templates/tesseract-digital-twin-host",
+      "target": "/Users/yizhengwang/Documents/aibox-to-yizheng/Tesseract_yizheng/aily-blockly/public/tesseract-digital-twin",
       "fileCount": 2,
-      "hash": "361c3e0f6945148b0ed97662880bd3f4a461cbd82d773b6551c69c38081fb6bf"
+      "hash": "7fed4c2155b10e8698bfaa53538abf11518d76de6b5fcdf58d4242ff58737044"
     },
     {
       "name": "models-compat",
-      "source": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/frontend/assets/models",
-      "target": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/public/assets/assets/models",
+      "source": "/Users/yizhengwang/Documents/aibox-to-yizheng/Tesseract_yizheng/frontend/assets/models",
+      "target": "/Users/yizhengwang/Documents/aibox-to-yizheng/Tesseract_yizheng/aily-blockly/public/assets/assets/models",
       "fileCount": 11,
-      "hash": "4c4c18f0a1e4e372a0b82e647969b8ebb9fb809199cd9223d718dba369460d71"
+      "hash": "e83dcb9e01c0a61e27c0f41ff5759e6d8c33358cbaf3060331a2837e57d83982"
     },
     {
       "name": "config-compat",
-      "source": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/frontend/assets/config",
-      "target": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/public/assets/assets/config",
+      "source": "/Users/yizhengwang/Documents/aibox-to-yizheng/Tesseract_yizheng/frontend/assets/config",
+      "target": "/Users/yizhengwang/Documents/aibox-to-yizheng/Tesseract_yizheng/aily-blockly/public/assets/assets/config",
       "fileCount": 5,
       "hash": "5121e2a34413fa00b219755eaeec19cd8c44343071d68297f14b63537bd6f783"
     },
     {
       "name": "videos-compat",
-      "source": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/frontend/assets/videos",
-      "target": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/public/assets/assets/videos",
+      "source": "/Users/yizhengwang/Documents/aibox-to-yizheng/Tesseract_yizheng/frontend/assets/videos",
+      "target": "/Users/yizhengwang/Documents/aibox-to-yizheng/Tesseract_yizheng/aily-blockly/public/assets/assets/videos",
       "fileCount": 5,
-      "hash": "2762fedf61b5862eb76ee978f2afa15b05ce9ac2bd5d531bf781a63d79e65037"
+      "hash": "b2cc6dd7c8539981fabe165b61f95f2b6f988515ffdf1c5f89d27202b2a1ffd1"
     }
   ]
 }

@@ -15,7 +15,23 @@ const state = {
   transformSignature: "",
   modelIds: [],
   viewerReady: false,
+  resolverConfig: {
+    interfacePresets: {},
+    mountProfiles: {},
+    portComponentOverrides: {},
+  },
 };
+
+loadResolverConfig()
+  .then((config) => {
+    state.resolverConfig = config;
+    if (state.currentEnvelope) {
+      applySceneEnvelope(state.currentEnvelope);
+    }
+  })
+  .catch((error) => {
+    console.warn("[DigitalTwin][DesktopHost] failed to load resolver config", error);
+  });
 
 function normalizePayload(raw) {
   if (typeof raw === "string" && raw.trim()) {
@@ -73,6 +89,532 @@ function asVector(raw, fallback = [0, 0, 0]) {
   return [...fallback];
 }
 
+function asRecord(raw) {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    return raw;
+  }
+  return null;
+}
+
+function hasAnyKey(record, keys) {
+  return keys.some((key) => Object.prototype.hasOwnProperty.call(record, key));
+}
+
+function readString(record, keys, fallback = "") {
+  for (const key of keys) {
+    if (Object.prototype.hasOwnProperty.call(record, key)) {
+      const value = String(record[key] ?? "").trim();
+      if (value) {
+        return value;
+      }
+    }
+  }
+  return fallback;
+}
+
+function buildAssetUrl(pathname) {
+  try {
+    return new URL(pathname, window.location.href).toString();
+  } catch {
+    return pathname;
+  }
+}
+
+async function fetchJsonConfig(pathname) {
+  try {
+    const response = await fetch(buildAssetUrl(pathname), { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+    return normalizePayload(await response.text());
+  } catch (error) {
+    console.warn("[DigitalTwin][DesktopHost] config fetch failed", pathname, error);
+    return null;
+  }
+}
+
+function looksLikeMountProfileMap(record) {
+  if (Object.keys(record).length === 0) {
+    return true;
+  }
+  return Object.values(record).some((value) => {
+    const item = asRecord(value);
+    return (
+      item &&
+      hasAnyKey(item, [
+        "position",
+        "rotation",
+        "scale",
+        "mount_position_offset",
+        "mount_rotation_offset",
+        "mount_scale",
+      ])
+    );
+  });
+}
+
+function looksLikePortComponentOverrideMap(record) {
+  if (Object.keys(record).length === 0) {
+    return true;
+  }
+  return Object.values(record).some((value) => {
+    const portMap = asRecord(value);
+    if (!portMap) {
+      return false;
+    }
+    return Object.values(portMap).some((overrideValue) => {
+      const override = asRecord(overrideValue);
+      return (
+        override &&
+        hasAnyKey(override, [
+          "position",
+          "rotation",
+          "residual_position",
+          "residual_rotation",
+        ])
+      );
+    });
+  });
+}
+
+function pickNestedRecord(record, keys, predicate) {
+  if (predicate(record)) {
+    return record;
+  }
+  for (const key of keys) {
+    const nested = asRecord(record[key]);
+    if (nested && predicate(nested)) {
+      return nested;
+    }
+  }
+  return {};
+}
+
+function extractMountProfiles(raw) {
+  const record = asRecord(raw);
+  if (!record) {
+    return {};
+  }
+  return pickNestedRecord(
+    record,
+    [
+      "mount_profiles",
+      "mountProfiles",
+      "digital_twin_mount_profiles",
+      "digitalTwinMountProfiles",
+      "mount_compensation",
+      "mountCompensation",
+      "digital_twin_mount_compensation",
+      "digitalTwinMountCompensation",
+      "models",
+    ],
+    looksLikeMountProfileMap
+  );
+}
+
+function extractPortComponentOverrides(raw) {
+  const record = asRecord(raw);
+  if (!record) {
+    return {};
+  }
+  return pickNestedRecord(
+    record,
+    [
+      "port_component_overrides",
+      "portComponentOverrides",
+      "digital_twin_port_component_overrides",
+      "digitalTwinPortComponentOverrides",
+      "overrides",
+    ],
+    looksLikePortComponentOverrideMap
+  );
+}
+
+function extractInterfacePresets(raw) {
+  const list = Array.isArray(raw) ? raw : [];
+  const result = {};
+  for (const item of list) {
+    const record = asRecord(item);
+    if (!record) {
+      continue;
+    }
+    const id = readString(record, ["id"]);
+    if (!id) {
+      continue;
+    }
+    result[id] = {
+      id,
+      position: asVector(record.position),
+      rotation: asVector(record.rotation),
+    };
+  }
+  return result;
+}
+
+async function loadResolverConfig() {
+  const [interfacesRaw, mountProfilesRaw, portOverridesRaw] = await Promise.all([
+    fetchJsonConfig("../assets/assets/config/digital_twin_interfaces.json"),
+    fetchJsonConfig("../assets/assets/config/digital_twin_mount_profiles.json"),
+    fetchJsonConfig("../assets/assets/config/digital_twin_port_component_overrides.json"),
+  ]);
+
+  return {
+    interfacePresets: extractInterfacePresets(
+      asRecord(interfacesRaw)?.interfaces ?? interfacesRaw
+    ),
+    mountProfiles: extractMountProfiles(mountProfilesRaw),
+    portComponentOverrides: extractPortComponentOverrides(portOverridesRaw),
+  };
+}
+
+function readInterfaceId(record) {
+  return readString(record, ["interface_id", "interfaceId"]);
+}
+
+function readMountPositionOffset(record, mountProfile) {
+  if (
+    hasAnyKey(record, ["mount_position_offset", "mountPositionOffset"])
+  ) {
+    return asVector(record.mount_position_offset ?? record.mountPositionOffset);
+  }
+  return asVector(
+    mountProfile?.position ?? mountProfile?.mount_position_offset,
+    [0, 0, 0]
+  );
+}
+
+function readMountRotationOffset(record, mountProfile) {
+  if (
+    hasAnyKey(record, ["mount_rotation_offset", "mountRotationOffset"])
+  ) {
+    return asVector(record.mount_rotation_offset ?? record.mountRotationOffset);
+  }
+  return asVector(
+    mountProfile?.rotation ?? mountProfile?.mount_rotation_offset,
+    [0, 0, 0]
+  );
+}
+
+function readScale(record, mountProfile) {
+  if (hasAnyKey(record, ["scale", "scl"])) {
+    return asVector(record.scale ?? record.scl, [1, 1, 1]);
+  }
+  return asVector(mountProfile?.scale ?? mountProfile?.mount_scale, [1, 1, 1]);
+}
+
+function normalizeSceneModel(item, index, mountProfiles) {
+  const record = asRecord(item);
+  if (!record) {
+    return null;
+  }
+  const id = readString(record, ["id"], `model_${index + 1}`);
+  const mountProfile = asRecord(mountProfiles[id]) || {};
+  return {
+    id,
+    url: String(record.url ?? "").trim(),
+    interfaceId: readInterfaceId(record),
+    position: asVector(record.position ?? record.pos),
+    rotation: asVector(record.rotation ?? record.rot),
+    scale: readScale(record, mountProfile),
+    mountPositionOffset: readMountPositionOffset(record, mountProfile),
+    mountRotationOffset: readMountRotationOffset(record, mountProfile),
+  };
+}
+
+function normalizePortComponentOverride(record) {
+  const override = asRecord(record);
+  if (!override) {
+    return {
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+    };
+  }
+  return {
+    position: asVector(
+      override.position ?? override.residual_position,
+      [0, 0, 0]
+    ),
+    rotation: asVector(
+      override.rotation ?? override.residual_rotation,
+      [0, 0, 0]
+    ),
+  };
+}
+
+function lookupPortComponentOverride(overrides, interfaceId, modelId) {
+  if (!interfaceId || !modelId) {
+    return {
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+    };
+  }
+  return normalizePortComponentOverride(
+    asRecord(overrides?.[interfaceId])?.[modelId]
+  );
+}
+
+function composeMountOffset({
+  mountProfilePosition,
+  portResidualPosition = [0, 0, 0],
+}) {
+  return [
+    mountProfilePosition[0] + portResidualPosition[0],
+    mountProfilePosition[1] + portResidualPosition[1],
+    mountProfilePosition[2] + portResidualPosition[2],
+  ];
+}
+
+function composeLocalPosition({
+  anchorPosition,
+  anchorRotation,
+  mountProfilePosition,
+  portResidualPosition = [0, 0, 0],
+}) {
+  const combinedCompensation = composeMountOffset({
+    mountProfilePosition,
+    portResidualPosition,
+  });
+  const rotatedCompensation = rotateVector(
+    combinedCompensation,
+    anchorRotation
+  );
+  return [
+    anchorPosition[0] + rotatedCompensation[0],
+    anchorPosition[1] + rotatedCompensation[1],
+    anchorPosition[2] + rotatedCompensation[2],
+  ];
+}
+
+function scaleVector(vector, scale) {
+  return [
+    vector[0] * scale[0],
+    vector[1] * scale[1],
+    vector[2] * scale[2],
+  ];
+}
+
+function composePosition({
+  basePosition,
+  baseRotation,
+  localPosition,
+  localScale = [1, 1, 1],
+}) {
+  const scaledLocalPosition = scaleVector(localPosition, localScale);
+  const rotated = rotateVector(scaledLocalPosition, baseRotation);
+  return [
+    basePosition[0] + rotated[0],
+    basePosition[1] + rotated[1],
+    basePosition[2] + rotated[2],
+  ];
+}
+
+function composeLocalRotation({
+  anchorRotation,
+  mountProfileRotation,
+  portResidualRotation = [0, 0, 0],
+}) {
+  return composeRotation({
+    baseRotation: anchorRotation,
+    localRotation: composeRotation({
+      baseRotation: mountProfileRotation,
+      localRotation: portResidualRotation,
+    }),
+  });
+}
+
+function composeRotation({ baseRotation, localRotation }) {
+  return quaternionFromEulerDegrees(baseRotation)
+    .multiply(quaternionFromEulerDegrees(localRotation))
+    .toEulerDegrees();
+}
+
+function rotateVector(vector, rotation) {
+  return quaternionFromEulerDegrees(rotation).rotateVector(vector);
+}
+
+function degToRad(value) {
+  return (Number(value) || 0) * (Math.PI / 180);
+}
+
+function radToDeg(value) {
+  return value * (180 / Math.PI);
+}
+
+function normalizeEulerDegrees(vector) {
+  return vector.map((value) => {
+    let degrees = radToDeg(value);
+    if (!Number.isFinite(degrees)) {
+      return 0;
+    }
+    degrees = ((degrees + 180) % 360 + 360) % 360 - 180;
+    return Math.abs(degrees) < 0.000001 ? 0 : degrees;
+  });
+}
+
+function quaternionFromEulerDegrees(rotation) {
+  const rx = degToRad(rotation[0] ?? 0);
+  const ry = degToRad(rotation[1] ?? 0);
+  const rz = degToRad(rotation[2] ?? 0);
+
+  const cx = Math.cos(rx * 0.5);
+  const sx = Math.sin(rx * 0.5);
+  const cy = Math.cos(ry * 0.5);
+  const sy = Math.sin(ry * 0.5);
+  const cz = Math.cos(rz * 0.5);
+  const sz = Math.sin(rz * 0.5);
+
+  return {
+    x: sx * cy * cz + cx * sy * sz,
+    y: cx * sy * cz - sx * cy * sz,
+    z: cx * cy * sz + sx * sy * cz,
+    w: cx * cy * cz - sx * sy * sz,
+    multiply(other) {
+      return quaternionFromComponents(
+        this.w * other.x + this.x * other.w + this.y * other.z - this.z * other.y,
+        this.w * other.y - this.x * other.z + this.y * other.w + this.z * other.x,
+        this.w * other.z + this.x * other.y - this.y * other.x + this.z * other.w,
+        this.w * other.w - this.x * other.x - this.y * other.y - this.z * other.z
+      );
+    },
+    rotateVector(vector) {
+      const pure = quaternionFromComponents(vector[0], vector[1], vector[2], 0);
+      const conjugate = quaternionFromComponents(-this.x, -this.y, -this.z, this.w);
+      const rotated = this.multiply(pure).multiply(conjugate);
+      return [rotated.x, rotated.y, rotated.z];
+    },
+    toEulerDegrees() {
+      const sinrCosp = 2 * (this.w * this.x + this.y * this.z);
+      const cosrCosp = 1 - 2 * (this.x * this.x + this.y * this.y);
+      const roll = Math.atan2(sinrCosp, cosrCosp);
+
+      const sinp = 2 * (this.w * this.y - this.z * this.x);
+      const pitch =
+        Math.abs(sinp) >= 1
+          ? Math.sign(sinp) * Math.PI / 2
+          : Math.asin(sinp);
+
+      const sinyCosp = 2 * (this.w * this.z + this.x * this.y);
+      const cosyCosp = 1 - 2 * (this.y * this.y + this.z * this.z);
+      const yaw = Math.atan2(sinyCosp, cosyCosp);
+
+      return normalizeEulerDegrees([roll, pitch, yaw]);
+    },
+  };
+}
+
+function quaternionFromComponents(x, y, z, w) {
+  return {
+    x,
+    y,
+    z,
+    w,
+    multiply(other) {
+      return quaternionFromComponents(
+        this.w * other.x + this.x * other.w + this.y * other.z - this.z * other.y,
+        this.w * other.y - this.x * other.z + this.y * other.w + this.z * other.x,
+        this.w * other.z + this.x * other.y - this.y * other.x + this.z * other.w,
+        this.w * other.w - this.x * other.x - this.y * other.y - this.z * other.z
+      );
+    },
+    rotateVector(vector) {
+      const pure = quaternionFromComponents(vector[0], vector[1], vector[2], 0);
+      const conjugate = quaternionFromComponents(-this.x, -this.y, -this.z, this.w);
+      const rotated = this.multiply(pure).multiply(conjugate);
+      return [rotated.x, rotated.y, rotated.z];
+    },
+    toEulerDegrees() {
+      const sinrCosp = 2 * (this.w * this.x + this.y * this.z);
+      const cosrCosp = 1 - 2 * (this.x * this.x + this.y * this.y);
+      const roll = Math.atan2(sinrCosp, cosrCosp);
+
+      const sinp = 2 * (this.w * this.y - this.z * this.x);
+      const pitch =
+        Math.abs(sinp) >= 1
+          ? Math.sign(sinp) * Math.PI / 2
+          : Math.asin(sinp);
+
+      const sinyCosp = 2 * (this.w * this.z + this.x * this.y);
+      const cosyCosp = 1 - 2 * (this.y * this.y + this.z * this.z);
+      const yaw = Math.atan2(sinyCosp, cosyCosp);
+
+      return normalizeEulerDegrees([roll, pitch, yaw]);
+    },
+  };
+}
+
+function resolveSceneModels(scene) {
+  const sceneRecord = asRecord(scene);
+  if (!sceneRecord) {
+    return [];
+  }
+
+  const rawModels = Array.isArray(sceneRecord.models) ? sceneRecord.models : [];
+  const mountProfiles = state.resolverConfig.mountProfiles || {};
+  const normalizedModels = rawModels
+    .map((item, index) => normalizeSceneModel(item, index, mountProfiles))
+    .filter(Boolean);
+  const baseModelId = readString(sceneRecord, ["base_model_id", "baseModelId"]);
+  const baseModel =
+    normalizedModels.find((item) => item.id === baseModelId) ||
+    normalizedModels.find((item) => !item.interfaceId) ||
+    null;
+  const interfacePresets = (() => {
+    const sceneInterfaces = extractInterfacePresets(sceneRecord.interfaces);
+    if (Object.keys(sceneInterfaces).length > 0) {
+      return sceneInterfaces;
+    }
+    return state.resolverConfig.interfacePresets || {};
+  })();
+  const portComponentOverrides = (() => {
+    const sceneOverrides = extractPortComponentOverrides(sceneRecord);
+    if (Object.keys(sceneOverrides).length > 0) {
+      return sceneOverrides;
+    }
+    return state.resolverConfig.portComponentOverrides || {};
+  })();
+
+  return normalizedModels.map((model) => {
+    if (!baseModel || model.id === baseModel.id || !model.interfaceId) {
+      return model;
+    }
+
+    const interfacePreset = interfacePresets[model.interfaceId];
+    if (!interfacePreset) {
+      return model;
+    }
+
+    const portResidual = lookupPortComponentOverride(
+      portComponentOverrides,
+      model.interfaceId,
+      model.id
+    );
+    const resolvedPosition = composePosition({
+      basePosition: baseModel.position,
+      baseRotation: baseModel.rotation,
+      localPosition: composeLocalPosition({
+        anchorPosition: interfacePreset.position,
+        anchorRotation: interfacePreset.rotation,
+        mountProfilePosition: model.mountPositionOffset,
+        portResidualPosition: portResidual.position,
+      }),
+    });
+    const resolvedRotation = composeRotation({
+      baseRotation: baseModel.rotation,
+      localRotation: composeLocalRotation({
+        anchorRotation: interfacePreset.rotation,
+        mountProfileRotation: model.mountRotationOffset,
+        portResidualRotation: portResidual.rotation,
+      }),
+    });
+
+    return {
+      ...model,
+      position: resolvedPosition,
+      rotation: resolvedRotation,
+    };
+  });
+}
+
 function toVectorQuery(raw, fallback = [0, 0, 0]) {
   const [x, y, z] = asVector(raw, fallback);
   return `${x},${y},${z}`;
@@ -80,17 +622,7 @@ function toVectorQuery(raw, fallback = [0, 0, 0]) {
 
 function getSceneModels(envelope) {
   const scene = extractScene(envelope);
-  const models = Array.isArray(scene?.models) ? scene.models : [];
-  return models
-    .filter((item) => item && typeof item === "object")
-    .map((item, index) => ({
-      id: String(item.id ?? `model_${index + 1}`),
-      url: String(item.url ?? "").trim(),
-      position: asVector(item.position ?? item.pos),
-      rotation: asVector(item.rotation ?? item.rot),
-      scale: asVector(item.scale ?? item.scl, [1, 1, 1]),
-    }))
-    .filter((item) => item.url);
+  return resolveSceneModels(scene).filter((item) => item.url);
 }
 
 function buildAssetSignature(models) {

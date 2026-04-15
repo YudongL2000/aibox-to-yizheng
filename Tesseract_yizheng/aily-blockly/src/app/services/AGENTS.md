@@ -20,6 +20,8 @@ feedback.service.ts: 反馈上报服务，负责用户反馈提交。
 firmware.service.ts: 固件服务，管理固件下载与安装链路。
 hardware-runtime.service.ts: 硬件运行时真相源，桌面端优先走本地 `electronAPI.tesseract.hardwareStatus()`，浏览器场景才回退到 HTTP/WS；统一汇聚 heartbeat/command 日志、顶栏状态快照，并把 canonical digitalTwinScene 主动同步进 Electron scene cache。
 hardware-runtime.service.spec.ts: 硬件运行时服务回归测试，锁住本地 IPC 优先级、HTTP fallback、WS 命令回包、renderer 日志写入与 digitalTwin scene cache 同步行为。
+desktop-digital-twin-state.service.ts: renderer-side 数字孪生 scene/preview 真相源，负责统一 revision、可见性和 envelope 归一化，并在 MQTT runtime 刷新时保住 `config_complete` 这类可下发 metadata，避免嵌入式 CTA 被覆盖。
+desktop-digital-twin-state.service.spec.ts: 数字孪生状态服务回归测试，锁住 `config_complete` metadata 在同场景 runtime refresh 下会被保留、在场景变化时会正常失效。
 iwindow.service.ts: 窗口消息服务，封装 Electron 窗口间通信。
 log.service.ts: 运行日志服务，承接应用日志与日志视图消费。
 model-project.service.ts: 项目模型服务，组织项目级模型元数据。
@@ -33,8 +35,8 @@ project.service.ts: 项目总控服务，维护当前项目路径、路由切换
 serial.service.ts: 串口服务，封装端口打开、关闭与数据读写。
 settings.service.ts: 设置服务，管理用户设置与偏好。
 sscma-command.service.ts: SSCMA 命令服务，承接模型/设备相关指令。
-tesseract-project.service.spec.ts: Tesseract 项目真相源测试，锁住 workflow 快照与视图同步目标契约。
-tesseract-project.service.ts: Tesseract 项目真相源，负责项目模式识别、workflow 快照持久化与工作区 workflow 对齐目标广播。
+tesseract-project.service.spec.ts: Tesseract 项目真相源测试，锁住 workflow 快照、metadata merge 与视图同步目标契约。
+tesseract-project.service.ts: Tesseract 项目真相源，负责项目模式识别、workflow 快照持久化、metadata 增量合并、硬件下发状态落盘与工作区 workflow 对齐目标广播。
 tesseract-skill-library.service.ts: Tesseract skills 库真相源，统一 renderer 侧 skills 列表读取、保存入库与新技能飞入动画信号。
 translation.service.ts: 翻译服务，处理 i18n 文案切换。
 ui.service.ts: UI 状态服务，驱动页脚、终端与界面级状态，并统一承载子窗口 `keepAboveMain/windowRole` 打开意图。
@@ -49,5 +51,12 @@ workflow.service.ts: 工作流服务，封装工作流相关业务调用。
 - 服务层的项目路径与 workflow 引用一旦分离，左侧工作区就会重新掉回主页或旧流程；任何修改都必须优先验证这条单向同步链。
 - `UiService.openWindow()` 传递的不只是尺寸和 path；涉及数字孪生等关键子窗口时，层级意图也必须显式声明，不能再靠默认 BrowserWindow 顺序碰运气。
 - `hardware-runtime.service.ts` 只消费本地 Tesseract runtime / backend HTTP fallback 状态与命令回包，不得混入 MimicLaw relay 逻辑；日志写入必须经 `log.service.ts` 统一落盘到 renderer 日志面板；数字孪生 scene 也必须从这里单向推进到 Electron cache，不能再让聊天层与 heartbeat 层各推一套。
+- `desktop-digital-twin-state.service.ts` 是 renderer 侧 scene envelope 的唯一合并点；如果需要保留 `config_complete` / `sessionId` 这类 CTA metadata，必须在这里做精确 merge，不要把业务补丁散落到 Flutter 页面或 runtime service。
+- `tesseract-project.service.ts` 里的 workflow `metadata` 现在承载 `assemblyResume/hardwareDispatch` 等恢复信息；新补丁必须走增量 merge，不能把已有 metadata 整块覆盖掉。
+
+变更日志
+- 2026-04-15: `tesseract-project.service.ts` 开始增量合并 workflow metadata，并持久化 `assemblyResume/hardwareDispatch`，供 workflow 页恢复组装下发与跨入口判断“是否已下发”。
+- 2026-04-15: 新增 `desktop-digital-twin-state.service.ts`/spec 约束，保住 `config_complete` 场景 metadata 不被同场景 `hardware_status` refresh 覆盖，修复嵌入数字孪生端侧下发按钮被心跳刷掉的问题。
+- 2026-04-15: `ui.service.ts` 新增 workbench payload 清理能力，供组装闭环完成后移除 stale `digital-twin` assembly payload，避免下一轮检测台继续复用旧 session。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md

@@ -115,6 +115,42 @@ describe('TesseractProjectService', () => {
     expect(service.workflowViewTarget$).toBeDefined();
   });
 
+  it('merges workflow metadata patches instead of replacing the whole metadata object', () => {
+    service.ensureProjectScaffold('/demo', {
+      projectName: 'demo',
+    });
+
+    service.persistWorkflowSnapshot('/demo', {
+      metadata: {
+        phase: 'hot_plugging',
+        assemblyResume: {
+          nodeName: 'camera_node',
+          components: [{ componentId: 'camera', displayName: '摄像头' }],
+          allPendingHardwareNodeNames: ['camera_node'],
+        },
+      },
+    });
+
+    const snapshot = service.persistHardwareDispatch('/demo', {
+      lastAction: 'upload',
+      receiptStatus: 'acknowledged',
+      responseStatus: 'started',
+      successful: true,
+      updatedAt: '2026-04-15T00:00:00.000Z',
+    });
+
+    expect(snapshot.metadata).toEqual(jasmine.objectContaining({
+      phase: 'hot_plugging',
+      assemblyResume: jasmine.objectContaining({
+        nodeName: 'camera_node',
+      }),
+      hardwareDispatch: jasmine.objectContaining({
+        lastAction: 'upload',
+        successful: true,
+      }),
+    }));
+  });
+
   it('uses a stable global workspace key when project path is absent', () => {
     expect(service.getWorkspaceKey('')).toBe(service.globalWorkspaceKey);
 

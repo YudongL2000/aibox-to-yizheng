@@ -351,6 +351,15 @@ void main() {
       expect(merged['model_3']!.scale, [0.6, 0.6, 0.6]);
     });
 
+    test('normalizes physical port aliases to canonical interface ids', () {
+      expect(normalizeDigitalTwinInterfaceId('3-1.2'), 'port_1');
+      expect(normalizeDigitalTwinInterfaceId('3-1.3'), 'port_2');
+      expect(normalizeDigitalTwinInterfaceId('3-1.4'), 'port_3');
+      expect(normalizeDigitalTwinInterfaceId('3-1.6'), 'port_4');
+      expect(normalizeDigitalTwinInterfaceId('3-1.7'), 'port_7');
+      expect(normalizeDigitalTwinInterfaceId('/dev/hdmi'), 'port_hdmi');
+    });
+
     test('applies component mount profiles to scene models', () {
       final scene = DigitalTwinSceneConfig.fromJson({
         'display_mode': 'multi_scene',
@@ -594,6 +603,126 @@ void main() {
       expect(mounted.position, [1.0, 0.0, 1.0]);
       expect(mounted.rotation[1], closeTo(90.0, 0.001));
     });
+
+    test(
+      'applies canonical residuals to temporary assembly overlay model ids',
+      () {
+        final scene = DigitalTwinSceneConfig.fromJson({
+          'display_mode': 'multi_scene',
+          'base_model_id': 'model_5',
+          'interfaces': [
+            {
+              'id': 'port_3',
+              'label': '接口3',
+              'kind': 'side',
+              'position': [1.4, 0, -0.81],
+              'rotation': [0, 120, 0],
+            },
+          ],
+          'models': [
+            {
+              'id': 'model_5',
+              'url': '/assets/assets/models/base.glb',
+              'position': [0, 0, 0],
+              'rotation': [0, 0, 0],
+              'scale': [2.4, 2.4, 2.4],
+              'device_id': 'device-001',
+            },
+            {
+              'id': 'assembly-detected-camera-cam-001',
+              'url': '/assets/assets/models/cam.glb',
+              'interface_id': 'port_3',
+              'position': [0, 0, 0],
+              'rotation': [0, 0, 0],
+              'scale': [2.16, 2.16, 2.16],
+              'mount_position_offset': [0, -0.6, -0.05],
+              'mount_rotation_offset': [0, 0, 0],
+              'device_id': 'cam-001',
+            },
+          ],
+        });
+
+        final overrides = DigitalTwinPortComponentOverrideTable.fromJson({
+          'port_3': {
+            'model_3': {
+              'position': [0.15, 0, 0.25],
+              'rotation': [0, 0, 0],
+            },
+          },
+        });
+
+        final resolved = DigitalTwinMountResolver.resolveScene(
+          scene: scene,
+          bootstrapScene: scene,
+          portComponentOverrides: overrides,
+        );
+        final mounted =
+            resolved.findModelById('assembly-detected-camera-cam-001')!;
+
+        expect(mounted.position[0], closeTo(1.4982, 0.001));
+        expect(mounted.position[1], closeTo(-0.6, 0.001));
+        expect(mounted.position[2], closeTo(-1.0398, 0.001));
+      },
+    );
+
+    test(
+      'normalizes raw physical assembly ports before interface resolution',
+      () {
+        final scene = DigitalTwinSceneConfig.fromJson({
+          'display_mode': 'multi_scene',
+          'base_model_id': 'model_5',
+          'interfaces': [
+            {
+              'id': 'port_4',
+              'label': '接口4',
+              'kind': 'side',
+              'position': [1, 0, 0],
+              'rotation': [0, 0, 0],
+            },
+          ],
+          'models': [
+            {
+              'id': 'model_5',
+              'url': '/assets/assets/models/base.glb',
+              'position': [0, 0, 0],
+              'rotation': [0, 0, 0],
+              'scale': [1, 1, 1],
+              'device_id': 'device-001',
+            },
+            {
+              'id': 'assembly-detected-hand-hand-001',
+              'url': '/assets/assets/models/hand.glb',
+              'interface_id': '3-1.6',
+              'position': [0, 0, 0],
+              'rotation': [0, 0, 0],
+              'mount_position_offset': [0, 0, 0],
+              'mount_rotation_offset': [0, 0, 0],
+              'device_id': 'hand-001',
+            },
+          ],
+        });
+
+        final overrides = DigitalTwinPortComponentOverrideTable.fromJson({
+          'port_4': {
+            'model_4': {
+              'position': [0, 0, 1],
+              'rotation': [0, 90, 0],
+            },
+          },
+        });
+
+        final resolved = DigitalTwinMountResolver.resolveScene(
+          scene: scene,
+          bootstrapScene: scene,
+          portComponentOverrides: overrides,
+        );
+        final mounted =
+            resolved.findModelById('assembly-detected-hand-hand-001')!;
+
+        expect(mounted.position, [1.0, 0.0, 1.0]);
+        expect(mounted.rotation[1], closeTo(90.0, 0.001));
+      },
+    );
 
     test('keeps scene unchanged when base model is missing', () {
       final scene = DigitalTwinSceneConfig.fromJson({

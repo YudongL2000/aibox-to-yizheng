@@ -30,6 +30,7 @@ interaction_modules/: AI 卡片与配置交互子组件集合。
 - `dialogue_mode/` 只折叠 backend `dialogueMode` envelope，不得重新从消息文案、硬件桥事件或本地布尔值猜分支。
 - `ai_interaction_window.dart` 只保留当前真实接入的 workflow/config/deploy 与 dialogue path；未接线的本地占位 widget/helper 一旦无引用必须删除，不能继续停留在总壳里制造假入口。
 - `ai_interaction_window.dart`、`digital_twin_preview_pane.dart`、`assembly_checklist_panel.dart` 等主工作台组件必须优先消费 `context.spatial` 暴露的 semantic surface/status/button/input/list primitives；新增壳层样式禁止继续手写裸色值。
+- `ai_interaction_window.dart` 内所有会触发服务端提交的 CTA，优先复用统一 submit gate，并在按钮本体保留 loading/disabled 反馈，避免请求中卡片直接失去交互线索或被快速双击两次。
 - preview、checklist、model preview 等主工作台活跃组件默认只允许一层直接语义容器；如果父页面已经提供 panel/stage，子组件必须输出扁平内容而不是继续再包一层同类 surface。
 - `assembly_checklist_panel.dart` 在按钮区显现后也必须保持 scroll-safe；禁止再使用 `Expanded + ListView + 底部 CTA` 这类会在低高度侧栏里直接触发 `RenderFlex overflow` 的结构。
 - `digital_twin_preview_pane.dart` 对 inactive preview session 必须优先走“折叠按钮 -> 点击展开”的密度控制；不要把所有 mic/speaker/camera 模块长期全量展开占满画布 overlay。
@@ -41,6 +42,7 @@ interaction_modules/: AI 卡片与配置交互子组件集合。
 - preview、workflow 与 checklist 等主工作台活跃组件必须默认无 hero header；只有内容本身不足以说明当前面板职责时，才允许补一个简短标题。
 
 变更日志
+- 2026-04-15: `AiInteractionWindow` 与 interaction_modules 提交类按钮接入统一 keyed 防连点 gate，选择提交/图片确认/热插拔确认/继续交流在请求期间保留 inline loading 与禁用态。
 - 2026-04-12: `Model3DLightingConfig` 默认背景 hex 与 web viewer fallback 对齐到 shell 深灰 `#121316`，修复数字孪生从 loading skeleton 切到 ready 后画布回蓝的问题。
 - 2026-04-12: `model_3d_viewer.dart` 的 loading shell 改为跟随 `viewerReady` 结束，并对齐 Electron 数字孪生 skeleton 的网格底、stage 占位与 shimmer 动效，避免 Flutter iframe 内再出现旧进度条风格。
 - 2026-04-12: camera preview 去掉 Flutter 内层 data-block 包壳，并联动 web `p2p_preview.html` 删除可见 badge/header/底部 overlay，减少 preview 区的嵌套框数量。

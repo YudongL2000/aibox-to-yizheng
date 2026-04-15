@@ -15,12 +15,15 @@ ZLMRTCClient.js: p2p 预览依赖的本地 WebRTC/ZLMRTC 适配库，供 iframe 
 - 灯光、位姿、选择都属于同一条 viewer 协议链；当 `drag=false` 时，选择与 gizmo 必须整体退场，不能留下半套调试 UI。
 - 当 `drag=false` 时，主画布鼠标只保留旋转/缩放；平移必须交给右下缩略导航图，不能再把主画布左键拖拽绑成 pan。
 - viewer 发出的 `position/rotation` 必须是预览窗口全局坐标系的绝对值；host 下发时若父节点存在变换，viewer 负责还原 local。
+- viewer 对外暴露的位姿锚点固定取模型包围盒中心，不能直接把 GLB 原始 pivot 当成 host 坐标原点，否则外部资产会出现整体偏移。
 - 缩放既要支持初始化 `scl`，也要支持运行时协议更新；viewer 只执行协议，不自己猜测哪个模型该更大。
 - 相机缩放边界与 near/far 裁剪属于 viewer 本地职责，不能把“滚轮安全”寄托给 Flutter 页面层。
 - `p2p_preview.html` 不得重复绘制与 Flutter 宿主已提供的 badge/header/status shell；camera iframe 内优先只保留视频面本身，避免出现多层嵌套框。
 - `p2p_preview.html` 不得回退到浏览器原生 `video controls`；camera 播放控制统一由 Flutter 外层的 connect/disconnect CTA 提供。
 
 变更日志
+- 2026-04-15: `viewer.js` 恢复以 GLB 包围盒中心作为 viewer 坐标锚点，统一 host 坐标与模型落点，避免外部 3D 资产因原始 pivot 差异出现整体偏移。
+- 2026-04-15: 补回 vendored `third_party/three/three.module.js` 并让 importmap 指向可跟踪路径，修复浏览器把缺失模块请求回退成 HTML 后 3D viewer 因 MIME 错误完全不执行的问题。
 - 2026-04-12: `index.html` 的静态 overlay 从旧蓝色进度条改为 Electron 对齐的 skeleton loading，修复数字孪生在 Flutter / Electron 兼容链路里仍露出旧 loader 的问题。
 - 2026-04-12: `index.html` / `viewer.js` 默认画布底色与加载遮罩统一改为 dark shell 深灰 `#121316`，避免 viewer ready 后从加载态深灰跳回旧深蓝。
 - 2026-04-12: `index.html` / `viewer.js` 为只读 `drag=false` 模式新增右下缩略导航图；主画布恢复成旋转/缩放，平移改由缩略图拖拽完成。

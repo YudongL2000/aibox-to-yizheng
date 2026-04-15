@@ -63,6 +63,12 @@
 - `metadata.iterations`
 - `metadata.nodeCount`
 
+附加行为：
+- backend 会在返回 `workflow_ready` 时，自动把完整 `workflow` 归档到 `backend/data/workflow/<timestamp>_<sessionId>[__NN].json`
+- 若归档写入失败，主响应仍保持 `workflow_ready`，失败原因仅以 backend warn 日志暴露
+
+补充说明：若后续配置阶段完成后用户继续点击“下发工作流”，backend 还会把当前会话里配置完成后的最终 workflow 再归档到同目录，文件名形如 `backend/data/workflow/<timestamp>_<sessionId>__config_upload[__NN].json`，用于排查配置逻辑与最终下发内容是否一致。
+
 ### 3.4 `select_single` / `select_multi` / `image_upload`
 交互卡片类型。用于需求收敛阶段，也用于 ConfigAgent 阶段（例如 TTS/屏幕二次确认）。
 
@@ -207,6 +213,8 @@
 
 响应：统一包络。
 
+补充说明：当响应类型为 `workflow_ready` 时，backend 会同步输出 workflow 文本日志，并自动在 `backend/data/workflow/` 中生成对应 JSON 归档文件。
+
 错误：
 - `400`: `sessionId is required`
 - `500`: Agent 异常
@@ -222,6 +230,23 @@
 ```
 
 响应：同 `/api/agent/confirm`。
+
+---
+
+### 5.4A 下发硬件工作流
+**POST** `/api/agent/hardware/workflow/upload`
+
+请求：
+```json
+{
+  "sessionId": "必须，若不显式传 workflow 则从当前会话读取配置完成后的 workflow",
+  "workflow": "可选，显式覆盖上传 payload"
+}
+```
+
+响应：统一包络。
+
+补充说明：当请求携带 `sessionId` 时，backend 会在真正上传前把本次下发使用的最终 workflow 额外归档到 `backend/data/workflow/`，文件名追加 `__config_upload` 标签，便于 debug “用户配置后的最终下发内容”。归档失败只记 warn，不影响上传主流程。
 
 ---
 

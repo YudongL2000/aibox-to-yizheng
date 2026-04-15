@@ -22,6 +22,7 @@ services/: 协议与后端访问层，负责旧 Agent 会话管理、Tesseract b
 - Skills 的轻量调用态与完整 Skill Center 都在聊天外层的 `Assets` 语义下被唤起；AilyChat 只负责发出动作，不承担整个支持层导航。
 - `config_complete` 的 CTA 只允许上传到硬件、停止工作流与打开工作流三类，不允许再把 mock 热插拔或硬编码端口选择带回前台。
 - “上传到硬件 / 停止工作流” 的用户提示必须服从 backend receipt 的真实 `status`；未 ack 或后端未启用时，容器不得直接渲染成 done。
+- 上传/停止工作流的 receipt 还必须同步回写 `tesseract-project.service.ts` 的 workflow 快照 metadata；否则 workflow 页无法判断当前项目是否还需要展示“进入组装下发”入口。
 - 配置阶段的数字孪生场景也只服从 backend `digitalTwinScene`；聊天窗口只能转发给子窗口，不能本地再猜一遍组件挂载。
 - 旧登录浮层只允许存在于 Agent/QA 模式；Tesseract 模式若仍渲染 `<app-login>`，等同于把历史认证逻辑误接进 backend-first 链路。
 - UI 必须显式暴露当前模式；模式已经切换但按钮仍显示旧标签，等同于制造调试幻觉。
@@ -30,6 +31,8 @@ services/: 协议与后端访问层，负责旧 Agent 会话管理、Tesseract b
 - `x-aily-board-viewer`、`x-aily-library-viewer`、`x-aily-button-viewer`、`x-aily-task-action-viewer`、`x-aily-blockly-viewer`、`x-aily-component-recommendation-viewer` 这类通用 viewer 必须显式使用 `var(--radius-base/sm)`，不能假设宿主 `radius-pill` 会一直被压到小值。
 
 变更日志
+- 2026-04-15: `aily-chat.component.ts` 的上传/停止工作流动作开始把 hardware receipt 回写到项目 workflow 快照，供 workflow 页跨会话判断是否已完成端侧下发。
+- 2026-04-15: 组装检测台完成闭环后，`aily-chat.component.ts` 会同步清掉 `digital-twin` workbench stale payload，再确认 hot_plugging 节点，避免下一轮组装继续停在旧 session。
 - 2026-04-12: aily-chat.component.ts 开始按 hardware receipt 的 `queued/sent/acknowledged/failed` 渲染上传/停止状态，避免未真正下发也显示“已上传到硬件”。
 - 2026-04-12: aily-chat.component.scss 重构为 Spatial Wireframe operator console，技能卡/输入区/资源托盘/bridge 状态统一改成实线边框 + 虚线分隔 + mono meta label 语法。
 - 2026-04-12: chat 宿主和 x-dialog viewer 第三波去胶囊化，用户/TESS 气泡、配置引导、蓝图卡、CTA 与底部输入壳统一收敛到 4-6px 低圆角。

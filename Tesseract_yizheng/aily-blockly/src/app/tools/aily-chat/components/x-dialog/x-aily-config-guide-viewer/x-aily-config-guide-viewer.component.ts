@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 CommonModule、backend 输出的 config-guide payload 与 DialogueHardwareBridgeService 的实时硬件快照。
- * [OUTPUT]: 对外提供 x-aily-config-guide-viewer，渲染当前配置节点说明、热插拔状态与交互提示，并统一成低圆角矩形配置卡。
+ * [OUTPUT]: 对外提供 x-aily-config-guide-viewer，渲染当前配置节点说明、热插拔状态与交互提示，并统一成低圆角矩形配置卡；长选项文案需保持可换行且不挤爆状态徽标。
  * [POS]: x-dialog 的配置阶段说明卡片，被 hot_plugging/config_input/select_* 响应复用。
  * [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md
  */
@@ -136,12 +136,14 @@ const CATEGORY_COMPONENT_MAP: Record<string, HotplugRequirement> = {
               [class.option--active]="isSelected(option.value)"
               (click)="toggleOption(option.value)"
             >
-              <strong>{{ option.label }}</strong>
+              <span class="option-copy">
+                <strong>{{ option.label }}</strong>
+                @if (resolveOptionMeta(option)) {
+                  <span class="option-meta">{{ resolveOptionMeta(option) }}</span>
+                }
+              </span>
               @if (isSelected(option.value)) {
                 <span class="option-selected-badge">已选</span>
-              }
-              @if (resolveOptionMeta(option)) {
-                <span>{{ resolveOptionMeta(option) }}</span>
               }
             </button>
           }
@@ -347,14 +349,42 @@ const CATEGORY_COMPONENT_MAP: Record<string, HotplugRequirement> = {
         margin-top: 12px;
       }
       .option {
-        display: flex;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: flex-start;
         gap: 12px;
+        width: 100%;
         padding: 8px 10px;
         border-radius: var(--radius-sm);
         background: var(--surface-muted);
         color: var(--text-primary);
         border: 1px solid transparent;
+        box-sizing: border-box;
+        white-space: normal;
+      }
+      .option-copy {
+        min-width: 0;
+        max-width: 100%;
+        display: grid;
+        gap: 4px;
+        white-space: normal;
+      }
+      .option-copy strong,
+      .option-meta {
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+        line-height: 1.45;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+      .option-copy strong {
+        font-size: 13px;
+      }
+      .option-meta {
+        color: var(--text-secondary);
+        font-size: 12px;
       }
       .option--interactive {
         cursor: pointer;
@@ -373,7 +403,9 @@ const CATEGORY_COMPONENT_MAP: Record<string, HotplugRequirement> = {
         background: color-mix(in srgb, var(--accent) 12%, var(--surface-panel));
       }
       .option-selected-badge {
-        margin-left: auto;
+        flex-shrink: 0;
+        align-self: flex-start;
+        justify-self: end;
         padding: 2px 8px;
         border-radius: var(--radius-sm);
         background: color-mix(in srgb, var(--accent) 12%, var(--surface-panel));

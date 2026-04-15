@@ -14,5 +14,10 @@ workflow_details_widget_test.dart: workflow 详情卡片回归，锁住空白明
 - 测试优先锁定 backend-first 契约折叠，不在 widget 层重复猜业务分支。
 - 对话模式新增字段时，先补这里的映射回归，再改 UI。
 - scene envelope / preview runtime state 新增字段时，先补纯逻辑回归，再改工作台布局。
+- 硬件组装页如果引入临时 overlay scene，必须在纯逻辑测试里同时锁住 raw `3-1.x` 端口别名规范化，以及它与 canonical `portId + modelId` 残差表的兼容，避免首页和组装页出现两套挂载结果。
+
+变更日志
+- 2026-04-15: `widget_test.dart` 补充 raw `3-1.x` 端口别名规范化回归，锁住 assembly overlay 和 canonical interface 锚点的一致性。
+- 2026-04-15: `widget_test.dart` 补充 assembly overlay modelId 命中 canonical port residual 的回归，锁住硬件组装页与首页 digital twin 对齐。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md

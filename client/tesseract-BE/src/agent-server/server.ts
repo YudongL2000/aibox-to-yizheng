@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 AgentService、WorkflowDeployer 与 Express
- * [OUTPUT]: 对外提供 HTTP API 服务、dialogue-mode 显式路由、MQTT hardware status / command 接口与运行时诊断接口
+ * [OUTPUT]: 对外提供 HTTP API 服务、dialogue-mode 显式路由、MQTT hardware status / command / audio-test 接口与运行时诊断接口
  * [POS]: agent-server 的 HTTP 入口，也是对话模式、硬件 runtime 与配置态 scene 的唯一 HTTP 入口
  * [PROTOCOL]: 变更时更新此头部，然后检查 AGENT.md
  */
@@ -15,6 +15,8 @@ import { logger } from '../utils/logger';
 import { buildDigitalTwinSceneFromConfigState } from '../agents/digital-twin-scene';
 import { RuntimeStatusMonitor } from './runtime-status';
 import type { DialogueModeHardwareEventInput, DialogueModeInteractionMode } from '../agents/types';
+
+const AUDIO_TEST_MESSAGE_TYPES = new Set(['test_mic', 'test_speaker']);
 
 export interface AgentHttpServerOptions {
   port?: number;
@@ -95,16 +97,37 @@ export class AgentHttpServer {
       }
     });
 
+    app.delete('/api/agent/skills/:skillId', (req, res) => {
+      const { skillId } = req.params;
+      if (!skillId) {
+        res.status(400).json({ success: false, error: 'skillId is required' });
+        return;
+      }
+
+      try {
+        logger.debug('HTTP delete-skill request', { skillId });
+        const deleted = this.agentService.deleteSkill(skillId);
+        res.json({ success: deleted });
+      } catch (error) {
+        logger.warn('HTTP delete-skill error', error);
+        res.status(500).json({
+          success: false,
+          error: error instanceof Error ? error.message : 'Delete skill error',
+        });
+      }
+    });
+
     app.post('/api/agent/save-skill', (req, res) => {
       const sessionId = req.body?.sessionId as string | undefined;
+      const projectPath = req.body?.projectPath as string | undefined;
       if (!sessionId) {
         res.status(400).json({ error: 'sessionId is required' });
         return;
       }
 
       try {
-        logger.debug('HTTP save-skill request', { sessionId });
-        const skill = this.agentService.saveSkill(sessionId);
+        logger.debug('HTTP save-skill request', { sessionId, projectPath: projectPath ?? null });
+        const skill = this.agentService.saveSkill(sessionId, projectPath);
         res.json({
           success: true,
           skill,
@@ -137,6 +160,7 @@ export class AgentHttpServer {
         const result = await this.agentService.chat(message, sessionId, {
           interactionMode,
           teachingContext: req.body?.teachingContext ?? null,
+          clarificationContext: req.body?.clarificationContext ?? undefined,
         });
         res.json(result);
       } catch (error) {
@@ -445,6 +469,33 @@ export class AgentHttpServer {
       }
     });
 
+    app.post('/api/agent/hardware/audio-test', async (req, res) => {
+      const messageType = typeof req.body?.messageType === 'string'
+        ? req.body.messageType.trim()
+        : '';
+
+      if (!AUDIO_TEST_MESSAGE_TYPES.has(messageType)) {
+        res.status(400).json({ error: 'messageType must be test_mic or test_speaker' });
+        return;
+      }
+
+      try {
+        const response = await this.agentService.publishAudioTest(
+          messageType as 'test_mic' | 'test_speaker'
+        );
+        res.json({
+          success: true,
+          data: response,
+        });
+      } catch (error) {
+        logger.warn('HTTP audio test error', error);
+        res.status(400).json({
+          success: false,
+          error: error instanceof Error ? error.message : 'Audio test error',
+        });
+      }
+    });
+
     app.post('/api/agent/hardware/microphone/open', async (_req, res) => {
       try {
         const response = await this.agentService.openMicrophone();
@@ -501,14 +552,26 @@ export class AgentHttpServer {
         return;
       }
 
+      const softwareConfiguredCount = configState.progress?.completed ?? 0;
+      const softwarePendingCount = (configState.progress?.total ?? 0) - softwareConfiguredCount;
+      const configuredNodeCount = configState.configurableNodes.filter((node) => node.status === 'configured').length;
+      const pendingHardwareNodeNames = configState.pendingHardwareNodeNames ?? [];
+
       res.json({
         success: true,
         data: {
           workflowId: configState.workflowId,
           currentNode: configState.configurableNodes[configState.currentNodeIndex] ?? null,
           progress: configState.progress ?? null,
-          pendingCount: (configState.progress?.total ?? 0) - (configState.progress?.completed ?? 0),
-          configuredCount: configState.progress?.completed ?? 0,
+          pendingCount: softwarePendingCount,
+          configuredCount: configuredNodeCount,
+          softwareConfiguredCount,
+          softwarePendingCount,
+          softwareCompleted: configState.completed,
+          assemblyCompleted: configState.assemblyCompleted ?? (pendingHardwareNodeNames.length === 0),
+          actionReady: configState.actionReady ?? false,
+          pendingHardwareNodeNames,
+          pendingHardwareCount: pendingHardwareNodeNames.length,
           digitalTwinScene: buildDigitalTwinSceneFromConfigState(configState),
         },
       });

@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 Node.js fs/path、AgentSession 与 dialogue-mode 领域类型。
- * [OUTPUT]: 对外提供 SkillLibraryRepository、skills JSON 持久化、skill save candidate 构造与对话库摘要折叠。
+ * [OUTPUT]: 对外提供 SkillLibraryRepository、skills JSON 持久化、skill save candidate 构造、项目 workflow snapshot 恢复与对话库摘要折叠。
  * [POS]: dialogue-mode 的技能库真相源，负责把教学完成产物落为可检索 skill JSON，并为对话分流与前端库视图提供统一数据。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -97,8 +97,36 @@ export class SkillLibraryRepository {
     return nextRecord;
   }
 
+  deleteBySkillId(skillId: string): boolean {
+    const filePath = this.getSkillFilePath(skillId);
+    if (!fs.existsSync(filePath)) {
+      return false;
+    }
+    fs.unlinkSync(filePath);
+    return true;
+  }
+
   buildCatalog(): SkillLibraryRecord[] {
     return this.list();
+  }
+
+  // ── 关键词模糊搜索 ─────────────────────────────────────────
+  findByKeywords(keywords: string[], limit = 2): SkillLibraryRecord[] {
+    if (keywords.length === 0) return [];
+    const lowerKeywords = keywords.map((k) => k.toLowerCase());
+    const scored = this.list()
+      .map((record) => {
+        const haystack = [
+          record.displayName,
+          record.summary,
+          ...(record.keywords ?? []),
+        ].join(' ').toLowerCase();
+        const hits = lowerKeywords.filter((kw) => haystack.includes(kw)).length;
+        return { record, hits };
+      })
+      .filter((entry) => entry.hits > 0)
+      .sort((a, b) => b.hits - a.hits);
+    return scored.slice(0, limit).map((entry) => entry.record);
   }
 
   private findBySkillId(skillId: string): SkillLibraryRecord | null {
@@ -130,16 +158,64 @@ export class SkillLibraryRepository {
   }
 }
 
+export interface PersistedWorkflowSnapshot {
+  sessionId?: string | null;
+  workflowId?: string | null;
+  workflow?: WorkflowDefinition | null;
+  workflowSummary?: string | null;
+  skillSaveCandidate?: Partial<SkillSaveCandidate> | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+export function readPersistedWorkflowSnapshot(projectPath: string): PersistedWorkflowSnapshot | null {
+  const normalizedProjectPath = normalizeSentence(projectPath);
+  if (!normalizedProjectPath) {
+    return null;
+  }
+
+  const snapshotPath = path.resolve(normalizedProjectPath, '.tesseract', 'workflow.json');
+  if (!fs.existsSync(snapshotPath)) {
+    return null;
+  }
+
+  try {
+    const raw = fs.readFileSync(snapshotPath, 'utf-8');
+    const parsed = JSON.parse(raw) as PersistedWorkflowSnapshot;
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function isConfigStateActionReady(configState: ConfigAgentState | null | undefined): boolean {
+  if (!configState) {
+    return false;
+  }
+
+  if (typeof configState.actionReady === 'boolean') {
+    return configState.actionReady;
+  }
+
+  const pendingHardwareNodeNames = Array.isArray(configState.pendingHardwareNodeNames)
+    ? configState.pendingHardwareNodeNames
+    : [];
+  const assemblyCompleted = typeof configState.assemblyCompleted === 'boolean'
+    ? configState.assemblyCompleted
+    : pendingHardwareNodeNames.length === 0;
+  return configState.completed && assemblyCompleted;
+}
+
 export function buildSkillSaveCandidateFromSession(session: AgentSession): SkillSaveCandidate | null {
-  if (!session.workflow || !session.configAgentState?.completed) {
+  const configState = session.configAgentState;
+  if (!session.workflow || !configState || !isConfigStateActionReady(configState)) {
     return null;
   }
 
   const displayName = deriveDisplayName(session);
   const summary = deriveSummary(session, displayName);
   const keywords = deriveKeywords(session, displayName, summary);
-  const requiredHardware = buildRequiredHardware(session.configAgentState);
-  const workflowId = session.configAgentState.workflowId;
+  const requiredHardware = buildRequiredHardware(configState);
+  const workflowId = configState.workflowId;
 
   return {
     skillId: buildSkillId(displayName),
@@ -152,6 +228,68 @@ export function buildSkillSaveCandidateFromSession(session: AgentSession): Skill
     workflowId,
     workflowName: session.workflow.name || displayName,
     sourceSessionId: session.id,
+  };
+}
+
+export function buildSkillSaveCandidateFromSnapshot(
+  snapshot: PersistedWorkflowSnapshot,
+  fallbackSessionId = ''
+): SkillSaveCandidate | null {
+  const workflow = isWorkflowDefinition(snapshot?.workflow) ? snapshot.workflow : null;
+  if (!workflow) {
+    return null;
+  }
+
+  const persistedCandidate =
+    snapshot?.skillSaveCandidate && typeof snapshot.skillSaveCandidate === 'object'
+      ? snapshot.skillSaveCandidate
+      : null;
+
+  const displayName =
+    normalizeHumanLabel(persistedCandidate?.displayName)
+    || normalizeHumanLabel(snapshot.workflowSummary)
+    || normalizeHumanLabel(workflow.name)
+    || '新技能';
+  const summary =
+    normalizeSentence(persistedCandidate?.summary)
+    || normalizeSentence(snapshot.workflowSummary)
+    || `通过教学模式创建的技能：${displayName}`;
+  const persistedRequiredHardware = normalizeRequiredHardware(persistedCandidate?.requiredHardware);
+  const requiredHardware = persistedRequiredHardware.length > 0
+    ? persistedRequiredHardware
+    : buildRequiredHardwareFromWorkflow(workflow);
+  const workflowId =
+    normalizeSentence(persistedCandidate?.workflowId)
+    || normalizeSentence(snapshot.workflowId)
+    || '';
+  const workflowName =
+    normalizeSentence(persistedCandidate?.workflowName)
+    || normalizeSentence(workflow.name)
+    || displayName;
+  const sourceSessionId =
+    normalizeSentence(persistedCandidate?.sourceSessionId)
+    || normalizeSentence(snapshot.sessionId)
+    || normalizeSentence(fallbackSessionId)
+    || `snapshot-${Date.now().toString(36)}`;
+  const keywords = Array.isArray(persistedCandidate?.keywords) && persistedCandidate.keywords.length > 0
+    ? uniqueStrings(persistedCandidate.keywords)
+    : uniqueStrings(
+      [displayName, workflowName, summary].flatMap((value) => splitKeywords(value))
+    ).slice(0, 12);
+
+  return {
+    skillId: normalizeSentence(persistedCandidate?.skillId) || buildSkillId(displayName),
+    displayName,
+    summary,
+    keywords,
+    gameplayGuide:
+      normalizeSentence(persistedCandidate?.gameplayGuide)
+      || `没问题！我已经学会“${displayName}”了。你只要像平时一样提出这个需求，我会先检查硬件，再带你开始交互。`,
+    requiredHardware,
+    initialPhysicalCue: persistedCandidate?.initialPhysicalCue || deriveInitialPhysicalCue(requiredHardware),
+    workflowId,
+    workflowName,
+    sourceSessionId,
   };
 }
 
@@ -215,6 +353,52 @@ function buildRequiredHardware(configState: ConfigAgentState): DialogueModeHardw
   return Array.from(requirements.values());
 }
 
+function buildRequiredHardwareFromWorkflow(workflow: WorkflowDefinition): DialogueModeHardwareRequirement[] {
+  const requirements = new Map<string, DialogueModeHardwareRequirement>();
+  const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
+
+  for (const rawNode of nodes) {
+    if (!rawNode || typeof rawNode !== 'object') {
+      continue;
+    }
+
+    const node = rawNode as Record<string, unknown>;
+    const notes = node['notes'] && typeof node['notes'] === 'object'
+      ? node['notes'] as Record<string, unknown>
+      : null;
+    const parameters = node['parameters'] && typeof node['parameters'] === 'object'
+      ? node['parameters'] as Record<string, unknown>
+      : null;
+    const category = String(node['category'] ?? notes?.['category'] ?? '').trim().toUpperCase();
+    const preset = HARDWARE_REQUIREMENT_PRESETS[category];
+    if (!preset) {
+      continue;
+    }
+
+    const topology = firstNonEmptyText(
+      notes?.['topology'],
+      node['topology'],
+      parameters?.['topology'],
+      parameters?.['portId'],
+      node['portId']
+    );
+    const requirementKey = `${preset.componentId}:${topology || 'any'}`;
+
+    if (!requirements.has(requirementKey)) {
+      requirements.set(requirementKey, {
+        componentId: preset.componentId,
+        displayName: preset.displayName,
+        requiredCapability: preset.requiredCapability,
+        acceptablePorts: topology ? [topology] : [],
+        requiredModelIds: [],
+        isOptional: false,
+      });
+    }
+  }
+
+  return Array.from(requirements.values());
+}
+
 function deriveInitialPhysicalCue(
   requiredHardware: DialogueModeHardwareRequirement[]
 ): DialogueModePhysicalCue | undefined {
@@ -237,6 +421,64 @@ function deriveInitialPhysicalCue(
     autoTrigger: true,
     targetComponentId: primaryHardware.componentId,
   };
+}
+
+function normalizeRequiredHardware(value: unknown): DialogueModeHardwareRequirement[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') {
+      return [];
+    }
+
+    const record = item as Record<string, unknown>;
+    const componentId = normalizeSentence(String(record['componentId'] || ''));
+    const displayName = normalizeSentence(String(record['displayName'] || componentId));
+    const requiredCapability = normalizeSentence(String(record['requiredCapability'] || ''));
+    if (!componentId || !displayName || !requiredCapability) {
+      return [];
+    }
+
+    return [{
+      componentId,
+      displayName,
+      requiredCapability,
+      acceptablePorts: normalizeStringArray(record['acceptablePorts']),
+      requiredModelIds: normalizeStringArray(record['requiredModelIds']),
+      isOptional: record['isOptional'] === true,
+    }];
+  });
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => normalizeSentence(String(item || '')))
+    .filter(Boolean);
+}
+
+function firstNonEmptyText(...values: unknown[]): string {
+  for (const value of values) {
+    const normalized = normalizeSentence(typeof value === 'string' ? value : String(value || ''));
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return '';
+}
+
+function isWorkflowDefinition(value: unknown): value is WorkflowDefinition {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as WorkflowDefinition;
+  return Array.isArray(candidate.nodes) && Boolean(candidate.connections && typeof candidate.connections === 'object');
 }
 
 function deriveDisplayName(session: AgentSession): string {

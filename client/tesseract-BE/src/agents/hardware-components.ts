@@ -537,7 +537,7 @@ export const SCENE_COMPONENT_DEFINITIONS: SceneComponentDefinition[] = [
   },
   {
     componentId: HARDWARE_COMPONENT_IDS.WHEEL,
-    lookupNames: ['wheel', 'chassis', '底盘', '全向轮'],
+    lookupNames: ['wheel', 'chassis', '底盘', '全向轮', '小车', '麦克纳姆', 'mecanum', 'cart'],
     category: 'WHEEL',
     displayName: '底盘（全向轮）',
     summary: '负责前进、后退与旋转等移动动作。',

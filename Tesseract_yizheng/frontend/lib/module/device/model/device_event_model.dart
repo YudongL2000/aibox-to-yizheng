@@ -1,6 +1,6 @@
 /*
  * [INPUT]: 依赖 dart:convert 的 JSON 解析能力，接收 MQTT 设备事件与数字孪生场景配置原始数据。
- * [OUTPUT]: 对外提供 DeviceEventPayload、DeviceInfoItem、DigitalTwinSceneConfig、DigitalTwinInterfacePreset、DigitalTwinModelItem 等纯数据模型与变换辅助方法，其中 scene 位姿统一代表预览窗口全局坐标系的绝对值，并支持接口锚点、组件安装锚点与接口-组件残差三层挂载语义。
+ * [OUTPUT]: 对外提供 DeviceEventPayload、DeviceInfoItem、DigitalTwinSceneConfig、DigitalTwinInterfacePreset、DigitalTwinModelItem 等纯数据模型与变换辅助方法，其中 scene 位姿统一代表预览窗口全局坐标系的绝对值，并支持接口锚点、组件安装锚点与接口-组件残差三层挂载语义，同时兼容 raw 物理端口别名 -> canonical interface id 与临时 assembly overlay modelId -> canonical 残差键回退。
  * [POS]: module/device/model 的协议模型层，被 MQTT 服务、工作台页面和测试用例共同消费。
  * [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md
  */
@@ -8,6 +8,98 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+
+const Set<String> _kCanonicalDigitalTwinInterfaceIds = <String>{
+  'port_1',
+  'port_2',
+  'port_3',
+  'port_4',
+  'port_7',
+  'port_hdmi',
+};
+
+const Map<String, String> _kDigitalTwinInterfaceAliasMap = <String, String>{
+  '3-1.2': 'port_1',
+  '3-1.3': 'port_2',
+  '3-1.4': 'port_3',
+  '3-1.6': 'port_4',
+  '3-1.7': 'port_7',
+  '312': 'port_1',
+  '313': 'port_2',
+  '314': 'port_3',
+  '316': 'port_4',
+  '317': 'port_7',
+  'a': 'port_1',
+  'sidea': 'port_1',
+  '侧面a': 'port_1',
+  'b': 'port_2',
+  'sideb': 'port_2',
+  '侧面b': 'port_2',
+  'c': 'port_3',
+  'sidec': 'port_3',
+  '侧面c': 'port_3',
+  'd': 'port_4',
+  'sided': 'port_4',
+  '侧面d': 'port_4',
+  'e': 'port_hdmi',
+  'sidee': 'port_hdmi',
+  '侧面e': 'port_hdmi',
+  'f': 'port_2',
+  'sidef': 'port_2',
+  '侧面f': 'port_2',
+  'bottom': 'port_7',
+  'bottomport': 'port_7',
+  'portbottom': 'port_7',
+  '底部': 'port_7',
+  'hdmi': 'port_hdmi',
+  'port_hdmi': 'port_hdmi',
+  'porthdmi': 'port_hdmi',
+  '/dev/hdmi': 'port_hdmi',
+  'port_1': 'port_1',
+  'port_2': 'port_2',
+  'port_3': 'port_3',
+  'port_4': 'port_4',
+  'port_7': 'port_7',
+};
+
+String normalizeDigitalTwinInterfaceId(
+  String? raw, {
+  String fallback = '',
+}) {
+  final trimmed = raw?.trim() ?? '';
+  if (trimmed.isEmpty) {
+    return fallback;
+  }
+
+  final normalized = trimmed.toLowerCase();
+  final directAlias = _kDigitalTwinInterfaceAliasMap[normalized];
+  if (directAlias != null) {
+    return directAlias;
+  }
+
+  final compact = normalized.replaceAll(RegExp(r'[\s·._-]+'), '');
+  final compactAlias = _kDigitalTwinInterfaceAliasMap[compact];
+  if (compactAlias != null) {
+    return compactAlias;
+  }
+
+  final portMatch = RegExp(r'^(?:port|接口|usb)?([1-8])$').firstMatch(compact);
+  if (portMatch != null) {
+    final candidate = 'port_${portMatch.group(1)}';
+    if (_kCanonicalDigitalTwinInterfaceIds.contains(candidate)) {
+      return candidate;
+    }
+  }
+
+  if (compact.contains('hdmi')) {
+    return 'port_hdmi';
+  }
+  if (compact.contains('底部')) {
+    return 'port_7';
+  }
+
+  return fallback.isNotEmpty ? fallback : trimmed;
+}
 
 /// MQTT 设备事件 payload 结构（与飞书文档 / device/usb/event 约定一致）
 class DeviceEventPayload {
@@ -159,9 +251,10 @@ class DigitalTwinSceneConfig {
   }
 
   DigitalTwinInterfacePreset? findInterfaceById(String? interfaceId) {
-    if (interfaceId == null || interfaceId.isEmpty) return null;
+    final normalizedInterfaceId = normalizeDigitalTwinInterfaceId(interfaceId);
+    if (normalizedInterfaceId.isEmpty) return null;
     for (final interface in interfaces) {
-      if (interface.id == interfaceId) return interface;
+      if (interface.id == normalizedInterfaceId) return interface;
     }
     return null;
   }
@@ -626,6 +719,15 @@ class DigitalTwinPortComponentOverride {
 /// 接口-组件残差表。
 /// 结构为 `portId -> modelId -> residualOverride`。
 class DigitalTwinPortComponentOverrideTable {
+  static const String _kAssemblyOverlayModelPrefix = 'assembly-detected-';
+  static const Map<String, String> _kAssemblyOverlayCanonicalModelIds =
+      <String, String>{
+    'wheel': 'model_1',
+    'screen': 'model_2',
+    'camera': 'model_3',
+    'hand': 'model_4',
+  };
+
   final Map<String, Map<String, DigitalTwinPortComponentOverride>> items;
 
   const DigitalTwinPortComponentOverrideTable({
@@ -638,6 +740,8 @@ class DigitalTwinPortComponentOverrideTable {
   ) {
     final result = <String, Map<String, DigitalTwinPortComponentOverride>>{};
     for (final portEntry in json.entries) {
+      final normalizedPortId = normalizeDigitalTwinInterfaceId(portEntry.key);
+      if (normalizedPortId.isEmpty) continue;
       final portMap = DigitalTwinSceneConfig._normalizeMap(portEntry.value);
       if (portMap == null || portMap.isEmpty) continue;
 
@@ -650,7 +754,7 @@ class DigitalTwinPortComponentOverrideTable {
             DigitalTwinPortComponentOverride.fromJson(overrideMap);
       }
       if (modelOverrides.isNotEmpty) {
-        result[portEntry.key] = modelOverrides;
+        result[normalizedPortId] = modelOverrides;
       }
     }
     return DigitalTwinPortComponentOverrideTable(items: result);
@@ -659,13 +763,34 @@ class DigitalTwinPortComponentOverrideTable {
   bool get isEmpty => items.isEmpty;
 
   DigitalTwinPortComponentOverride lookup(String? portId, String? modelId) {
-    if (portId == null ||
-        portId.isEmpty ||
-        modelId == null ||
-        modelId.isEmpty) {
+    final normalizedPortId = normalizeDigitalTwinInterfaceId(portId);
+    if (normalizedPortId.isEmpty || modelId == null || modelId.isEmpty) {
       return const DigitalTwinPortComponentOverride();
     }
-    return items[portId]?[modelId] ?? const DigitalTwinPortComponentOverride();
+    final direct = items[normalizedPortId]?[modelId];
+    if (direct != null) {
+      return direct;
+    }
+    final canonicalModelId = _canonicalizeResidualLookupModelId(modelId);
+    if (canonicalModelId == modelId) {
+      return const DigitalTwinPortComponentOverride();
+    }
+    return items[normalizedPortId]?[canonicalModelId] ??
+        const DigitalTwinPortComponentOverride();
+  }
+
+  static String _canonicalizeResidualLookupModelId(String modelId) {
+    final normalized = modelId.trim().toLowerCase();
+    if (!normalized.startsWith(_kAssemblyOverlayModelPrefix)) {
+      return modelId;
+    }
+    final suffix = normalized.substring(_kAssemblyOverlayModelPrefix.length);
+    for (final entry in _kAssemblyOverlayCanonicalModelIds.entries) {
+      if (suffix == entry.key || suffix.startsWith('${entry.key}-')) {
+        return entry.value;
+      }
+    }
+    return modelId;
   }
 
   DigitalTwinPortComponentOverrideTable upsert({
@@ -673,6 +798,8 @@ class DigitalTwinPortComponentOverrideTable {
     required String modelId,
     required DigitalTwinPortComponentOverride override,
   }) {
+    final normalizedPortId =
+        normalizeDigitalTwinInterfaceId(portId, fallback: portId);
     final nextItems = <String, Map<String, DigitalTwinPortComponentOverride>>{
       for (final entry in items.entries)
         entry.key: <String, DigitalTwinPortComponentOverride>{
@@ -681,7 +808,7 @@ class DigitalTwinPortComponentOverrideTable {
     };
 
     final nextPortMap = <String, DigitalTwinPortComponentOverride>{
-      ...(nextItems[portId] ??
+      ...(nextItems[normalizedPortId] ??
           const <String, DigitalTwinPortComponentOverride>{}),
     };
     if (override.isIdentity) {
@@ -691,9 +818,9 @@ class DigitalTwinPortComponentOverrideTable {
     }
 
     if (nextPortMap.isEmpty) {
-      nextItems.remove(portId);
+      nextItems.remove(normalizedPortId);
     } else {
-      nextItems[portId] = nextPortMap;
+      nextItems[normalizedPortId] = nextPortMap;
     }
 
     return DigitalTwinPortComponentOverrideTable(items: nextItems);
@@ -738,7 +865,7 @@ class DigitalTwinInterfacePreset {
 
   factory DigitalTwinInterfacePreset.fromJson(Map<String, dynamic> json) {
     return DigitalTwinInterfacePreset(
-      id: json['id']?.toString() ?? '',
+      id: normalizeDigitalTwinInterfaceId(json['id']?.toString()),
       label: json['label']?.toString() ?? '',
       kind: json['kind']?.toString() ?? 'side',
       position: DigitalTwinModelItem._readVector3(json['position']),
@@ -754,7 +881,7 @@ class DigitalTwinInterfacePreset {
     List<double>? rotation,
   }) {
     return DigitalTwinInterfacePreset(
-      id: id ?? this.id,
+      id: id != null ? normalizeDigitalTwinInterfaceId(id) : this.id,
       label: label ?? this.label,
       kind: kind ?? this.kind,
       position: DigitalTwinModelItem._copyVector3(position ?? this.position),
@@ -854,8 +981,9 @@ class DigitalTwinModelItem {
     return DigitalTwinModelItem(
       id: json['id']?.toString() ?? '',
       url: normalizeFlutterWebModelAssetUrl(json['url']?.toString() ?? ''),
-      interfaceId:
-          json['interface_id']?.toString() ?? json['port_id']?.toString(),
+      interfaceId: normalizeDigitalTwinInterfaceId(
+        json['interface_id']?.toString() ?? json['port_id']?.toString(),
+      ),
       position: _readVector3(json['position']),
       rotation: _readVector3(json['rotation']),
       scale: _readVector3(json['scale'], fallback: const <double>[1, 1, 1]),
@@ -883,7 +1011,9 @@ class DigitalTwinModelItem {
     return DigitalTwinModelItem(
       id: id ?? this.id,
       url: url != null ? normalizeFlutterWebModelAssetUrl(url) : this.url,
-      interfaceId: interfaceId ?? this.interfaceId,
+      interfaceId: interfaceId != null
+          ? normalizeDigitalTwinInterfaceId(interfaceId)
+          : this.interfaceId,
       position: _copyVector3(position ?? this.position),
       rotation: _copyVector3(rotation ?? this.rotation),
       scale: _copyVector3(scale ?? this.scale),

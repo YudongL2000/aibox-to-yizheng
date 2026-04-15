@@ -75,6 +75,10 @@ export class HardwareService {
         components.add('wheel');
       }
 
+      if (this.hasWheelAlias(normalizedValue)) {
+        components.add('wheel');
+      }
+
       if (key.includes('hardware')) {
         if (normalizedValue.includes('摄像头')) components.add('camera');
         if (normalizedValue.includes('麦克风')) components.add('microphone');
@@ -82,7 +86,7 @@ export class HardwareService {
         if (normalizedValue.includes('机械手')) components.add('hand');
         if (normalizedValue.includes('机械臂')) components.add('hand');
         if (normalizedValue.includes('屏幕')) components.add('screen');
-        if (normalizedValue.includes('底盘')) components.add('wheel');
+        if (normalizedValue.includes('底盘') || this.hasWheelAlias(normalizedValue)) components.add('wheel');
       }
     });
 
@@ -107,6 +111,9 @@ export class HardwareService {
       components.add('tts');
       components.add('speaker');
       components.add('hand');
+    }
+    if (this.hasWheelAlias(categoryHint)) {
+      components.add('wheel');
     }
 
     if (entities.game_type || entities.yolo_gestures) {
@@ -142,5 +149,11 @@ export class HardwareService {
       }
     }
     return String(value);
+  }
+
+  private hasWheelAlias(value: string): boolean {
+    return ['底盘', '小车', '麦克纳姆', 'mecanum', 'cart', 'chassis'].some((keyword) =>
+      value.includes(keyword)
+    );
   }
 }

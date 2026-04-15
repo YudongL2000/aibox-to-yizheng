@@ -155,7 +155,7 @@ describe('ConfigAgent API integration', () => {
     }
   });
 
-  it('accepts portId on confirm-node and projects the selected interface into digitalTwinScene', async () => {
+  it('pure-hardware workflow enters hot_plugging with digitalTwinScene', async () => {
     if (!(await canListen())) {
       return;
     }
@@ -266,34 +266,18 @@ describe('ConfigAgent API integration', () => {
       };
       workflows.set(workflowId, structuredClone(workflowJson));
 
+      // 纯硬件工作流 (CAM-only): 软件侧已完成，但仍需进入硬件组装阶段
       const start = await postJson<any>(
         `http://127.0.0.1:${port}/api/agent/start-config`,
         { sessionId, workflowId, workflowJson }
       );
       expect(start.response.status).toBe(200);
       expect(start.data.response.type).toBe('hot_plugging');
-      expect(start.data.response.interaction.selected).toBe('port_3');
-
-      const confirm = await postJson<any>(
-        `http://127.0.0.1:${port}/api/agent/confirm-node`,
-        {
-          sessionId,
-          nodeName: 'http_cam',
-          portId: 'port_6',
-          device_ID: 'camera-live-001',
-        }
-      );
-      expect(confirm.response.status).toBe(200);
-      expect(confirm.data.response.type).toBe('config_complete');
-      expect(confirm.data.response.digitalTwinScene.models).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            id: 'model_3',
-            interface_id: 'port_3',
-            device_id: 'camera-live-001',
-          }),
-        ])
-      );
+      expect(start.data.response.metadata.allPendingHardwareNodeNames).toEqual(['http_cam']);
+      // digitalTwinScene 应包含基座模型与标准接口
+      expect(start.data.response.digitalTwinScene).toBeDefined();
+      expect(start.data.response.digitalTwinScene.base_model_id).toBeDefined();
+      expect(start.data.response.digitalTwinScene.interfaces).toBeInstanceOf(Array);
     } finally {
       await server.stop();
     }

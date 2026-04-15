@@ -28,6 +28,33 @@ export interface TesseractManifest {
   devmode?: string;
 }
 
+export interface TesseractAssemblyComponent {
+  componentId: string;
+  displayName: string;
+}
+
+export interface TesseractAssemblyResumeState {
+  nodeName?: string | null;
+  components: TesseractAssemblyComponent[];
+  allPendingHardwareNodeNames?: string[];
+}
+
+export interface TesseractHardwareDispatchState {
+  lastAction: 'upload' | 'stop';
+  receiptStatus?: string | null;
+  responseStatus?: string | null;
+  workflowFile?: string | null;
+  message?: string | null;
+  successful?: boolean;
+  updatedAt: string;
+}
+
+export interface TesseractWorkflowMetadata extends Record<string, unknown> {
+  phase?: string;
+  assemblyResume?: TesseractAssemblyResumeState | null;
+  hardwareDispatch?: TesseractHardwareDispatchState | null;
+}
+
 export interface TesseractWorkflowSnapshot {
   schemaVersion: 1;
   projectName: string;
@@ -37,7 +64,7 @@ export interface TesseractWorkflowSnapshot {
   workflowUrl?: string | null;
   workflow?: any | null;
   blueprint?: any | null;
-  metadata?: Record<string, unknown>;
+  metadata?: TesseractWorkflowMetadata;
 }
 
 export interface TesseractWorkflowViewTarget {
@@ -149,17 +176,18 @@ export class TesseractProjectService {
     snapshot: Partial<TesseractWorkflowSnapshot>
   ): TesseractWorkflowSnapshot {
     const previous = this.readWorkflowSnapshot(projectPath);
+    const nextMetadata = this.mergeMetadata(previous?.metadata, snapshot.metadata);
     const nextSnapshot: TesseractWorkflowSnapshot = {
       schemaVersion: 1,
       projectName: previous?.projectName || snapshot.projectName || window['path'].basename(projectPath),
-      updatedAt: new Date().toISOString(),
       sessionId: previous?.sessionId ?? null,
       workflowId: previous?.workflowId ?? null,
       workflowUrl: previous?.workflowUrl ?? null,
       workflow: previous?.workflow ?? null,
       blueprint: previous?.blueprint ?? null,
-      metadata: previous?.metadata ?? {},
       ...snapshot,
+      updatedAt: new Date().toISOString(),
+      metadata: nextMetadata,
     };
 
     window['fs'].writeFileSync(
@@ -168,6 +196,17 @@ export class TesseractProjectService {
     );
 
     return nextSnapshot;
+  }
+
+  persistHardwareDispatch(
+    projectPath: string,
+    hardwareDispatch: TesseractHardwareDispatchState | null
+  ): TesseractWorkflowSnapshot {
+    return this.persistWorkflowSnapshot(projectPath, {
+      metadata: {
+        hardwareDispatch,
+      },
+    });
   }
 
   syncWorkflowSnapshotAndView(
@@ -279,6 +318,16 @@ export class TesseractProjectService {
 
   private normalizeText(value?: string | null): string {
     return String(value || '').trim();
+  }
+
+  private mergeMetadata(
+    previous?: TesseractWorkflowMetadata | null,
+    next?: TesseractWorkflowMetadata | null
+  ): TesseractWorkflowMetadata {
+    return {
+      ...(previous ?? {}),
+      ...(next ?? {}),
+    };
   }
 
   private readJsonFile<T>(filePath: string): T | null {

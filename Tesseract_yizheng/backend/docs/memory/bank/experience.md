@@ -5,6 +5,7 @@
 - 先写架构决策文档，再进入大规模重构，能明显降低后续反复返工。
 - 把 capability / hardware 定义收成单一真相源，能显著减少 Agent 行为和配置漂移。
 - 将健康探测、discovery、reflection、generation 的 timeout 拆开，比单一 timeout 更稳。
+- 数字孪生 viewer 的 host 位姿锚点必须固定到模型包围盒中心；如果直接采用 GLB 原始 pivot，外部资产会在“坐标正确”的前提下仍然整体偏移。
 - 后端 trace 与前端可视化调试联动后，AI-native 行为问题更容易被真实定位，而不是靠猜。
 - SafetyNet 退役要按场景逐条做对照实验；`AGENT_SCENE_SAFETY_NETS=none` 只适合暴露原始缺陷，不适合拿来判断哪条安全网已经可删。
 - 设计 SafetyNet 退役测试时，要先避开 generic normalizer 的前置裁剪规则；否则你以为在测 scene safety net，实际上在测更底层的 node cleanup。

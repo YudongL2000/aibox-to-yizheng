@@ -169,7 +169,7 @@ export class WorkflowResultFlow {
       position: [basePosition[0], basePosition[1]],
       parameters: { jsCode: 'return items;' },
       notes: {
-        title: '胜负表情展示',
+        title: '表情展示',
         subtitle: '物理显示单元。根据裁判结果，在屏幕上显示出机器人此时的情绪眼神。',
         category: 'SCREEN',
         session_ID: sessionId,

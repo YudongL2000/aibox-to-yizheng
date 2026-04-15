@@ -215,6 +215,11 @@ export class OrchestratorResponseBuilder {
       sections.push(assumptionText);
     }
 
+    const topology = this.buildTopologyPreview(capabilities);
+    if (topology) {
+      sections.push(`**节点拓扑**\n\`\`\`mermaid\n${topology}\n\`\`\``);
+    }
+
     sections.push('> 如果这就是你的目标，可以点击「确认构建」，我会生成第一版工作流。');
 
     return sections.join('\n\n');
@@ -464,11 +469,27 @@ export class OrchestratorResponseBuilder {
       reflection.suggested_user_actions,
       reflection
     );
-    if (suggestedOptions.length > 0) {
-      return this.limitClarificationOptions(suggestedOptions).map((candidate) => candidate.option);
+    const primaryMissingInfo = this.getPrimaryMissingInfo(reflection);
+    const limitedSuggestedOptions = this.limitClarificationOptions(suggestedOptions);
+    if (this.hasSufficientClarificationOptions(limitedSuggestedOptions, primaryMissingInfo?.category)) {
+      return limitedSuggestedOptions.map((candidate) => candidate.option);
     }
-    return this.limitClarificationOptions(this.buildQuestionOptions(reflection))
-      .map((candidate) => candidate.option);
+
+    const questionOptions = this.limitClarificationOptions(this.buildQuestionOptions(reflection));
+    if (this.hasSufficientClarificationOptions(questionOptions, primaryMissingInfo?.category)) {
+      return questionOptions.map((candidate) => candidate.option);
+    }
+
+    if (primaryMissingInfo) {
+      return this.buildSyntheticOptionsForMissingInfo(primaryMissingInfo)
+        .slice(0, 4)
+        .map((option) => ({
+          ...option,
+          category: primaryMissingInfo.category,
+        }));
+    }
+
+    return questionOptions.map((candidate) => candidate.option);
   }
 
   private buildQuestionOptions(reflection: ReflectionResult): ClarificationOptionCandidate[] {
@@ -510,6 +531,7 @@ export class OrchestratorResponseBuilder {
             label: normalizedValue,
             value: normalizedValue,
             reason: description ?? questionReason,
+            category,
           },
           category,
           priority: missingInfo?.priority ?? 3,
@@ -532,7 +554,7 @@ export class OrchestratorResponseBuilder {
               return;
             }
             options.set(option.value, {
-              option,
+              option: { ...option, category: primaryMissingInfo.category },
               category: primaryMissingInfo.category,
               priority: primaryMissingInfo.priority ?? 3,
               blocking: primaryMissingInfo.blocking ?? false,
@@ -598,6 +620,7 @@ export class OrchestratorResponseBuilder {
           label,
           value: option.value,
           reason: option.reason,
+          category,
         },
         category,
         priority: missingInfo?.priority ?? 3,
@@ -794,7 +817,7 @@ export class OrchestratorResponseBuilder {
 
     return presets[missingInfo.category] ?? [
       {
-        label: missingInfo.description.replace(/。$/, ''),
+        label: '请补充更多信息',
         value: missingInfo.description.replace(/。$/, ''),
         reason: missingInfo.description,
       },
@@ -812,6 +835,43 @@ export class OrchestratorResponseBuilder {
       return left.blocking ? -1 : 1;
     }
     return left.sourceOrder - right.sourceOrder;
+  }
+
+  private hasSufficientClarificationOptions(
+    options: ClarificationOptionCandidate[],
+    primaryCategory?: ReflectionResult['missing_info'][number]['category']
+  ): boolean {
+    if (options.length < 2) {
+      return false;
+    }
+
+    const targetOptions = primaryCategory
+      ? options.filter((option) => option.category === primaryCategory)
+      : options;
+
+    if (targetOptions.length < 2) {
+      return false;
+    }
+
+    return targetOptions.every((candidate) => this.isHealthyClarificationOption(candidate.option));
+  }
+
+  private isHealthyClarificationOption(option: InteractionOption): boolean {
+    const label = option.label.trim();
+    const value = option.value.trim();
+    if (label.length < 3 || value.length < 6) {
+      return false;
+    }
+
+    if (/^(它看|它听|它说|看它|听它|语音|屏幕|动作)$/.test(label)) {
+      return false;
+    }
+
+    if (/^[它他她这个那[个]?]/.test(label) && label.length <= 5) {
+      return false;
+    }
+
+    return true;
   }
 
   private compareClarificationCategories(
@@ -903,6 +963,41 @@ export class OrchestratorResponseBuilder {
   private componentLabel(componentId: string): string {
     return this.hardwareComponents.find((component) => component.id === componentId)?.displayName
       ?? componentId;
+  }
+
+  // ── 拓扑预览 ──────────────────────────────────────────────────
+  private buildTopologyPreview(capabilities: HardwareCapability[]): string {
+    if (capabilities.length === 0) return '';
+
+    const buckets = this.bucketCapabilities(capabilities);
+    const nodes: string[] = [];
+    const edges: string[] = [];
+    let id = 0;
+    const nextId = () => `n${id++}`;
+
+    const triggerId = nextId();
+    nodes.push(`    ${triggerId}["触发"]`);
+
+    const connect = (from: string, labels: string[]): string => {
+      if (labels.length === 0) return from;
+      const nid = nextId();
+      nodes.push(`    ${nid}["${labels.join(' / ')}"]`);
+      edges.push(`    ${from} --> ${nid}`);
+      return nid;
+    };
+
+    let prev = triggerId;
+    prev = connect(prev, buckets.inputs);
+    prev = connect(prev, buckets.processes);
+    if (buckets.decisions.length > 0) {
+      const did = nextId();
+      nodes.push(`    ${did}{"条件判断"}`);
+      edges.push(`    ${prev} --> ${did}`);
+      prev = did;
+    }
+    connect(prev, buckets.outputs);
+
+    return `graph TD\n${nodes.join('\n')}\n${edges.join('\n')}`;
   }
 
   private describeMissingFields(fields: string[]): string {

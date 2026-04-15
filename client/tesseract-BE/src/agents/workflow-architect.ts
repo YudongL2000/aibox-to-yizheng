@@ -453,7 +453,7 @@ ${requirements.map((line, index) => `${index + 1}. ${line}`).join('\n')}
 
   private async callLLM(messages: ChatMessage[]): Promise<string> {
     return this.llmClient.chat(messages, {
-      maxTokens: 10000,
+      maxTokens: 28000,
       timeoutMs: this.llmTimeoutMs,
     });
   }

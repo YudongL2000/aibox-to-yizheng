@@ -1,12 +1,12 @@
 /**
  * [INPUT]: 依赖 AgentService、SessionService 与 logger
- * [OUTPUT]: 验证 AgentService 的会话路由、dialogue-mode 分支、确认构建与工作流日志输出
+ * [OUTPUT]: 验证 AgentService 的会话路由、dialogue-mode 分支、确认构建、工作流日志输出与 workflow JSON 自动归档/失败降级行为
  * [POS]: tests/unit/agent-server 的服务层守护测试
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { AgentService } from '../../../src/agent-server/agent-service';
@@ -89,6 +89,18 @@ function createSkillRepoFixture() {
   };
 }
 
+function createArchiveWorkspaceFixture() {
+  const rootDir = mkdtempSync(join(tmpdir(), 'agent-service-archive-'));
+
+  return {
+    rootDir,
+    archiveDir: join(rootDir, 'data', 'workflow'),
+    cleanup: () => {
+      rmSync(rootDir, { recursive: true, force: true });
+    },
+  };
+}
+
 function createCompletedConfigState(workflow: WorkflowDefinition): ConfigAgentState {
   return {
     workflowId: 'wf-skill-1',
@@ -119,11 +131,39 @@ function createCompletedConfigState(workflow: WorkflowDefinition): ConfigAgentSt
     ],
     currentNodeIndex: 2,
     completed: true,
+    assemblyCompleted: true,
+    actionReady: true,
+    pendingHardwareNodeNames: [],
     progress: {
       total: 2,
       completed: 2,
       percentage: 100,
     },
+  };
+}
+
+function createIncompleteConfigState(workflow: WorkflowDefinition): ConfigAgentState {
+  return {
+    ...createCompletedConfigState(workflow),
+    currentNodeIndex: 0,
+    completed: false,
+    assemblyCompleted: false,
+    actionReady: false,
+    pendingHardwareNodeNames: ['摄像头抓拍', '机械手出石头'],
+    progress: {
+      total: 2,
+      completed: 1,
+      percentage: 50,
+    },
+  };
+}
+
+function createAssemblyPendingConfigState(workflow: WorkflowDefinition): ConfigAgentState {
+  return {
+    ...createCompletedConfigState(workflow),
+    assemblyCompleted: false,
+    actionReady: false,
+    pendingHardwareNodeNames: ['机械手出石头'],
   };
 }
 
@@ -667,56 +707,411 @@ describe('AgentService', () => {
   });
 
   it('confirms workflow using existing session', async () => {
-    const intakeAgent = {
-      confirmBlueprint: vi.fn().mockResolvedValue({
-        type: 'workflow_ready',
-        message: 'ok',
-        workflow: { name: 'WF', nodes: [], connections: {} },
-      }),
-    };
-    const configAgent = {
-      processConfigurationInput: vi.fn(),
-    };
-    const sessionService = new SessionService();
-    const session = sessionService.getOrCreate();
-    const service = new AgentService(intakeAgent as any, sessionService, configAgent as any);
+    const workspace = createArchiveWorkspaceFixture();
+    try {
+      const intakeAgent = {
+        confirmBlueprint: vi.fn().mockResolvedValue({
+          type: 'workflow_ready',
+          message: 'ok',
+          workflow: { name: 'WF', nodes: [], connections: {} },
+        }),
+      };
+      const configAgent = {
+        processConfigurationInput: vi.fn(),
+      };
+      const sessionService = new SessionService();
+      const session = sessionService.getOrCreate();
+      const service = new AgentService(
+        intakeAgent as any,
+        sessionService,
+        configAgent as any,
+        undefined,
+        undefined,
+        undefined,
+        workspace.archiveDir
+      );
 
-    const result = await service.confirm(session.id);
+      const result = await service.confirm(session.id);
 
-    expect(result.sessionId).toBe(session.id);
-    expect(result.response.type).toBe('workflow_ready');
+      expect(result.sessionId).toBe(session.id);
+      expect(result.response.type).toBe('workflow_ready');
+      expect(readdirSync(workspace.archiveDir)).toHaveLength(1);
+    } finally {
+      workspace.cleanup();
+    }
   });
 
   it('logs full workflow json document when confirm returns workflow_ready', async () => {
+    const workspace = createArchiveWorkspaceFixture();
+    try {
+      const workflow = {
+        name: 'WF',
+        nodes: [{ id: '1', name: 'Webhook', type: 'n8n-nodes-base.webhook', position: [0, 0], parameters: {} }],
+        connections: {},
+      };
+      const intakeAgent = {
+        confirmBlueprint: vi.fn().mockResolvedValue({
+          type: 'workflow_ready',
+          message: 'ok',
+          workflow,
+        }),
+      };
+      const configAgent = {
+        processConfigurationInput: vi.fn(),
+      };
+      const sessionService = new SessionService();
+      const session = sessionService.getOrCreate();
+      const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+      const service = new AgentService(
+        intakeAgent as any,
+        sessionService,
+        configAgent as any,
+        undefined,
+        undefined,
+        undefined,
+        workspace.archiveDir
+      );
+
+      await service.confirm(session.id);
+
+      expect(infoSpy).toHaveBeenCalledWith(
+        'AgentService: workflow JSON document for session %s\n%s',
+        session.id,
+        JSON.stringify(workflow, null, 2)
+      );
+
+      infoSpy.mockRestore();
+    } finally {
+      workspace.cleanup();
+    }
+  });
+
+  it('archives workflow json with the session id in the file name', async () => {
+    const workspace = createArchiveWorkspaceFixture();
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-04-13T04:10:20.123Z'));
+      const workflow = {
+        name: 'Archive WF',
+        nodes: [{ id: '1', name: 'Webhook', type: 'n8n-nodes-base.webhook', position: [0, 0], parameters: {} }],
+        connections: {},
+      };
+      const intakeAgent = {
+        confirmBlueprint: vi.fn().mockResolvedValue({
+          type: 'workflow_ready',
+          message: 'ok',
+          workflow,
+        }),
+      };
+      const configAgent = {
+        processConfigurationInput: vi.fn(),
+      };
+      const sessionService = new SessionService();
+      const session = sessionService.getOrCreate();
+      const service = new AgentService(
+        intakeAgent as any,
+        sessionService,
+        configAgent as any,
+        undefined,
+        undefined,
+        undefined,
+        workspace.archiveDir
+      );
+
+      await service.confirm(session.id);
+
+      const [fileName] = readdirSync(workspace.archiveDir);
+      expect(fileName).toMatch(new RegExp(`_${session.id}\\.json$`));
+      expect(readFileSync(join(workspace.archiveDir, fileName), 'utf-8')).toBe(
+        JSON.stringify(workflow, null, 2)
+      );
+    } finally {
+      vi.useRealTimers();
+      workspace.cleanup();
+    }
+  });
+
+  it('adds a collision suffix when the first workflow archive name already exists', async () => {
+    const workspace = createArchiveWorkspaceFixture();
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-04-13T04:10:20.123Z'));
+      const intakeAgent = {
+        confirmBlueprint: vi.fn().mockResolvedValue({
+          type: 'workflow_ready',
+          message: 'ok',
+          workflow: { name: 'WF', nodes: [], connections: {} },
+        }),
+      };
+      const configAgent = {
+        processConfigurationInput: vi.fn(),
+      };
+      const sessionService = new SessionService();
+      const session = sessionService.getOrCreate();
+      const service = new AgentService(
+        intakeAgent as any,
+        sessionService,
+        configAgent as any,
+        undefined,
+        undefined,
+        undefined,
+        workspace.archiveDir
+      );
+
+      await service.confirm(session.id);
+      await service.confirm(session.id);
+
+      const archiveFiles = readdirSync(workspace.archiveDir).sort();
+      expect(archiveFiles).toHaveLength(2);
+      expect(archiveFiles[0]).toMatch(new RegExp(`_${session.id}\\.json$`));
+      expect(archiveFiles[1]).toMatch(new RegExp(`_${session.id}__01\\.json$`));
+    } finally {
+      vi.useRealTimers();
+      workspace.cleanup();
+    }
+  });
+
+  it('keeps workflow_ready visible when workflow archive writing fails', async () => {
+    const workspace = createArchiveWorkspaceFixture();
+    try {
+      mkdirSync(join(workspace.rootDir, 'data'), { recursive: true });
+      writeFileSync(join(workspace.rootDir, 'data', 'workflow'), 'blocked', 'utf-8');
+      const intakeAgent = {
+        confirmBlueprint: vi.fn().mockResolvedValue({
+          type: 'workflow_ready',
+          message: 'ok',
+          workflow: { name: 'WF', nodes: [], connections: {} },
+        }),
+      };
+      const configAgent = {
+        processConfigurationInput: vi.fn(),
+      };
+      const sessionService = new SessionService();
+      const session = sessionService.getOrCreate();
+      const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+      const service = new AgentService(
+        intakeAgent as any,
+        sessionService,
+        configAgent as any,
+        undefined,
+        undefined,
+        undefined,
+        workspace.archiveDir
+      );
+
+      const result = await service.confirm(session.id);
+
+      expect(result.response.type).toBe('workflow_ready');
+      expect(warnSpy).toHaveBeenCalledWith(
+        'AgentService: workflow archive failed',
+        expect.objectContaining({
+          sessionId: session.id,
+          errorCode: 'EEXIST',
+        })
+      );
+
+      warnSpy.mockRestore();
+    } finally {
+      workspace.cleanup();
+    }
+  });
+
+  it('archives configured workflow json when uploading hardware workflow for debug', async () => {
+    const workspace = createArchiveWorkspaceFixture();
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-04-13T11:39:07.220Z'));
+      const workflow = {
+        name: 'Configured WF',
+        nodes: [
+          {
+            id: '1',
+            name: 'screen_node',
+            type: 'n8n-nodes-base.httpRequest',
+            position: [0, 0],
+            parameters: {},
+            notes: {
+              category: 'SCREEN',
+              extra: 'configured',
+              topology: 'port_4',
+              device_ID: 'screen-live-001',
+            },
+          },
+        ],
+        connections: {},
+      };
+      const intakeAgent = {
+        processUserInput: vi.fn(),
+      };
+      const configAgent = {
+        processConfigurationInput: vi.fn(),
+      };
+      const hardwareRuntime = {
+        uploadWorkflow: vi.fn().mockResolvedValue({
+          kind: 'workflow_upload',
+          requestId: 'req-1',
+          topic: 'hardware/workflow/upload',
+          payload: workflow,
+          publishedAt: new Date().toISOString(),
+          status: 'queued',
+          response: null,
+          responseAt: null,
+        }),
+      };
+      const sessionService = new SessionService();
+      const session = sessionService.getOrCreate();
+      sessionService.setWorkflow(session.id, workflow as any);
+      const service = new AgentService(
+        intakeAgent as any,
+        sessionService,
+        configAgent as any,
+        undefined,
+        undefined,
+        hardwareRuntime as any,
+        workspace.archiveDir
+      );
+
+      const receipt = await service.uploadHardwareWorkflow(undefined, session.id);
+
+      expect(receipt.kind).toBe('workflow_upload');
+      expect(hardwareRuntime.uploadWorkflow).toHaveBeenCalledWith(workflow);
+
+      const archiveFiles = readdirSync(workspace.archiveDir);
+      expect(archiveFiles).toHaveLength(1);
+      expect(archiveFiles[0]).toMatch(new RegExp(`_${session.id}__config_upload\\.json$`));
+      expect(readFileSync(join(workspace.archiveDir, archiveFiles[0]), 'utf-8')).toBe(
+        JSON.stringify(workflow, null, 2)
+      );
+    } finally {
+      vi.useRealTimers();
+      workspace.cleanup();
+    }
+  });
+
+  it('blocks hardware workflow upload while software configuration is incomplete', async () => {
+    const workspace = createArchiveWorkspaceFixture();
+    try {
+      const workflow = {
+        name: 'Configured WF',
+        nodes: [],
+        connections: {},
+      };
+      const intakeAgent = {
+        processUserInput: vi.fn(),
+      };
+      const configAgent = {
+        processConfigurationInput: vi.fn(),
+      };
+      const hardwareRuntime = {
+        uploadWorkflow: vi.fn(),
+      };
+      const sessionService = new SessionService();
+      const session = sessionService.getOrCreate();
+      sessionService.setWorkflow(session.id, workflow as any);
+      sessionService.setConfigAgentState(session.id, createIncompleteConfigState(workflow as any));
+      const service = new AgentService(
+        intakeAgent as any,
+        sessionService,
+        configAgent as any,
+        undefined,
+        undefined,
+        hardwareRuntime as any,
+        workspace.archiveDir
+      );
+
+      await expect(service.uploadHardwareWorkflow(undefined, session.id)).rejects.toThrow(
+        '当前会话仍处于软件配置阶段，请先完成全部配置再下发工作流'
+      );
+      expect(hardwareRuntime.uploadWorkflow).not.toHaveBeenCalled();
+    } finally {
+      workspace.cleanup();
+    }
+  });
+
+  it('blocks hardware workflow upload while hardware assembly is still pending', async () => {
+    const workspace = createArchiveWorkspaceFixture();
+    try {
+      const workflow = {
+        name: 'Configured WF',
+        nodes: [],
+        connections: {},
+      };
+      const intakeAgent = {
+        processUserInput: vi.fn(),
+      };
+      const configAgent = {
+        processConfigurationInput: vi.fn(),
+      };
+      const hardwareRuntime = {
+        uploadWorkflow: vi.fn(),
+      };
+      const sessionService = new SessionService();
+      const session = sessionService.getOrCreate();
+      sessionService.setWorkflow(session.id, workflow as any);
+      sessionService.setConfigAgentState(session.id, createAssemblyPendingConfigState(workflow as any));
+      const service = new AgentService(
+        intakeAgent as any,
+        sessionService,
+        configAgent as any,
+        undefined,
+        undefined,
+        hardwareRuntime as any,
+        workspace.archiveDir
+      );
+
+      await expect(service.uploadHardwareWorkflow(undefined, session.id)).rejects.toThrow(
+        '当前会话仍处于硬件组装阶段，请先完成全部拼装再下发工作流'
+      );
+      expect(hardwareRuntime.uploadWorkflow).not.toHaveBeenCalled();
+    } finally {
+      workspace.cleanup();
+    }
+  });
+
+  it('explains save-skill failure when the session is still in software configuration', () => {
     const workflow = {
-      name: 'WF',
-      nodes: [{ id: '1', name: 'Webhook', type: 'n8n-nodes-base.webhook', position: [0, 0], parameters: {} }],
+      name: 'Configured WF',
+      nodes: [],
       connections: {},
     };
     const intakeAgent = {
-      confirmBlueprint: vi.fn().mockResolvedValue({
-        type: 'workflow_ready',
-        message: 'ok',
-        workflow,
-      }),
+      processUserInput: vi.fn(),
     };
     const configAgent = {
       processConfigurationInput: vi.fn(),
     };
     const sessionService = new SessionService();
     const session = sessionService.getOrCreate();
-    const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    sessionService.setWorkflow(session.id, workflow as any);
+    sessionService.setConfigAgentState(session.id, createIncompleteConfigState(workflow as any));
     const service = new AgentService(intakeAgent as any, sessionService, configAgent as any);
 
-    await service.confirm(session.id);
-
-    expect(infoSpy).toHaveBeenCalledWith(
-      'AgentService: workflow JSON document for session %s\n%s',
-      session.id,
-      JSON.stringify(workflow, null, 2)
+    expect(() => service.saveSkill(session.id)).toThrow(
+      '当前会话仍处于软件配置阶段，请先完成全部配置再存入 Skills 库'
     );
+  });
 
-    infoSpy.mockRestore();
+  it('explains save-skill failure when hardware assembly is still pending', () => {
+    const workflow = {
+      name: 'Configured WF',
+      nodes: [],
+      connections: {},
+    };
+    const intakeAgent = {
+      processUserInput: vi.fn(),
+    };
+    const configAgent = {
+      processConfigurationInput: vi.fn(),
+    };
+    const sessionService = new SessionService();
+    const session = sessionService.getOrCreate();
+    sessionService.setWorkflow(session.id, workflow as any);
+    sessionService.setConfigAgentState(session.id, createAssemblyPendingConfigState(workflow as any));
+    const service = new AgentService(intakeAgent as any, sessionService, configAgent as any);
+
+    expect(() => service.saveSkill(session.id)).toThrow(
+      '当前会话仍处于硬件组装阶段，请先完成全部拼装再存入 Skills 库'
+    );
   });
 
   it('resets session', () => {
@@ -731,5 +1126,70 @@ describe('AgentService', () => {
 
     const resetSession = sessionService.getSession(session.id);
     expect(resetSession?.history.length).toBe(0);
+  });
+
+  it('recovers save-skill from persisted project snapshot after backend restart', () => {
+    const fixture = createSkillRepoFixture();
+    const projectPath = mkdtempSync(join(tmpdir(), 'tesseract-project-'));
+    try {
+      mkdirSync(join(projectPath, '.tesseract'), { recursive: true });
+      writeFileSync(
+        join(projectPath, '.tesseract', 'workflow.json'),
+        JSON.stringify({
+          schemaVersion: 1,
+          projectName: 'Demo Project',
+          updatedAt: new Date().toISOString(),
+          sessionId: 'session-restart-recover',
+          workflowId: 'wf-recover',
+          workflowSummary: '通过摄像头识别手势并驱动机械手回应。',
+          workflow: {
+            name: '猜拳互动',
+            nodes: [],
+            connections: {},
+          },
+          skillSaveCandidate: {
+            skillId: 'skill-rps-recover',
+            displayName: '石头剪刀布',
+            summary: '通过摄像头识别手势并驱动机械手回应。',
+            keywords: ['石头剪刀布', '猜拳'],
+            gameplayGuide: '先出拳，我会立刻识别并回应。',
+            requiredHardware: RPS_SKILL.requiredHardware,
+            initialPhysicalCue: RPS_SKILL.initialPhysicalCue,
+            workflowId: 'wf-recover',
+            workflowName: '猜拳互动',
+            sourceSessionId: 'session-restart-recover',
+          },
+        }, null, 2),
+        'utf-8'
+      );
+
+      const intakeAgent = {
+        processUserInput: vi.fn(),
+      };
+      const configAgent = {
+        processConfigurationInput: vi.fn(),
+      };
+      const service = new AgentService(
+        intakeAgent as any,
+        new SessionService(),
+        configAgent as any,
+        fixture.repository,
+      );
+
+      const saved = service.saveSkill('session-restart-recover', projectPath);
+
+      expect(saved).toEqual(expect.objectContaining({
+        skillId: 'skill-rps-recover',
+        workflowId: 'wf-recover',
+        sourceSessionId: 'session-restart-recover',
+      }));
+      expect(service.listSkills()[0]).toEqual(expect.objectContaining({
+        skillId: 'skill-rps-recover',
+        displayName: '石头剪刀布',
+      }));
+    } finally {
+      rmSync(projectPath, { recursive: true, force: true });
+      fixture.cleanup();
+    }
   });
 });

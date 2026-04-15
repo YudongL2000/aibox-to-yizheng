@@ -1,6 +1,6 @@
 /*
  * [INPUT]: 依赖 agent chat/confirm/validate/deploy 接口、硬件桥 facade、缓存上传能力，并接收工作台传入的布局状态与 workflow URL/教学接力回调。
- * [OUTPUT]: 对外提供 AiInteractionWindow 双模组件，统一承接教学模式与 OpenClaw 对话模式，并向父层回传 workflow URL 与 backend-first digital twin scene，同时复用 Spatial dark shell 的硬边 panel/button/input/status 语义。
+ * [OUTPUT]: 对外提供 AiInteractionWindow 双模组件，统一承接教学模式与 OpenClaw 对话模式，并向父层回传 workflow URL 与 backend-first digital twin scene，同时补齐用户提交按钮的 loading 反馈与防连点 gate。
  * [POS]: module/home/widget 的 AI 交互总壳，负责把 backend 响应折叠为工作流卡片或对话模式状态，同时转发物理 cue、部署确认与教学跳转；未接线的本地占位 workflow/config UI 不再保留，并统一工作台对话壳层语法。
  * [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md
  */
@@ -38,6 +38,7 @@ import 'package:dio/dio.dart' hide ResponseType;
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:aitesseract/utils/cache/cache_manager.dart';
+import 'package:aitesseract/utils/prevent_reclick_util.dart';
 import 'package:aitesseract/utils/spatial_design_ref.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:image_picker/image_picker.dart';
@@ -45,6 +46,19 @@ import 'package:image_picker/image_picker.dart';
 /// AI交互窗口组件
 /// 参考图片实现完整的AI交互界面
 enum _AssistantPanelMode { teaching, dialogue }
+
+enum _SubmitAction {
+  teachingSend,
+  dialogueSend,
+  selectionSubmit,
+  imageUpload,
+  imageContinue,
+  hotPlugConfirm,
+  continueChat,
+  confirmBlueprint,
+  confirmWorkflow,
+  deployWorkflow,
+}
 
 class AiInteractionWindow extends StatefulWidget {
   final String? initialPrompt; // 初始提示文本
@@ -150,6 +164,7 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
   bool _isWorkflowDeployed = false; // 是否已部署到硬件
   bool _isDeployingWorkflow = false; // 是否正在部署
   bool _isHotPlugConfirmed = false; // hot_plugging 是否已确认
+  _SubmitAction? _activeSubmitAction;
   _AssistantPanelMode _panelMode = _AssistantPanelMode.teaching;
   DialogueModePanelState _dialoguePanelState = DialogueModePanelState.initial();
   dialogue_api.DialogueModeEnvelope? _dialogueEnvelope;
@@ -161,6 +176,39 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
   SpatialThemeData get _spatial => context.spatial;
 
   Color _toneColor(SpatialStatusTone tone) => _spatial.status(tone);
+
+  bool _isSubmitActionActive(_SubmitAction action) =>
+      _activeSubmitAction == action;
+
+  Future<void> _runSubmitAction(
+    _SubmitAction action,
+    Future<void> Function() task,
+  ) async {
+    if (_activeSubmitAction != null) {
+      return;
+    }
+    final actionKey = 'ai_interaction_window.${action.name}';
+    if (!PreventReClickUtil.tryEnter(key: actionKey)) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _activeSubmitAction = action;
+      });
+    }
+
+    try {
+      await task();
+    } finally {
+      PreventReClickUtil.release(key: actionKey);
+      if (mounted && _activeSubmitAction == action) {
+        setState(() {
+          _activeSubmitAction = null;
+        });
+      }
+    }
+  }
 
   // 对话消息列表
   final List<InteractionMessage> _messages = [];
@@ -514,77 +562,79 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
       return;
     }
 
-    // 先检查健康状态
-    if (!_isHealthOk) {
-      // 如果健康检查未通过，先执行健康检查
-      EasyLoading.show(status: '检查服务状态...');
-      await _checkHealthStatus();
-      EasyLoading.dismiss();
-
+    await _runSubmitAction(_SubmitAction.teachingSend, () async {
+      // 先检查健康状态
       if (!_isHealthOk) {
-        EasyLoading.showError('服务不可用，请稍后重试');
+        // 如果健康检查未通过，先执行健康检查
+        EasyLoading.show(status: '检查服务状态...');
+        await _checkHealthStatus();
+        EasyLoading.dismiss();
+
+        if (!_isHealthOk) {
+          EasyLoading.showError('服务不可用，请稍后重试');
+          return;
+        }
+      }
+
+      // 清空输入框
+      _commandController.clear();
+
+      // 添加用户消息到列表
+      setState(() {
+        _messages.add(
+          InteractionMessage(
+            text: command,
+            isUser: true,
+            type: MessageType.userInput,
+          ),
+        );
+        _isSending = true;
+      });
+
+      // 检查是否是 config_input 状态
+      if (_interactionState == InteractionState.configInput &&
+          _currentConfigNode != null) {
+        // 处理 config_input 类型的输入
+        await _handleConfigInput(command);
         return;
       }
-    }
 
-    // 清空输入框
-    _commandController.clear();
+      // 调用对话接口
+      try {
+        EasyLoading.show(status: '发送中...');
 
-    // 添加用户消息到列表
-    setState(() {
-      _messages.add(
-        InteractionMessage(
-          text: command,
-          isUser: true,
-          type: MessageType.userInput,
-        ),
-      );
-      _isSending = true;
-    });
+        final chatResponse = await _agentChatApi.sendMessage(
+          message: command,
+          sessionId: _sessionId,
+        );
 
-    // 检查是否是 config_input 状态
-    if (_interactionState == InteractionState.configInput &&
-        _currentConfigNode != null) {
-      // 处理 config_input 类型的输入
-      await _handleConfigInput(command);
-      return;
-    }
+        EasyLoading.dismiss();
 
-    // 调用对话接口
-    try {
-      EasyLoading.show(status: '发送中...');
+        if (chatResponse != null) {
+          // 保存 sessionId
+          _sessionId = chatResponse.sessionId;
 
-      final chatResponse = await _agentChatApi.sendMessage(
-        message: command,
-        sessionId: _sessionId,
-      );
+          // 开始聊天，点亮节点1
+          if (_currentStep < 1) {
+            setState(() {
+              _currentStep = 1;
+            });
+          }
 
-      EasyLoading.dismiss();
-
-      if (chatResponse != null) {
-        // 保存 sessionId
-        _sessionId = chatResponse.sessionId;
-
-        // 开始聊天，点亮节点1
-        if (_currentStep < 1) {
-          setState(() {
-            _currentStep = 1;
-          });
+          // 处理响应
+          _handleChatResponse(chatResponse);
+        } else {
+          EasyLoading.showError('发送失败，请重试');
         }
-
-        // 处理响应
-        _handleChatResponse(chatResponse);
-      } else {
-        EasyLoading.showError('发送失败，请重试');
+      } catch (e) {
+        EasyLoading.dismiss();
+        EasyLoading.showError('发送失败: ${e.toString()}');
+      } finally {
+        setState(() {
+          _isSending = false;
+        });
       }
-    } catch (e) {
-      EasyLoading.dismiss();
-      EasyLoading.showError('发送失败: ${e.toString()}');
-    } finally {
-      setState(() {
-        _isSending = false;
-      });
-    }
+    });
   }
 
   Future<void> _sendDialogueCommand() async {
@@ -598,50 +648,54 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
       return;
     }
 
-    if (!_isHealthOk) {
-      EasyLoading.show(status: '检查服务状态...');
-      await _checkHealthStatus();
-      EasyLoading.dismiss();
+    await _runSubmitAction(_SubmitAction.dialogueSend, () async {
       if (!_isHealthOk) {
-        EasyLoading.showError('服务不可用，请稍后重试');
-        return;
+        EasyLoading.show(status: '检查服务状态...');
+        await _checkHealthStatus();
+        EasyLoading.dismiss();
+        if (!_isHealthOk) {
+          EasyLoading.showError('服务不可用，请稍后重试');
+          return;
+        }
       }
-    }
 
-    _commandController.clear();
-    setState(() {
-      _dialogueLastUserPrompt = command;
-      _dialoguePanelState = _dialoguePanelState.copyWith(isSending: true);
+      _commandController.clear();
+      setState(() {
+        _dialogueLastUserPrompt = command;
+        _dialoguePanelState = _dialoguePanelState.copyWith(isSending: true);
+      });
+
+      try {
+        EasyLoading.show(status: 'OpenClaw 正在思考...');
+        final chatResponse = await _agentChatApi.sendMessage(
+          message: command,
+          sessionId: _dialoguePanelState.sessionId,
+          interactionMode: dialogue_api.DialogueModeInteractionMode.dialogue,
+        );
+        EasyLoading.dismiss();
+
+        if (chatResponse == null) {
+          EasyLoading.showError('发送失败，请重试');
+          return;
+        }
+
+        _handleDialogueResponse(
+          chatResponse,
+          fallbackMessage: chatResponse.response.message ?? '我准备好了，继续吧。',
+        );
+      } catch (error) {
+        EasyLoading.dismiss();
+        EasyLoading.showError('发送失败: $error');
+      } finally {
+        if (mounted) {
+          setState(() {
+            _dialoguePanelState = _dialoguePanelState.copyWith(
+              isSending: false,
+            );
+          });
+        }
+      }
     });
-
-    try {
-      EasyLoading.show(status: 'OpenClaw 正在思考...');
-      final chatResponse = await _agentChatApi.sendMessage(
-        message: command,
-        sessionId: _dialoguePanelState.sessionId,
-        interactionMode: dialogue_api.DialogueModeInteractionMode.dialogue,
-      );
-      EasyLoading.dismiss();
-
-      if (chatResponse == null) {
-        EasyLoading.showError('发送失败，请重试');
-        return;
-      }
-
-      _handleDialogueResponse(
-        chatResponse,
-        fallbackMessage: chatResponse.response.message ?? '我准备好了，继续吧。',
-      );
-    } catch (error) {
-      EasyLoading.dismiss();
-      EasyLoading.showError('发送失败: $error');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _dialoguePanelState = _dialoguePanelState.copyWith(isSending: false);
-        });
-      }
-    }
   }
 
   /// 统一处理响应（支持所有对话类型和配置类型）
@@ -933,75 +987,76 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
 
   /// 提交选择的值
   void _submitSelection(List<String> selectedValues) async {
-    if (selectedValues.isEmpty || _currentInteraction == null) return;
-
-    try {
-      // 多选用逗号隔开，单选直接传值
-      final message = selectedValues.join(',');
-
-      // 获取选中项的label用于显示
-      final selectedLabels = <String>[];
-      if (_currentInteraction!.options != null) {
-        for (final value in selectedValues) {
-          final option = _currentInteraction!.options!.firstWhere(
-            (opt) => opt.value == value,
-            orElse: () => InteractionOption(label: value, value: value),
-          );
-          selectedLabels.add(option.label);
-        }
-      } else {
-        selectedLabels.addAll(selectedValues);
-      }
-
-      // 添加用户消息到列表（显示用户选择的内容）
-      setState(() {
-        _messages.add(
-          InteractionMessage(
-            text: selectedLabels.join(', '),
-            isUser: true,
-            type: MessageType.userInput,
-          ),
-        );
-        _isSending = true;
-        // 清空选择交互状态
-        _interactionState = InteractionState.idle;
-        _currentInteraction = null;
-      });
-
-      EasyLoading.show(status: '提交中...');
-
-      // 调用 /api/agent/chat 接口，参数 message 为选择项的 value（多选用逗号隔开）
-      final chatResponse = await _agentChatApi.sendMessage(
-        message: message,
-        sessionId: _sessionId,
-      );
-
-      EasyLoading.dismiss();
-
-      if (chatResponse != null) {
-        // 保存 sessionId
-        _sessionId = chatResponse.sessionId;
-
-        // 开始聊天，点亮节点1
-        if (_currentStep < 1) {
-          setState(() {
-            _currentStep = 1;
-          });
-        }
-
-        // 处理响应
-        _handleChatResponse(chatResponse);
-      } else {
-        EasyLoading.showError('提交失败，请重试');
-      }
-    } catch (e) {
-      EasyLoading.dismiss();
-      EasyLoading.showError('提交失败: ${e.toString()}');
-    } finally {
-      setState(() {
-        _isSending = false;
-      });
+    if (selectedValues.isEmpty || _currentInteraction == null || _isSending) {
+      return;
     }
+
+    await _runSubmitAction(_SubmitAction.selectionSubmit, () async {
+      try {
+        // 多选用逗号隔开，单选直接传值
+        final message = selectedValues.join(',');
+
+        // 获取选中项的label用于显示
+        final selectedLabels = <String>[];
+        if (_currentInteraction!.options != null) {
+          for (final value in selectedValues) {
+            final option = _currentInteraction!.options!.firstWhere(
+              (opt) => opt.value == value,
+              orElse: () => InteractionOption(label: value, value: value),
+            );
+            selectedLabels.add(option.label);
+          }
+        } else {
+          selectedLabels.addAll(selectedValues);
+        }
+
+        // 添加用户消息到列表（显示用户选择的内容）
+        setState(() {
+          _messages.add(
+            InteractionMessage(
+              text: selectedLabels.join(', '),
+              isUser: true,
+              type: MessageType.userInput,
+            ),
+          );
+          _isSending = true;
+        });
+
+        EasyLoading.show(status: '提交中...');
+
+        // 调用 /api/agent/chat 接口，参数 message 为选择项的 value（多选用逗号隔开）
+        final chatResponse = await _agentChatApi.sendMessage(
+          message: message,
+          sessionId: _sessionId,
+        );
+
+        EasyLoading.dismiss();
+
+        if (chatResponse != null) {
+          // 保存 sessionId
+          _sessionId = chatResponse.sessionId;
+
+          // 开始聊天，点亮节点1
+          if (_currentStep < 1) {
+            setState(() {
+              _currentStep = 1;
+            });
+          }
+
+          // 处理响应
+          _handleChatResponse(chatResponse);
+        } else {
+          EasyLoading.showError('提交失败，请重试');
+        }
+      } catch (e) {
+        EasyLoading.dismiss();
+        EasyLoading.showError('提交失败: ${e.toString()}');
+      } finally {
+        setState(() {
+          _isSending = false;
+        });
+      }
+    });
   }
 
   /// 选择图片（只选择，不立即上传）
@@ -1062,81 +1117,93 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
   void _confirmImageUpload() async {
     if (_isUploading || _selectedImageBase64 == null) return;
 
-    try {
-      EasyLoading.show(status: '上传中...');
-      setState(() {
-        _isUploading = true;
-      });
-
-      // 从交互配置中获取profile，如果没有则使用默认值
-      String profile = '老刘'; // 默认值
-      if (_currentInteraction != null &&
-          _currentInteraction!.field == 'face_profiles') {
-        // 尝试从interaction的description或title中提取profile
-        final description = _currentInteraction!.description ??
-            _currentInteraction!.title ??
-            '';
-        // 检查是否包含人物名称（老刘、老付、老王）
-        if (description.contains('老刘')) {
-          profile = '老刘';
-        } else if (description.contains('老付')) {
-          profile = '老付';
-        } else if (description.contains('老王')) {
-          profile = '老王';
-        }
-        // 也可以从用户之前的消息中提取
-        // 查找最近一条用户消息，看是否包含人物名称
-        for (var msg in _messages.reversed) {
-          if (msg.isUser && msg.text.contains('老刘')) {
-            profile = '老刘';
-            break;
-          } else if (msg.isUser && msg.text.contains('老付')) {
-            profile = '老付';
-            break;
-          } else if (msg.isUser && msg.text.contains('老王')) {
-            profile = '老王';
-            break;
-          }
-        }
-      }
-
-      // 调用上传接口
-      final uploadResponse = await _agentUploadApi.uploadFace(
-        profile: profile,
-        fileName:
-            '${profile}_${DateTime.now().millisecondsSinceEpoch}.${_selectedImageExtension ?? "png"}',
-        contentBase64: _selectedImageBase64!,
-        width: _selectedImageWidth ?? 0,
-        height: _selectedImageHeight ?? 0,
-      );
-
-      if (uploadResponse != null && uploadResponse.success) {
-        // 上传成功，保存信息
+    await _runSubmitAction(_SubmitAction.imageUpload, () async {
+      try {
+        EasyLoading.show(status: '上传中...');
         setState(() {
-          _uploadedImageId = uploadResponse.imageId;
-          _uploadedImageBase64 = _selectedImageBase64;
-          _uploadProfile = uploadResponse.profile;
-          _interactionState = InteractionState.imageUploaded;
-          // 清空选择状态
-          _selectedImageBase64 = null;
-          _selectedImageExtension = null;
-          _selectedImageWidth = null;
-          _selectedImageHeight = null;
+          _isUploading = true;
         });
 
-        // 上传成功后，继续调用对话接口刷新
-        await _refreshChatAfterUpload();
-      } else {
-        EasyLoading.showError(uploadResponse?.error ?? '图片上传失败');
+        // 从交互配置中获取profile，如果没有则使用默认值
+        String profile = '老刘'; // 默认值
+        if (_currentInteraction != null &&
+            _currentInteraction!.field == 'face_profiles') {
+          // 尝试从interaction的description或title中提取profile
+          final description = _currentInteraction!.description ??
+              _currentInteraction!.title ??
+              '';
+          // 检查是否包含人物名称（老刘、老付、老王）
+          if (description.contains('老刘')) {
+            profile = '老刘';
+          } else if (description.contains('老付')) {
+            profile = '老付';
+          } else if (description.contains('老王')) {
+            profile = '老王';
+          }
+          // 也可以从用户之前的消息中提取
+          // 查找最近一条用户消息，看是否包含人物名称
+          for (var msg in _messages.reversed) {
+            if (msg.isUser && msg.text.contains('老刘')) {
+              profile = '老刘';
+              break;
+            } else if (msg.isUser && msg.text.contains('老付')) {
+              profile = '老付';
+              break;
+            } else if (msg.isUser && msg.text.contains('老王')) {
+              profile = '老王';
+              break;
+            }
+          }
+        }
+
+        // 调用上传接口
+        final uploadResponse = await _agentUploadApi.uploadFace(
+          profile: profile,
+          fileName:
+              '${profile}_${DateTime.now().millisecondsSinceEpoch}.${_selectedImageExtension ?? "png"}',
+          contentBase64: _selectedImageBase64!,
+          width: _selectedImageWidth ?? 0,
+          height: _selectedImageHeight ?? 0,
+        );
+
+        if (uploadResponse != null && uploadResponse.success) {
+          // 上传成功，保存信息
+          setState(() {
+            _uploadedImageId = uploadResponse.imageId;
+            _uploadedImageBase64 = _selectedImageBase64;
+            _uploadProfile = uploadResponse.profile;
+            _interactionState = InteractionState.imageUploaded;
+            // 清空选择状态
+            _selectedImageBase64 = null;
+            _selectedImageExtension = null;
+            _selectedImageWidth = null;
+            _selectedImageHeight = null;
+          });
+
+          // 上传成功后，继续调用对话接口刷新
+          await _refreshChatAfterUpload();
+        } else {
+          EasyLoading.showError(uploadResponse?.error ?? '图片上传失败');
+        }
+      } catch (e) {
+        EasyLoading.showError('上传失败: ${e.toString()}');
+      } finally {
+        EasyLoading.dismiss();
+        setState(() {
+          _isUploading = false;
+        });
       }
-    } catch (e) {
-      EasyLoading.showError('上传失败: ${e.toString()}');
-    } finally {
-      EasyLoading.dismiss();
-      setState(() {
-        _isUploading = false;
-      });
+    });
+  }
+
+  void _confirmUploadedImage() async {
+    if (_isUploading) {
+      return;
     }
+    await _runSubmitAction(
+      _SubmitAction.imageContinue,
+      _refreshChatAfterUpload,
+    );
   }
 
   /// 上传成功后刷新对话
@@ -1208,6 +1275,7 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
       onContinue: _continueChat, // 继续交流
       onConfirm: _confirmBlueprint, // 确认构建
       isBuilt: _isBlueprintBuilt,
+      isContinuing: _isSubmitActionActive(_SubmitAction.continueChat),
       maxButtonWidth: buttonMaxWidth,
     );
 
@@ -1263,108 +1331,112 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
 
   /// 继续交流
   void _continueChat() async {
-    if (_sessionId == null) return;
+    if (_sessionId == null || _isSending) return;
 
-    try {
-      EasyLoading.show(status: '发送中...');
-      setState(() {
-        _isSending = true;
-      });
+    await _runSubmitAction(_SubmitAction.continueChat, () async {
+      try {
+        EasyLoading.show(status: '发送中...');
+        setState(() {
+          _isSending = true;
+        });
 
-      final chatResponse = await _agentChatApi.sendMessage(
-        message: '继续',
-        sessionId: _sessionId,
-      );
+        final chatResponse = await _agentChatApi.sendMessage(
+          message: '继续',
+          sessionId: _sessionId,
+        );
 
-      EasyLoading.dismiss();
+        EasyLoading.dismiss();
 
-      if (chatResponse != null) {
-        _sessionId = chatResponse.sessionId;
-        _handleChatResponse(chatResponse);
-      } else {
-        EasyLoading.showError('发送失败，请重试');
+        if (chatResponse != null) {
+          _sessionId = chatResponse.sessionId;
+          _handleChatResponse(chatResponse);
+        } else {
+          EasyLoading.showError('发送失败，请重试');
+        }
+      } catch (e) {
+        EasyLoading.dismiss();
+        EasyLoading.showError('发送失败: ${e.toString()}');
+      } finally {
+        setState(() {
+          _isSending = false;
+        });
       }
-    } catch (e) {
-      EasyLoading.dismiss();
-      EasyLoading.showError('发送失败: ${e.toString()}');
-    } finally {
-      setState(() {
-        _isSending = false;
-      });
-    }
+    });
   }
 
   /// 确认构建蓝图
   void _confirmBlueprint() async {
-    if (_sessionId == null) return;
+    if (_sessionId == null || _isConfirmingBlueprint || _isSending) return;
 
-    try {
-      setState(() {
-        _isConfirmingBlueprint = true;
-        _isSending = true;
-      });
+    await _runSubmitAction(_SubmitAction.confirmBlueprint, () async {
+      try {
+        setState(() {
+          _isConfirmingBlueprint = true;
+          _isSending = true;
+        });
 
-      final confirmResponse = await _agentConfirmApi.confirm(
-        sessionId: _sessionId!,
-      );
+        final confirmResponse = await _agentConfirmApi.confirm(
+          sessionId: _sessionId!,
+        );
 
-      if (confirmResponse != null) {
-        _sessionId = confirmResponse.sessionId;
-        _handleChatResponse(confirmResponse);
+        if (confirmResponse != null) {
+          _sessionId = confirmResponse.sessionId;
+          _handleChatResponse(confirmResponse);
 
-        // 检查响应中是否有工作流数据，如果有则显示工作流详情组件
-        final responseData = confirmResponse.response;
-        if (responseData.workflow != null) {
-          setState(() {
-            // 设置工作流数据，用于显示工作流详情
-            _currentWorkflow = responseData.workflow;
+          // 检查响应中是否有工作流数据，如果有则显示工作流详情组件
+          final responseData = confirmResponse.response;
+          if (responseData.workflow != null) {
+            setState(() {
+              // 设置工作流数据，用于显示工作流详情
+              _currentWorkflow = responseData.workflow;
 
-            // 从workflow的meta中提取工作流详情（人物名称、动作手势、语音内容等）
-            final workflowMeta = responseData.workflow!.meta;
-            if (workflowMeta != null) {
-              _workflowData = Map<String, dynamic>.from(workflowMeta);
-              // 确保包含基本字段
-              if (responseData.workflow!.name != null) {
-                _workflowData!['name'] = responseData.workflow!.name;
+              // 从workflow的meta中提取工作流详情（人物名称、动作手势、语音内容等）
+              final workflowMeta = responseData.workflow!.meta;
+              if (workflowMeta != null) {
+                _workflowData = Map<String, dynamic>.from(workflowMeta);
+                // 确保包含基本字段
+                if (responseData.workflow!.name != null) {
+                  _workflowData!['name'] = responseData.workflow!.name;
+                }
+                if (responseData.metadata?.nodeCount != null) {
+                  _workflowData!['nodeCount'] =
+                      responseData.metadata!.nodeCount.toString();
+                }
+              } else {
+                // 如果没有meta，使用默认结构
+                _workflowData = {
+                  'name': responseData.workflow!.name ?? '',
+                  'nodeCount':
+                      responseData.metadata?.nodeCount?.toString() ?? '0',
+                };
               }
-              if (responseData.metadata?.nodeCount != null) {
-                _workflowData!['nodeCount'] =
-                    responseData.metadata!.nodeCount.toString();
-              }
-            } else {
-              // 如果没有meta，使用默认结构
-              _workflowData = {
-                'name': responseData.workflow!.name ?? '',
-                'nodeCount':
-                    responseData.metadata?.nodeCount?.toString() ?? '0',
-              };
-            }
 
-            // 设置状态为workflowReady以显示工作流详情组件
-            _interactionState = InteractionState.workflowReady;
-            _addCardMessageIfNeeded(MessageType.workflowCard);
-            // 触发workflow_ready，点亮节点3
-            if (_currentStep < 3) {
-              _currentStep = 3;
-            }
-            // 标记蓝图已构建，更新蓝图卡片文案
-            _isBlueprintBuilt = true;
-            // 新工作流就绪，重置构建 / 部署状态
-            _isWorkflowCreated = false;
-            _isWorkflowDeployed = false;
-          });
+              // 设置状态为workflowReady以显示工作流详情组件
+              _interactionState = InteractionState.workflowReady;
+              _addCardMessageIfNeeded(MessageType.workflowCard);
+              // 触发workflow_ready，点亮节点3
+              if (_currentStep < 3) {
+                _currentStep = 3;
+              }
+              // 标记蓝图已构建，更新蓝图卡片文案
+              _isBlueprintBuilt = true;
+              // 新工作流就绪，重置构建 / 部署状态
+              _isWorkflowCreated = false;
+              _isWorkflowDeployed = false;
+            });
+          }
+        } else {
+          EasyLoading.showError('确认失败，请重试');
         }
-      } else {
-        EasyLoading.showError('确认失败，请重试');
+      } catch (e) {
+        EasyLoading.showError('确认失败: ${e.toString()}');
+      } finally {
+        setState(() {
+          _isConfirmingBlueprint = false;
+          _isSending = false;
+        });
       }
-    } catch (e) {
-      EasyLoading.showError('确认失败: ${e.toString()}');
-    } finally {
-      setState(() {
-        _isConfirmingBlueprint = false;
-        _isSending = false;
-      });
-    }
+    });
   }
 
   /// 将 Workflow 转为可序列化的 Map
@@ -1384,79 +1456,81 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
       return;
     }
 
-    try {
-      setState(() {
-        _isCreatingWorkflow = true;
-      });
+    await _runSubmitAction(_SubmitAction.confirmWorkflow, () async {
+      try {
+        setState(() {
+          _isCreatingWorkflow = true;
+        });
 
-      // 构建工作流阶段：在 Code console 展示当前 workflow JSON（等待 n8n 链接前）
-      final jsonStr = _currentWorkflow != null
-          ? const JsonEncoder.withIndent(
-              '  ',
-            ).convert(_workflowToMap(_currentWorkflow!))
-          : null;
-      widget.onCodeConsoleUpdate?.call(true, jsonStr);
+        // 构建工作流阶段：在 Code console 展示当前 workflow JSON（等待 n8n 链接前）
+        final jsonStr = _currentWorkflow != null
+            ? const JsonEncoder.withIndent(
+                '  ',
+              ).convert(_workflowToMap(_currentWorkflow!))
+            : null;
+        widget.onCodeConsoleUpdate?.call(true, jsonStr);
 
-      // 检查sessionId是否存在
-      if (_sessionId == null || _sessionId!.isEmpty) {
-        EasyLoading.showError('会话ID不存在，无法创建工作流');
+        // 检查sessionId是否存在
+        if (_sessionId == null || _sessionId!.isEmpty) {
+          EasyLoading.showError('会话ID不存在，无法创建工作流');
+          setState(() {
+            _isCreatingWorkflow = false;
+          });
+          return;
+        }
+
+        // 调用创建workflow接口，传递sessionId
+        final createResponse = await _workflowApi.createWorkflow(
+          sessionId: _sessionId!,
+        );
+
+        if (createResponse != null) {
+          // 创建成功，更新webview URL
+          if (widget.onWorkflowUrlUpdated != null) {
+            widget.onWorkflowUrlUpdated!(createResponse.workflowUrl);
+          }
+          // n8n 流程图显示后收起 Code console，停止其内容滚动
+          widget.onCodeConsoleUpdate?.call(false, null);
+
+          // 往 _messages 加 MessageType.success，该条对应卡片为「工作流创建成功」+「开始配置」按钮
+          setState(() {
+            _currentWorkflowId = createResponse.workflowId;
+            _interactionState = InteractionState.deployment;
+            _currentStep = 4;
+            _isConfiguring = false;
+            _isWorkflowCreated = true;
+            _messages.add(
+              InteractionMessage(
+                text: '工作流创建成功: ${createResponse.workflowName}',
+                isUser: false,
+                type: MessageType.success,
+                data: {
+                  'workflowId': createResponse.workflowId,
+                  'workflowName': createResponse.workflowName,
+                  'workflowUrl': createResponse.workflowUrl,
+                  'showStartConfig': true,
+                },
+              ),
+            );
+          });
+
+          EasyLoading.showSuccess('工作流已创建并加载');
+        } else {
+          EasyLoading.showError('创建工作流失败');
+          widget.onCodeConsoleUpdate?.call(false, null);
+        }
+      } catch (e) {
+        EasyLoading.dismiss();
+        EasyLoading.showError('创建工作流失败: ${e.toString()}');
+        widget.onCodeConsoleUpdate?.call(false, null);
+      } finally {
         setState(() {
           _isCreatingWorkflow = false;
-        });
-        return;
-      }
-
-      // 调用创建workflow接口，传递sessionId
-      final createResponse = await _workflowApi.createWorkflow(
-        sessionId: _sessionId!,
-      );
-
-      if (createResponse != null) {
-        // 创建成功，更新webview URL
-        if (widget.onWorkflowUrlUpdated != null) {
-          widget.onWorkflowUrlUpdated!(createResponse.workflowUrl);
-        }
-        // n8n 流程图显示后收起 Code console，停止其内容滚动
-        widget.onCodeConsoleUpdate?.call(false, null);
-
-        // 往 _messages 加 MessageType.success，该条对应卡片为「工作流创建成功」+「开始配置」按钮
-        setState(() {
-          _currentWorkflowId = createResponse.workflowId;
-          _interactionState = InteractionState.deployment;
-          _currentStep = 4;
+          // 确保重置配置状态，避免按钮一直显示"配置中..."
           _isConfiguring = false;
-          _isWorkflowCreated = true;
-          _messages.add(
-            InteractionMessage(
-              text: '工作流创建成功: ${createResponse.workflowName}',
-              isUser: false,
-              type: MessageType.success,
-              data: {
-                'workflowId': createResponse.workflowId,
-                'workflowName': createResponse.workflowName,
-                'workflowUrl': createResponse.workflowUrl,
-                'showStartConfig': true,
-              },
-            ),
-          );
         });
-
-        EasyLoading.showSuccess('工作流已创建并加载');
-      } else {
-        EasyLoading.showError('创建工作流失败');
-        widget.onCodeConsoleUpdate?.call(false, null);
       }
-    } catch (e) {
-      EasyLoading.dismiss();
-      EasyLoading.showError('创建工作流失败: ${e.toString()}');
-      widget.onCodeConsoleUpdate?.call(false, null);
-    } finally {
-      setState(() {
-        _isCreatingWorkflow = false;
-        // 确保重置配置状态，避免按钮一直显示"配置中..."
-        _isConfiguring = false;
-      });
-    }
+    });
   }
 
   /// 开始配置流程
@@ -1670,52 +1744,61 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
 
   /// 处理热插拔确认（点击"已拼装完毕"按钮后）
   Future<void> _handleHotPluggingConfirm(ResponseData responseData) async {
-    if (_sessionId == null) return;
+    if (_sessionId == null || _isSending) return;
 
-    try {
-      EasyLoading.show(status: '确认中...');
+    await _runSubmitAction(_SubmitAction.hotPlugConfirm, () async {
+      try {
+        setState(() {
+          _isSending = true;
+        });
+        EasyLoading.show(status: '确认中...');
 
-      // 如果有 currentNode，调用 confirmNode 接口
-      if (responseData.currentNode != null) {
-        final effectiveNodeName = _getConfirmNodeNameForFace(
-          responseData.currentNode!.name,
-        );
-        final sub = _buildConfirmNodeSub(effectiveNodeName);
-        final confirmResponse = await _agentConfirmNodeApi.confirmNode(
-          sessionId: _sessionId!,
-          nodeName: effectiveNodeName,
-          sub: sub,
-        );
+        // 如果有 currentNode，调用 confirmNode 接口
+        if (responseData.currentNode != null) {
+          final effectiveNodeName = _getConfirmNodeNameForFace(
+            responseData.currentNode!.name,
+          );
+          final sub = _buildConfirmNodeSub(effectiveNodeName);
+          final confirmResponse = await _agentConfirmNodeApi.confirmNode(
+            sessionId: _sessionId!,
+            nodeName: effectiveNodeName,
+            sub: sub,
+          );
 
-        EasyLoading.dismiss();
+          EasyLoading.dismiss();
 
-        if (confirmResponse != null) {
-          _sessionId = confirmResponse.sessionId;
-          _clearFaceUploadStateIfNeeded(sub);
-          _handleResponse(confirmResponse.response);
+          if (confirmResponse != null) {
+            _sessionId = confirmResponse.sessionId;
+            _clearFaceUploadStateIfNeeded(sub);
+            _handleResponse(confirmResponse.response);
+          } else {
+            EasyLoading.showError('确认失败');
+          }
         } else {
-          EasyLoading.showError('确认失败');
-        }
-      } else {
-        // 如果没有 currentNode，调用 chat 接口发送确认消息
-        final chatResponse = await _agentChatApi.sendMessage(
-          message: '已拼装完毕',
-          sessionId: _sessionId,
-        );
+          // 如果没有 currentNode，调用 chat 接口发送确认消息
+          final chatResponse = await _agentChatApi.sendMessage(
+            message: '已拼装完毕',
+            sessionId: _sessionId,
+          );
 
+          EasyLoading.dismiss();
+
+          if (chatResponse != null) {
+            _sessionId = chatResponse.sessionId;
+            _handleResponse(chatResponse.response);
+          } else {
+            EasyLoading.showError('确认失败');
+          }
+        }
+      } catch (e) {
         EasyLoading.dismiss();
-
-        if (chatResponse != null) {
-          _sessionId = chatResponse.sessionId;
-          _handleResponse(chatResponse.response);
-        } else {
-          EasyLoading.showError('确认失败');
-        }
+        EasyLoading.showError('确认失败: ${e.toString()}');
+      } finally {
+        setState(() {
+          _isSending = false;
+        });
       }
-    } catch (e) {
-      EasyLoading.dismiss();
-      EasyLoading.showError('确认失败: ${e.toString()}');
-    }
+    });
   }
 
   String? _extractN8nAuthToken(String? rawValue) {
@@ -1799,9 +1882,7 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
   /// 通过 MQTT 发送 workflow JSON
   Future<bool> _sendWorkflowViaMqtt(Map<String, dynamic> workflowJson) async {
     try {
-      if (_mqttService == null) {
-        _mqttService = MqttDeviceService();
-      }
+      _mqttService ??= MqttDeviceService();
 
       if (!_mqttService!.isConnected) {
         print('[配置流程] ⚠️ MQTT 未连接，尝试连接...');
@@ -2086,8 +2167,12 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
   void _addCardMessageIfNeeded(MessageType cardType) {
     if (cardType != MessageType.blueprintCard &&
         cardType != MessageType.workflowCard &&
-        cardType != MessageType.deploymentCard) return;
-    if (_messages.any((m) => m.type == cardType)) return;
+        cardType != MessageType.deploymentCard) {
+      return;
+    }
+    if (_messages.any((m) => m.type == cardType)) {
+      return;
+    }
     _messages.add(InteractionMessage(text: '', isUser: false, type: cardType));
   }
 
@@ -2333,6 +2418,8 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
                       ? null
                       : () => _handleHotPluggingConfirm(responseData),
                   isConfirmed: _isHotPlugConfirmed,
+                  isSubmitting:
+                      _isSubmitActionActive(_SubmitAction.hotPlugConfirm),
                   maxButtonWidth: buttonMaxWidth,
                 ),
               ),
@@ -2512,8 +2599,10 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
     return ImagePreview(
       imageUrl: null,
       imageBase64: _selectedImageBase64,
+      isSubmitting: _isUploading,
       onConfirm: _confirmImageUpload, // 上传图片逻辑
       onReselect: _handleImagePick,
+      submittingText: '上传中...',
     );
   }
 
@@ -2523,10 +2612,10 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
       imageUrl: null,
       imageBase64: _uploadedImageBase64,
       profile: _uploadProfile,
-      onConfirm: () async {
-        // 确认后继续刷新对话
-        await _refreshChatAfterUpload();
-      },
+      isSubmitting:
+          _isUploading || _isSubmitActionActive(_SubmitAction.imageContinue),
+      onConfirm: _confirmUploadedImage,
+      submittingText: _isUploading ? '处理中...' : '提交中...',
     );
   }
 
@@ -2537,6 +2626,7 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
     return SelectInteractionWidget(
       interaction: _currentInteraction!,
       onSubmit: _submitSelection,
+      isSubmitting: _isSubmitActionActive(_SubmitAction.selectionSubmit),
     );
   }
 
@@ -2558,6 +2648,7 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
       onConfirm: _confirmWorkflow,
       isCreated: _isWorkflowCreated,
       isCreating: _isCreatingWorkflow,
+      isContinuing: _isSubmitActionActive(_SubmitAction.continueChat),
       maxButtonWidth: buttonMaxWidth,
     );
   }
@@ -2609,30 +2700,32 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
       return;
     }
 
-    try {
-      setState(() {
-        _isDeployingWorkflow = true;
-      });
+    await _runSubmitAction(_SubmitAction.deployWorkflow, () async {
+      try {
+        setState(() {
+          _isDeployingWorkflow = true;
+        });
 
-      EasyLoading.show(status: '部署中...');
-      await _fetchWorkflowAndSendMqtt(_currentWorkflowId!);
-      EasyLoading.dismiss();
+        EasyLoading.show(status: '部署中...');
+        await _fetchWorkflowAndSendMqtt(_currentWorkflowId!);
+        EasyLoading.dismiss();
 
-      setState(() {
-        _isWorkflowDeployed = true;
-        _isDeployingWorkflow = false;
-        _currentStep = 4;
-      });
-      EasyLoading.showSuccess('已部署');
-    } catch (e) {
-      EasyLoading.dismiss();
-      final errorMessage =
-          (e is StateError ? e.message : e.toString()).toString();
-      EasyLoading.showError(errorMessage);
-      setState(() {
-        _isDeployingWorkflow = false;
-      });
-    }
+        setState(() {
+          _isWorkflowDeployed = true;
+          _isDeployingWorkflow = false;
+          _currentStep = 4;
+        });
+        EasyLoading.showSuccess('已部署');
+      } catch (e) {
+        EasyLoading.dismiss();
+        final errorMessage =
+            (e is StateError ? e.message : e.toString()).toString();
+        EasyLoading.showError(errorMessage);
+        setState(() {
+          _isDeployingWorkflow = false;
+        });
+      }
+    });
   }
 
   // 底部输入区域（参考图1：硬边输入框 + SEND）
@@ -2877,9 +2970,10 @@ class _AiInteractionWindowState extends State<AiInteractionWindow> {
   }
 
   bool get _isBusySending {
-    return _panelMode == _AssistantPanelMode.dialogue
+    final modeBusy = _panelMode == _AssistantPanelMode.dialogue
         ? _dialoguePanelState.isSending
         : _isSending;
+    return modeBusy || _isUploading || _activeSubmitAction != null;
   }
 
   Widget _buildModeToggleBar() {

@@ -1,7 +1,7 @@
 /**
  * [INPUT]: 依赖 TesseractStudioComponent、路由/项目服务 stub 与 Electron IPC mock。
- * [OUTPUT]: 对外提供 TesseractStudioComponent 的活动工作区同步回归测试。
- * [POS]: editors/tesseract-studio 的契约测试，锁住全局活动工作区 `workflowId` 聚焦与延迟结果防串台。
+ * [OUTPUT]: 对外提供 TesseractStudioComponent 的活动工作区同步与组装恢复回归测试。
+ * [POS]: editors/tesseract-studio 的契约测试，锁住全局活动工作区 `workflowId` 聚焦、延迟结果防串台与 workflow 页直接进入硬件组装链路。
  * [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md
  */
 
@@ -15,6 +15,10 @@ describe('TesseractStudioComponent', () => {
   let message: jasmine.SpyObj<any>;
   let projectService: any;
   let tesseractProjectService: any;
+  let uiService: any;
+  let assemblyOrchestrator: any;
+  let desktopDigitalTwinState: any;
+  let tesseractChatService: any;
 
   function createQueryMap(values: Record<string, string>) {
     return {
@@ -27,7 +31,7 @@ describe('TesseractStudioComponent', () => {
     router.navigate.and.resolveTo(true);
     sanitizer = jasmine.createSpyObj('DomSanitizer', ['bypassSecurityTrustResourceUrl']);
     sanitizer.bypassSecurityTrustResourceUrl.and.callFake((value: string) => value);
-    message = jasmine.createSpyObj('NzMessageService', ['warning', 'success', 'error']);
+    message = jasmine.createSpyObj('NzMessageService', ['warning', 'success', 'error', 'info']);
     projectService = {
       currentProjectPath: '',
     };
@@ -42,9 +46,39 @@ describe('TesseractStudioComponent', () => {
       persistWorkflowSnapshot: jasmine
         .createSpy('persistWorkflowSnapshot')
         .and.callFake((_projectPath: string, snapshot: Record<string, unknown>) => snapshot),
+      persistHardwareDispatch: jasmine
+        .createSpy('persistHardwareDispatch')
+        .and.callFake((_projectPath: string, state: Record<string, unknown>) => ({
+          metadata: {
+            hardwareDispatch: state,
+          },
+        })),
       readManifest: jasmine.createSpy('readManifest').and.returnValue(null),
       readWorkflowSnapshot: jasmine.createSpy('readWorkflowSnapshot').and.returnValue(null),
       acknowledgeWorkflowViewTarget: jasmine.createSpy('acknowledgeWorkflowViewTarget'),
+    };
+    uiService = {
+      isSingleWindowUi: false,
+      openWorkbenchPanel: jasmine.createSpy('openWorkbenchPanel'),
+      clearWorkbenchPayload: jasmine.createSpy('clearWorkbenchPayload'),
+      isToolOpen: jasmine.createSpy('isToolOpen').and.returnValue(false),
+    };
+    assemblyOrchestrator = {
+      lastCompletion$: of(null),
+      startSession: jasmine.createSpy('startSession').and.callFake((payload: Record<string, unknown>) => ({
+        ...payload,
+        startedAt: '2026-04-15T00:00:00.000Z',
+      })),
+    };
+    desktopDigitalTwinState = {
+      applyScene: jasmine.createSpy('applyScene').and.callFake((payload: Record<string, unknown>) => payload),
+    };
+    tesseractChatService = {
+      confirmNode: jasmine.createSpy('confirmNode').and.resolveTo({
+        response: {
+          type: 'config_complete',
+        },
+      }),
     };
 
     (window as any).electronAPI = {
@@ -57,6 +91,27 @@ describe('TesseractStudioComponent', () => {
       },
       tesseract: {
         start: jasmine.createSpy('start').and.resolveTo({ healthy: true }),
+        getConfigState: jasmine.createSpy('getConfigState').and.resolveTo({
+          data: {
+            currentNode: { name: 'camera_node' },
+            pendingHardwareNodeNames: ['camera_node'],
+            pendingHardwareCount: 1,
+            actionReady: false,
+            digitalTwinScene: {
+              base_model_id: 'device-001',
+              models: [],
+            },
+          },
+        }),
+        hardwareUpload: jasmine.createSpy('hardwareUpload').and.resolveTo({
+          success: true,
+          data: {
+            status: 'acknowledged',
+            response: {
+              status: 'started',
+            },
+          },
+        }),
       },
     };
 
@@ -71,7 +126,11 @@ describe('TesseractStudioComponent', () => {
       sanitizer,
       message,
       projectService,
-      tesseractProjectService
+      tesseractProjectService,
+      uiService,
+      assemblyOrchestrator,
+      desktopDigitalTwinState,
+      tesseractChatService,
     );
   });
 
@@ -126,5 +185,43 @@ describe('TesseractStudioComponent', () => {
     });
     expect(component.showWorkflowPlaceholder).toBeTrue();
     expect(component.safeEditorUrl).toBeNull();
+  });
+
+  it('starts the hardware assembly surface directly from persisted snapshot state', async () => {
+    component.projectPath = '/demo';
+    component.snapshot = {
+      schemaVersion: 1,
+      projectName: 'demo',
+      updatedAt: '2026-04-15T00:00:00.000Z',
+      sessionId: 'session-1',
+      workflowId: 'wf-1',
+      workflow: { nodes: [] },
+      metadata: {
+        phase: 'hot_plugging',
+        assemblyResume: {
+          nodeName: 'camera_node',
+          components: [{ componentId: 'camera', displayName: '摄像头' }],
+          allPendingHardwareNodeNames: ['camera_node'],
+        },
+      },
+    };
+
+    await component.continueHardwareAssemblyFlow();
+
+    expect((window as any).electronAPI.tesseract.getConfigState).toHaveBeenCalledWith({
+      projectPath: '/demo',
+      sessionId: 'session-1',
+    });
+    expect(assemblyOrchestrator.startSession).toHaveBeenCalledWith(jasmine.objectContaining({
+      mode: 'hardware-assembly',
+      sessionId: 'session-1',
+      nodeName: 'camera_node',
+      components: [{ componentId: 'camera', displayName: '摄像头' }],
+      allPendingHardwareNodeNames: ['camera_node'],
+    }));
+    expect(uiService.openWorkbenchPanel).toHaveBeenCalledWith('digital-twin', jasmine.objectContaining({
+      mode: 'hardware-assembly',
+      sessionId: 'session-1',
+    }));
   });
 });

@@ -1,11 +1,13 @@
 /**
  * [INPUT]: 依赖 IntakeAgent/ConfigAgent/SessionService
- * [OUTPUT]: 对外提供 Agent 交互、dialogue-mode 真相源桥接、MQTT hardware runtime 门面、publishImageViaMqtt rec_img 图片发布、配置流程入口与会话级 trace 订阅能力，并把配置/对话阶段响应补齐 digital twin scene。
+ * [OUTPUT]: 对外提供 Agent 交互、dialogue-mode 真相源桥接、MQTT hardware runtime 门面、audio-test/raw publish、publishImageViaMqtt rec_img 图片发布、配置流程入口与会话级 trace 订阅能力，并把配置/对话阶段响应补齐 digital twin scene；save-skill 在 backend 重启后可回退到项目 workflow snapshot 恢复保存上下文；031 起 upload/save-skill 统一按 actionReady 门禁判定；`workflow_ready` 与 hardware workflow upload 时自动把对应 workflow JSON 归档到 `backend/data/workflow/`。
  * [POS]: agent-server 层的服务编排器，也是 HTTP/WS 共享的调试流桥接点、对话模式桥接点、硬件 runtime 门面与统一数字孪生投影出口。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
 
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { IntakeAgent } from '../agents/intake-agent';
 import { SessionService } from '../agents/session-service';
 import { ConfigAgent } from '../agents/config-agent';
@@ -18,25 +20,31 @@ import { DialogueModeService } from '../agents/dialogue-mode/dialogue-mode-servi
 import type { DialogueModeRouter } from '../agents/dialogue-mode/dialogue-mode-router';
 import {
   MqttHardwareRuntime,
+  type MqttHardwareRuntimeAudioTestMessageType,
   type MqttHardwareRuntimeCommandKind,
   type MqttHardwareRuntimeCommandReceipt,
+  type MqttHardwareRuntimeRawPublishReceipt,
   MqttHardwareRuntimeStatus,
 } from '../agents/mqtt-hardware-runtime';
 import {
   buildSkillSaveCandidateFromSession,
+  buildSkillSaveCandidateFromSnapshot,
+  readPersistedWorkflowSnapshot,
   SkillLibraryRepository,
   toDialogueModeLibrarySkillPreview,
 } from '../agents/dialogue-mode/skill-library-repository';
 import {
   AgentResponse,
+  ClarificationCategory,
   AgentTraceEvent,
   ConfigAgentState,
   DialogueModeHardwareEventInput,
   DialogueModeHardwareSnapshot,
   DialogueModeInteractionMode,
+  SkillSaveCandidate,
   WorkflowDefinition,
 } from '../agents/types';
-import { logger } from '../utils/logger';
+import { logger, toBeijingFilenameTimestamp } from '../utils/logger';
 
 type DigitalTwinAttachableResponse = Extract<
   AgentResponse,
@@ -61,6 +69,10 @@ type NodeConfigPayload = {
   sub?: Record<string, string>;
 };
 
+const WORKFLOW_ARCHIVE_DIRECTORY_SEGMENTS = ['data', 'workflow'] as const;
+const MAX_WORKFLOW_ARCHIVE_COLLISION_ATTEMPTS = 100;
+const CONFIG_UPLOAD_ARCHIVE_TAG = 'config_upload';
+
 export interface AgentChatOptions {
   interactionMode?: DialogueModeInteractionMode;
   teachingContext?: {
@@ -68,6 +80,9 @@ export interface AgentChatOptions {
     prefilledGoal?: string;
     sourceSessionId?: string;
   } | null;
+  clarificationContext?: {
+    category: ClarificationCategory;
+  };
 }
 
 export class AgentService {
@@ -81,7 +96,11 @@ export class AgentService {
     configAgent?: ConfigAgent,
     private skillLibraryRepository: SkillLibraryRepository = new SkillLibraryRepository(),
     dialogueModeRouter?: DialogueModeRouter,
-    private hardwareRuntime?: MqttHardwareRuntime
+    private hardwareRuntime?: MqttHardwareRuntime,
+    private workflowArchiveDirectory = path.resolve(
+      process.cwd(),
+      ...WORKFLOW_ARCHIVE_DIRECTORY_SEGMENTS
+    )
   ) {
     this.configAgentInstance = configAgent ?? new ConfigAgent(
       this.sessionService,
@@ -128,8 +147,11 @@ export class AgentService {
         dialogueResponse ??
         (session.phase === 'configuring'
           ? await this.configAgentInstance.processConfigurationInput(session.id, message)
-          : await this.intakeAgent.processUserInput(message, session.id));
+          : await this.intakeAgent.processUserInput(message, session.id, {
+              clarificationContext: options.clarificationContext,
+            }));
       const response = this.attachDigitalTwinScene(session.id, rawResponse);
+      this.enrichWithSkillRecommendations(response, message);
       logger.debug('AgentService: chat response', {
         sessionId: session.id,
         responseType: response.type,
@@ -202,9 +224,19 @@ export class AgentService {
     workflow: WorkflowDefinition | Record<string, unknown> | null | undefined,
     sessionId?: string
   ): Promise<MqttHardwareRuntimeCommandReceipt> {
-    const resolvedWorkflow = workflow ?? (sessionId ? this.sessionService.getWorkflow(sessionId) : null);
+    if (sessionId) {
+      this.assertSessionReadyForHardwareUpload(sessionId);
+    }
+
+    const resolvedWorkflow = workflow
+      ?? (sessionId ? this.sessionService.getWorkflow(sessionId) : null)
+      ?? (sessionId ? this.sessionService.getConfigAgentState(sessionId)?.workflowSnapshot : null);
     if (!resolvedWorkflow) {
       throw new Error('workflow or sessionId is required');
+    }
+
+    if (sessionId) {
+      this.archiveWorkflowSnapshot(sessionId, resolvedWorkflow, CONFIG_UPLOAD_ARCHIVE_TAG);
     }
 
     return this.hardwareRuntime?.uploadWorkflow(resolvedWorkflow as WorkflowDefinition)
@@ -223,6 +255,24 @@ export class AgentService {
   }): Promise<MqttHardwareRuntimeCommandReceipt> {
     return this.hardwareRuntime?.sendHardwareCommand(params)
       ?? this.createDisabledReceipt(this.resolveCommandKind(params.deviceType, params.cmd));
+  }
+
+  async publishAudioTest(
+    messageType: MqttHardwareRuntimeAudioTestMessageType,
+  ): Promise<MqttHardwareRuntimeRawPublishReceipt> {
+    if (!this.hardwareRuntime) {
+      throw new Error('设备未连接，请先连接硬件后再测试');
+    }
+    logger.info('AgentService: publishing audio test over MQTT', {
+      messageType,
+    });
+    const receipt = await this.hardwareRuntime.publishAudioTestMessage(messageType);
+    logger.info('AgentService: audio test publish succeeded', {
+      messageType,
+      topic: receipt.topic,
+      publishedAt: receipt.publishedAt,
+    });
+    return receipt;
   }
 
   // ── 021-mqtt-image-upload: 以 rec_img 协议将图片发送至硬件 ──
@@ -285,18 +335,107 @@ export class AgentService {
     return this.skillLibraryRepository.list().map(toDialogueModeLibrarySkillPreview);
   }
 
-  saveSkill(sessionId: string) {
+  deleteSkill(skillId: string): boolean {
+    return this.skillLibraryRepository.deleteBySkillId(skillId);
+  }
+
+  saveSkill(sessionId: string, projectPath?: string) {
     const session = this.sessionService.getSession(sessionId);
-    if (!session?.workflow) {
+    const recovered = this.restoreSaveSkillContextFromProject(sessionId, projectPath);
+    const workflow = session?.workflow
+      ?? session?.configAgentState?.workflowSnapshot
+      ?? recovered?.workflow
+      ?? null;
+    if (!workflow) {
       throw new Error('当前会话没有可保存的工作流');
     }
 
-    const candidate = buildSkillSaveCandidateFromSession(session);
+    const candidate = (session ? buildSkillSaveCandidateFromSession(session) : null) ?? recovered?.candidate ?? null;
     if (!candidate) {
+      if (session?.configAgentState && !this.isConfigActionReady(session.configAgentState)) {
+        throw new Error(this.buildConfigActionBlockedMessage(session.configAgentState, '存入 Skills 库'));
+      }
       throw new Error('当前会话还没有可存入技能库的教学成果');
     }
 
-    return this.skillLibraryRepository.save(candidate, session.workflow);
+    return this.skillLibraryRepository.save(candidate, workflow);
+  }
+
+  private assertSessionReadyForHardwareUpload(sessionId: string): void {
+    const configState = this.sessionService.getConfigAgentState(sessionId);
+    if (configState && !this.isConfigActionReady(configState)) {
+      throw new Error(this.buildConfigActionBlockedMessage(configState, '下发工作流'));
+    }
+  }
+
+  private isConfigActionReady(configState: ConfigAgentState | null | undefined): boolean {
+    if (!configState) {
+      return true;
+    }
+
+    if (typeof configState.actionReady === 'boolean') {
+      return configState.actionReady;
+    }
+
+    const pendingHardwareNodeNames = Array.isArray(configState.pendingHardwareNodeNames)
+      ? configState.pendingHardwareNodeNames
+      : [];
+    const assemblyCompleted = typeof configState.assemblyCompleted === 'boolean'
+      ? configState.assemblyCompleted
+      : pendingHardwareNodeNames.length === 0;
+    return configState.completed && assemblyCompleted;
+  }
+
+  private buildConfigActionBlockedMessage(
+    configState: ConfigAgentState,
+    actionLabel: '下发工作流' | '存入 Skills 库'
+  ): string {
+    if (!configState.completed) {
+      return `当前会话仍处于软件配置阶段，请先完成全部配置再${actionLabel}`;
+    }
+
+    return `当前会话仍处于硬件组装阶段，请先完成全部拼装再${actionLabel}`;
+  }
+
+  private restoreSaveSkillContextFromProject(
+    sessionId: string,
+    projectPath?: string
+  ): { workflow: WorkflowDefinition; candidate: SkillSaveCandidate } | null {
+    const normalizedProjectPath = String(projectPath || '').trim();
+    if (!normalizedProjectPath) {
+      return null;
+    }
+
+    const snapshot = readPersistedWorkflowSnapshot(normalizedProjectPath);
+    if (!snapshot) {
+      return null;
+    }
+
+    const snapshotSessionId = String(snapshot.sessionId || '').trim();
+    if (snapshotSessionId && snapshotSessionId !== sessionId) {
+      logger.warn('AgentService: save-skill snapshot session mismatch', {
+        sessionId,
+        snapshotSessionId,
+        projectPath: normalizedProjectPath,
+      });
+      return null;
+    }
+
+    const workflow = snapshot.workflow && typeof snapshot.workflow === 'object'
+      ? snapshot.workflow as WorkflowDefinition
+      : null;
+    const candidate = buildSkillSaveCandidateFromSnapshot(snapshot, sessionId);
+    if (!workflow || !candidate) {
+      return null;
+    }
+
+    logger.info('AgentService: restored save-skill context from workflow snapshot', {
+      sessionId,
+      projectPath: normalizedProjectPath,
+      workflowId: candidate.workflowId || snapshot.workflowId || null,
+    });
+
+    return { workflow, candidate };
   }
 
   async confirm(sessionId: string): Promise<{ sessionId: string; response: AgentResponse }> {
@@ -326,6 +465,7 @@ export class AgentService {
         messagePreview: this.preview(response.message),
       });
       this.logWorkflowDocument(sessionId, response);
+      this.archiveWorkflowDocument(sessionId, response);
       this.sessionService.appendTrace(sessionId, {
         source: 'agent_service',
         phase: 'response',
@@ -426,6 +566,25 @@ export class AgentService {
     return `${normalized.slice(0, 157)}...`;
   }
 
+  // ── Skills 推荐注入 ────────────────────────────────────────
+  private enrichWithSkillRecommendations(response: AgentResponse, userMessage: string): void {
+    if (response.type !== 'summary_ready') return;
+    try {
+      const keywords = userMessage
+        .replace(/[，。！？、\s]+/g, ' ')
+        .split(' ')
+        .filter((w) => w.length >= 2);
+      const matches = this.skillLibraryRepository.findByKeywords(keywords);
+      if (matches.length === 0) return;
+      const recommendations = matches
+        .map((s) => `- **${s.displayName}**：${s.summary ?? ''}`)
+        .join('\n');
+      response.message += `\n\n**已有类似技能**\n${recommendations}\n> 你可以直接使用已有技能，或继续构建新版本。`;
+    } catch {
+      // 静默降级：不影响主流程
+    }
+  }
+
   private logWorkflowDocument(sessionId: string, response: AgentResponse): void {
     if (response.type !== 'workflow_ready') {
       return;
@@ -436,6 +595,109 @@ export class AgentService {
       sessionId,
       JSON.stringify(response.workflow, null, 2)
     );
+  }
+
+  private archiveWorkflowDocument(sessionId: string, response: AgentResponse): void {
+    if (response.type !== 'workflow_ready') {
+      return;
+    }
+
+    this.archiveWorkflowSnapshot(sessionId, response.workflow);
+  }
+
+  private archiveWorkflowSnapshot(
+    sessionId: string,
+    workflow: WorkflowDefinition | Record<string, unknown>,
+    archiveTag?: string
+  ): void {
+    const workflowDocument = JSON.stringify(workflow, null, 2);
+    this.writeWorkflowArchive(sessionId, workflowDocument, archiveTag);
+  }
+
+  private writeWorkflowArchive(
+    sessionId: string,
+    workflowDocument: string,
+    archiveTag?: string
+  ): void {
+    const archiveDirectory = this.workflowArchiveDirectory;
+    const timestampToken = toBeijingFilenameTimestamp();
+    let attemptedFileName = this.buildWorkflowArchiveFileName(timestampToken, sessionId, 0, archiveTag);
+
+    try {
+      fs.mkdirSync(archiveDirectory, { recursive: true });
+
+      for (
+        let collisionIndex = 0;
+        collisionIndex < MAX_WORKFLOW_ARCHIVE_COLLISION_ATTEMPTS;
+        collisionIndex += 1
+      ) {
+        attemptedFileName = this.buildWorkflowArchiveFileName(
+          timestampToken,
+          sessionId,
+          collisionIndex,
+          archiveTag
+        );
+        const archivePath = path.join(archiveDirectory, attemptedFileName);
+
+        try {
+          fs.writeFileSync(archivePath, workflowDocument, {
+            encoding: 'utf-8',
+            flag: 'wx',
+          });
+          logger.info('AgentService: workflow archive written', {
+            sessionId,
+            archiveTag: archiveTag ?? 'workflow_ready',
+            fileName: attemptedFileName,
+            archivePath,
+          });
+          return;
+        } catch (error) {
+          if (this.isArchiveCollision(error)) {
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      logger.warn('AgentService: workflow archive failed', {
+        sessionId,
+        archiveTag: archiveTag ?? 'workflow_ready',
+        attemptedFileName,
+        errorMessage: 'No unique workflow archive file name available',
+        errorCode: 'ARCHIVE_NAME_EXHAUSTED',
+      });
+    } catch (error) {
+      logger.warn('AgentService: workflow archive failed', {
+        sessionId,
+        archiveTag: archiveTag ?? 'workflow_ready',
+        attemptedFileName,
+        errorMessage: error instanceof Error ? error.message : 'Unknown archive error',
+        errorCode: this.getArchiveErrorCode(error),
+      });
+    }
+  }
+
+  private buildWorkflowArchiveFileName(
+    timestampToken: string,
+    sessionId: string,
+    collisionIndex: number,
+    archiveTag?: string
+  ): string {
+    const archiveTagSuffix = archiveTag ? `__${archiveTag}` : '';
+    const collisionSuffix = collisionIndex === 0 ? '' : `__${String(collisionIndex).padStart(2, '0')}`;
+    return `${timestampToken}_${sessionId}${archiveTagSuffix}${collisionSuffix}.json`;
+  }
+
+  private isArchiveCollision(error: unknown): boolean {
+    return this.getArchiveErrorCode(error) === 'EEXIST';
+  }
+
+  private getArchiveErrorCode(error: unknown): string | null {
+    if (!error || typeof error !== 'object' || !('code' in error)) {
+      return null;
+    }
+
+    return typeof error.code === 'string' ? error.code : null;
   }
 
   private attachDigitalTwinScene(

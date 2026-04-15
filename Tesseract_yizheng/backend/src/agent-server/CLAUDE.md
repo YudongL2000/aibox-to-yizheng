@@ -21,7 +21,7 @@ agent-server/
 - 配置阶段和 dialogue-mode 阶段的 scene 必须由 AgentService/HTTP 路由统一附带，renderer 只能消费这份 backend scene，不能再本地拼装硬件挂载状态。
 - `interactionMode=dialogue` 的聊天请求必须走 dialogue-mode 真相源，HTTP/WS 只负责透传，不得再用旧的 workflow/config 路由假扮对话逻辑。
 - `validate-hardware` 与 `start-deploy` 是 dialogue-mode 的显式路由，返回的 `dialogueMode` envelope + `digitalTwinScene` 是唯一业务输出，前端不应再从普通 guidance 响应里反推插拔状态。
-- `hardware/status` 的 payload 不是裸状态摘要，而是 canonical runtime envelope：必须把 heartbeat、5 口界面、builtin top controls 与 scene 一起暴露给前端。
+- `hardware/status` 的 payload 不是裸状态摘要，而是 canonical runtime envelope：必须把 heartbeat、5 个通用口 + HDMI 界面、builtin top controls 与 scene 一起暴露给前端。
 - agent-factory.ts 必须把共享 LLMClient 注入 dialogue-mode 语义路由器；否则对话模式会退化回正则分流，重新把大量任务误送给 MimicLaw。
 - MQTT hardware runtime 现在是硬件真相源：AgentService 负责把 runtime snapshot 投影给 dialogue-mode 与 digital twin scene，server / websocket 只暴露 status、workflow upload/stop 与 hardware command 协议。
 

@@ -493,6 +493,103 @@ describe('Orchestrator', () => {
     );
   });
 
+  it('reuses the last successful complex workflow before falling back to ComponentComposer', async () => {
+    const llmClient = {
+      classify: vi.fn(),
+      chat: vi.fn(),
+    } as any;
+    const workflowArchitect = {
+      generateWorkflow: vi.fn().mockResolvedValue({
+        success: false,
+        workflow: undefined,
+        iterations: 1,
+        reasoning: 'gateway unavailable',
+      }),
+    };
+    const sessionService = new SessionService();
+    const orchestrator = new Orchestrator(
+      TEST_CONFIG,
+      llmClient,
+      sessionService,
+      HARDWARE_COMPONENTS,
+      workflowArchitect as any
+    );
+    const session = sessionService.getOrCreate();
+    const cachedWorkflow = {
+      name: 'cached_complex_face_welcome',
+      nodes: [
+        {
+          id: 'trigger-1',
+          name: 'webhook_trigger_cached',
+          type: 'n8n-nodes-base.webhook',
+          typeVersion: 2,
+          position: [0, 0],
+          parameters: { path: 'cached-workflow', httpMethod: 'POST' },
+          notes: { category: 'BASE', title: '缓存触发器' },
+        },
+        {
+          id: 'speaker-1',
+          name: 'code_speaker_cached',
+          type: 'n8n-nodes-base.code',
+          typeVersion: 2,
+          position: [220, 0],
+          parameters: { language: 'javaScript', jsCode: 'return items;' },
+          notes: { category: 'SPEAKER', title: '缓存播报' },
+        },
+      ],
+      connections: {
+        webhook_trigger_cached: {
+          main: [[{ node: 'code_speaker_cached', type: 'main', index: 0 }]],
+        },
+      },
+      settings: {},
+    };
+
+    sessionService.setLastComplexWorkflow(session.id, cachedWorkflow, {
+      capabilityIds: [
+        HARDWARE_CAPABILITY_IDS.CAMERA.SNAPSHOT_INPUT,
+        HARDWARE_CAPABILITY_IDS.FACE_NET.FACE_RECOGNITION,
+        HARDWARE_CAPABILITY_IDS.TTS.AUDIO_GENERATION,
+        HARDWARE_CAPABILITY_IDS.SPEAKER.AUDIO_PLAYBACK,
+      ],
+      userIntent: '当摄像头检测到人脸时，播放欢迎语音',
+      topologyHint: 'linear',
+    });
+    sessionService.setOrchestratorState(session.id, {
+      phase: 'reflection',
+      decision: 'direct_accept',
+      userIntent: '当摄像头检测到人脸时，播放欢迎语音',
+      capabilityIds: [
+        HARDWARE_CAPABILITY_IDS.CAMERA.SNAPSHOT_INPUT,
+        HARDWARE_CAPABILITY_IDS.FACE_NET.FACE_RECOGNITION,
+        HARDWARE_CAPABILITY_IDS.TTS.AUDIO_GENERATION,
+        HARDWARE_CAPABILITY_IDS.SPEAKER.AUDIO_PLAYBACK,
+      ],
+      searchKeywords: ['人脸检测', '欢迎语音', '摄像头', '喇叭'],
+      missingFields: [],
+      pendingQuestions: [],
+      reasoningSummary: '触发条件和反馈动作都已明确，可以直接进入工作流生成。',
+      recognizedRequirements: ['触发: 检测到人脸', '动作: 播放欢迎语音'],
+      confidence: 0.95,
+      complete: true,
+      canProceed: true,
+    });
+
+    const response = await orchestrator.confirm(session.id);
+
+    expect(response.type).toBe('workflow_ready');
+    if (response.type !== 'workflow_ready') {
+      throw new Error('Expected workflow_ready response');
+    }
+
+    expect(response.workflow.name).toBe('cached_complex_face_welcome');
+    expect(response.reasoning).toContain('reuse-last-complex-workflow fallback');
+    expect(workflowArchitect.generateWorkflow).toHaveBeenCalledTimes(1);
+    expect(
+      sessionService.getTraceEvents(session.id).some((event) => event.title === '复用上次复杂工作流')
+    ).toBe(true);
+  });
+
   it('does not skip semantic discovery llm for low-signal greeting input in ai-first mode', async () => {
     const { orchestrator, sessionService, llmClient } = createOrchestrator();
     const session = sessionService.getOrCreate();

@@ -172,7 +172,10 @@ import {
   TesseractInteractionMode,
   normalizeDialogueModeEnvelope,
 } from './services/tesseract-dialogue.models';
-import { TesseractProjectService } from '../../services/tesseract-project.service';
+import {
+  TesseractHardwareDispatchState,
+  TesseractProjectService,
+} from '../../services/tesseract-project.service';
 import { AssemblyOrchestratorService } from '../../services/assembly-orchestrator.service';
 import {
   HardwareRuntimeService,
@@ -1910,6 +1913,7 @@ ${JSON.stringify({ state: 'error', text: error?.message || '硬件校验失败�
     }
 
     const result = await window['electronAPI'].tesseract.hardwareUpload({ sessionId });
+    this.persistHardwareDispatchSnapshot(this.getCurrentProjectPath(), result, 'upload');
     return { markdown: this.buildHardwareReceiptMarkdown(result, 'workflow_upload') };
   }
 
@@ -1921,7 +1925,61 @@ ${JSON.stringify({ state: 'error', text: error?.message || '硬件校验失败�
     }
 
     const result = await window['electronAPI'].tesseract.hardwareStop({ sessionId });
+    this.persistHardwareDispatchSnapshot(this.getCurrentProjectPath(), result, 'stop');
     return { markdown: this.buildHardwareReceiptMarkdown(result, 'workflow_stop') };
+  }
+
+  private persistHardwareDispatchSnapshot(
+    projectPath: string,
+    result: any,
+    action: 'upload' | 'stop',
+  ): void {
+    const normalizedProjectPath = String(projectPath || '').trim();
+    if (!normalizedProjectPath) {
+      return;
+    }
+
+    this.tesseractProjectService.persistHardwareDispatch(
+      normalizedProjectPath,
+      this.buildHardwareDispatchState(result, action),
+    );
+  }
+
+  private buildHardwareDispatchState(
+    result: any,
+    action: 'upload' | 'stop',
+  ): TesseractHardwareDispatchState {
+    if (!result?.success) {
+      return {
+        lastAction: action,
+        receiptStatus: 'failed',
+        responseStatus: null,
+        workflowFile: null,
+        message: result?.error || (action === 'upload' ? '工作流上传失败' : '停止工作流失败'),
+        successful: false,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+
+    const receipt = result?.data || {};
+    const response = receipt?.response || {};
+    const receiptStatus = String(receipt?.status || '').trim().toLowerCase() || null;
+    const responseStatus = String(response?.status || '').trim().toLowerCase() || null;
+    const workflowFile = String(response?.workflow_file || '').trim() || null;
+    const responseMessage = String(response?.message || '').trim();
+
+    return {
+      lastAction: action,
+      receiptStatus,
+      responseStatus,
+      workflowFile,
+      message: responseMessage || null,
+      successful:
+        action === 'upload'
+          ? receiptStatus === 'acknowledged' && responseStatus === 'started'
+          : receiptStatus === 'acknowledged',
+      updatedAt: new Date().toISOString(),
+    };
   }
 
   private buildHardwareReceiptMarkdown(
@@ -6177,6 +6235,7 @@ Your role is ASK (Advisory & Quick Support) - you provide analysis, recommendati
     if (action === 'tesseract-assembly-completed-from-twin') {
       this.assemblyMonitorSubscription?.unsubscribe();
       this.assemblyMonitorSubscription = null;
+      this.uiService.clearWorkbenchPayload('digital-twin');
       this.assemblyOrchestrator.completeSession(data || {});
       this.dialogueAssemblyPhase = 'complete';
       const result = await this.confirmHotplugNodeAndContinue(

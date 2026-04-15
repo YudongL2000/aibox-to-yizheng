@@ -82,6 +82,13 @@ const CANONICAL_INTERFACES: InterfacePreset[] = [
     rotation: [0, 180, 0],
   },
   {
+    id: 'port_hdmi',
+    label: 'HDMI · 侧面E',
+    kind: 'side',
+    position: [-1.4, 0, 0.81],
+    rotation: [0, 300, 0],
+  },
+  {
     id: 'port_7',
     label: '接口7 · 3-1.7',
     kind: 'bottom',
@@ -106,7 +113,7 @@ const CATEGORY_MODEL_PRESETS: Partial<Record<NodeCategory, ModelPreset>> = {
     modelId: 'model_2',
     url: '/assets/assets/models/screen.glb',
     defaultDeviceId: 'screen-001',
-    defaultInterfaceId: 'port_7',
+    defaultInterfaceId: 'port_hdmi',
     mountPositionOffset: [0, 0, 0],
     mountRotationOffset: [0, 0, 90],
     scale: [2.16, 2.16, 2.16],
@@ -144,12 +151,14 @@ const TOPOLOGY_ALIASES: Record<string, string> = {
   d: 'port_4',
   sided: 'port_4',
   '侧面d': 'port_4',
-  e: 'port_2',
-  sidee: 'port_2',
-  '侧面e': 'port_2',
+  e: 'port_hdmi',
+  sidee: 'port_hdmi',
+  '侧面e': 'port_hdmi',
   f: 'port_2',
   sidef: 'port_2',
   '侧面f': 'port_2',
+  hdmi: 'port_hdmi',
+  porthdmi: 'port_hdmi',
   bottom: 'port_7',
   'bottom-port': 'port_7',
   'port-bottom': 'port_7',
@@ -491,6 +500,10 @@ function normalizeInterfaceId(raw: unknown, fallback: string): string {
 
   if (TOPOLOGY_ALIASES[compact]) {
     return TOPOLOGY_ALIASES[compact];
+  }
+
+  if (compact.includes('hdmi')) {
+    return 'port_hdmi';
   }
 
   if (compact.includes('底部')) {

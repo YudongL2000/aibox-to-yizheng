@@ -143,6 +143,35 @@ Widget interactionStatusChip(
   );
 }
 
+Widget interactionActionButtonChild(
+  BuildContext context, {
+  required String label,
+  bool isLoading = false,
+  Color? color,
+}) {
+  final effectiveColor = color ?? context.spatial.palette.textInverse;
+  if (!isLoading) {
+    return Text(label);
+  }
+
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      SizedBox(
+        width: 14,
+        height: 14,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(effectiveColor),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Text(label),
+    ],
+  );
+}
+
 Widget interactionDot(
   BuildContext context, {
   InteractionTone tone = InteractionTone.neutral,

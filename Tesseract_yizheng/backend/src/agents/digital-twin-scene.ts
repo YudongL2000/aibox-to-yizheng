@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 ConfigAgentState/ConfigurableNode/NodeCategory 与 DialogueModeHardwareSnapshot，消费配置阶段节点状态和对话模式硬件快照。
- * [OUTPUT]: 对外提供 digital twin scene 构造器、接口选项清单、builtin top controls 与接口归一化 helper，统一把 backend 状态折叠成 frontend 可直接消费的 digital twin scene。
+ * [OUTPUT]: 对外提供 digital twin scene 构造器、接口选项清单、builtin top controls 与接口归一化 helper，统一把 backend 状态折叠成 frontend 可直接消费的 digital twin scene，并优先复用 MQTT runtime 的物理端口别名规范化。
  * [POS]: agents 的数字孪生运行时投影层，被 agent-service 与 config-state/dialogue-mode 路由复用，避免前后端各自猜组件-接口映射或把 mic/speaker 误当外接口模型。
  * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
  */
@@ -12,6 +12,7 @@ import type {
   DialogueModeHardwareSnapshot,
   NodeCategory,
 } from './types';
+import { normalizeHardwarePortId } from './mqtt-hardware-runtime';
 
 type Vector3 = [number, number, number];
 
@@ -488,8 +489,13 @@ function normalizeInterfaceId(raw: unknown, fallback: string): string {
     return fallback;
   }
 
+  const normalizedHardwarePortId = normalizeHardwarePortId(normalized);
+  if (CANONICAL_INTERFACE_IDS.has(normalizedHardwarePortId)) {
+    return normalizedHardwarePortId;
+  }
+
   const compact = normalized.replace(/[\s·._-]+/g, '');
-  const portMatch = compact.match(/(?:port|接口|usb)?([1-8])$/i);
+  const portMatch = compact.match(/^(?:port|接口|usb)?([1-8])$/i);
   if (portMatch?.[1]) {
     const portId = `port_${portMatch[1]}`;
     if (CANONICAL_INTERFACE_IDS.has(portId)) {

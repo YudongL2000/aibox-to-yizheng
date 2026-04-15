@@ -9,11 +9,13 @@ import 'interaction_utils.dart';
 class SelectInteractionWidget extends StatefulWidget {
   final Interaction interaction;
   final Function(List<String> selectedValues) onSubmit;
+  final bool isSubmitting;
 
   const SelectInteractionWidget({
     super.key,
     required this.interaction,
     required this.onSubmit,
+    this.isSubmitting = false,
   });
 
   @override
@@ -72,7 +74,9 @@ class _SelectInteractionWidgetState extends State<SelectInteractionWidget> {
                 const Spacer(),
                 interactionStatusChip(
                   context,
-                  label: isMulti ? 'MULTI' : 'SINGLE',
+                  label: widget.isSubmitting
+                      ? 'SUBMITTING'
+                      : (isMulti ? 'MULTI' : 'SINGLE'),
                   tone: InteractionTone.info,
                 ),
               ],
@@ -85,22 +89,31 @@ class _SelectInteractionWidgetState extends State<SelectInteractionWidget> {
               style: spatial.cardTitleStyle(),
             ),
             SizedBox(height: spatial.space4),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: options
-                  .map((option) => _buildOption(context, option, isMulti))
-                  .toList(),
+            IgnorePointer(
+              ignoring: widget.isSubmitting,
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: options
+                    .map((option) => _buildOption(context, option, isMulti))
+                    .toList(),
+              ),
             ),
             SizedBox(height: spatial.space5),
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _selectedValues.isNotEmpty
+                onPressed: !widget.isSubmitting && _selectedValues.isNotEmpty
                     ? () => widget.onSubmit(_selectedValues.toList())
                     : null,
                 style: spatial.primaryButtonStyle(accent: accent),
-                child: Text(_getConfirmButtonText(widget.interaction.field)),
+                child: interactionActionButtonChild(
+                  context,
+                  label: widget.isSubmitting
+                      ? '提交中...'
+                      : _getConfirmButtonText(widget.interaction.field),
+                  isLoading: widget.isSubmitting,
+                ),
               ),
             ),
           ],

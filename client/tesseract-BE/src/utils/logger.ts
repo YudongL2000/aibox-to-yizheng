@@ -1,3 +1,10 @@
+/**
+ * [INPUT]: 依赖 Node.js fs/path/util 与运行时环境变量。
+ * [OUTPUT]: 对外提供 Logger、日志级别解析、北京时间 ISO/文件名时间 helper 与文件日志落盘能力。
+ * [POS]: backend 运行时的统一日志出口，也是所有基于北京时间文件名的日志/归档命名真相源。
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
 import fs from 'node:fs';
 import path from 'node:path';
 import util from 'node:util';
@@ -6,10 +13,14 @@ import util from 'node:util';
 // 北京时间格式化 (UTC+8)
 // ============================================================================
 
-function toBeijingISOString(date: Date = new Date()): string {
+export function toBeijingISOString(date: Date = new Date()): string {
   const beijingOffset = 8 * 60 * 60 * 1000; // UTC+8 in milliseconds
   const beijingTime = new Date(date.getTime() + beijingOffset);
   return beijingTime.toISOString().replace('Z', '+08:00');
+}
+
+export function toBeijingFilenameTimestamp(date: Date = new Date()): string {
+  return toBeijingISOString(date).replace(/[:.]/g, '-');
 }
 
 export enum LogLevel {
@@ -158,7 +169,7 @@ export class Logger {
 
     try {
       fs.mkdirSync(options.directory, { recursive: true });
-      const safeTimestamp = toBeijingISOString().replace(/[:.]/g, '-');
+      const safeTimestamp = toBeijingFilenameTimestamp();
       const fileName = options.fileName ?? `${safeTimestamp}.log`;
       const filePath = path.join(options.directory, fileName);
       this.fileStream = fs.createWriteStream(filePath, { flags: 'a' });

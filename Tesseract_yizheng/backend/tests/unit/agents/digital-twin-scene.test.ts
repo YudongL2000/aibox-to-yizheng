@@ -6,7 +6,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildDigitalTwinSceneFromConfigState } from '../../../src/agents/digital-twin-scene';
+import {
+  buildDigitalTwinSceneFromConfigState,
+  normalizeDigitalTwinInterfaceId,
+} from '../../../src/agents/digital-twin-scene';
 import type { ConfigAgentState, ConfigurableNode } from '../../../src/agents/types';
 
 function createConfiguredNode(
@@ -90,6 +93,7 @@ describe('buildDigitalTwinSceneFromConfigState', () => {
       'port_2',
       'port_3',
       'port_4',
+      'port_hdmi',
       'port_7',
     ]);
     expect(scene.top_controls).toEqual(
@@ -178,5 +182,14 @@ describe('buildDigitalTwinSceneFromConfigState', () => {
         device_id: 'wheel-live-001',
       })
     );
+  });
+
+  it('把物理口别名规范化成 canonical interface id', () => {
+    expect(normalizeDigitalTwinInterfaceId('3-1.2')).toBe('port_1');
+    expect(normalizeDigitalTwinInterfaceId('3-1.3')).toBe('port_2');
+    expect(normalizeDigitalTwinInterfaceId('3-1.4')).toBe('port_3');
+    expect(normalizeDigitalTwinInterfaceId('3-1.6')).toBe('port_4');
+    expect(normalizeDigitalTwinInterfaceId('3-1.7')).toBe('port_7');
+    expect(normalizeDigitalTwinInterfaceId('/dev/hdmi')).toBe('port_hdmi');
   });
 });

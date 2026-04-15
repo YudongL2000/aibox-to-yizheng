@@ -195,7 +195,7 @@ const GENERIC_TITLE_BY_CATEGORY: Record<NodeCategory, string[]> = {
   HAND: ['物理手势驱动', '机械手执行', '机械手动作'],
   WHEEL: ['底盘移动执行', '全向轮动作'],
   SPEAKER: ['倒数音频播报', '结果音频播报'],
-  SCREEN: ['胜负表情展示', '屏幕表情'],
+  SCREEN: ['表情展示', '屏幕表情'],
 };
 
 const GENERIC_SUBTITLE_KEYWORDS = [
@@ -468,13 +468,13 @@ export function generateNodeTitleSubtitle(
   const emojiZh = inferEmojiZh(source);
   if (emojiZh) {
     return {
-      title: `胜负表情展示-${emojiZh}`,
+      title: `表情展示-${emojiZh}`,
       subtitle: `物理显示单元，根据结果显示${emojiZh}表情。`,
     };
   }
 
   return {
-    title: '胜负表情展示',
+    title: '表情展示',
     subtitle: '物理显示单元，根据结果展示对应情绪表情。',
   };
 }

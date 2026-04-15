@@ -332,6 +332,8 @@ function createWrapper(model, position, rotation, index, modelId) {
   if (!box.isEmpty()) {
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
+    // Keep the wrapper origin at the model bounds center so host coordinates
+    // remain stable even when imported GLBs use different internal pivots.
     model.position.sub(center);
 
     const hitBox = new THREE.Mesh(

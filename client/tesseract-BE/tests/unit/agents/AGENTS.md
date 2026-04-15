@@ -19,7 +19,7 @@ hardware-component-aliases.test.ts: 硬件能力别名兼容测试。
 hardware-service.test.ts: 硬件查询与推断测试。
 intake-agent.test.ts: 入口代理兼容测试。
 mcp-client.test.ts: MCP 客户端桥接测试。
-mqtt-hardware-runtime.test.ts: MQTT 硬件运行时测试，锁住 heartbeat 解析、5 口映射与 workflow / command 封装。
+mqtt-hardware-runtime.test.ts: MQTT 硬件运行时测试，锁住 heartbeat 解析、5 口映射、workflow / command 封装与 raw audio-test publish exact payload。
 node-dependency-rules.test.ts: 节点依赖规则测试。
 orchestrator.test.ts: 总编排器测试。
 prompt-variants.test.ts: Prompt 变体测试。

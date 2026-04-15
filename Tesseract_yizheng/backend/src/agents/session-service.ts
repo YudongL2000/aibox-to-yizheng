@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 types 与 logger
- * [OUTPUT]: 对外提供会话管理、状态机能力与实时 trace 事件总线
+ * [OUTPUT]: 对外提供会话管理、状态机能力、复杂工作流缓存与实时 trace 事件总线
  * [POS]: agents 会话存储与生命周期管理入口，也是编排调试流的单一事实源
  * [PROTOCOL]: 变更时更新此头部，然后检查 AGENT.md
  */
@@ -11,8 +11,10 @@ import {
   AgentTraceEvent,
   AgentTraceEventInput,
   AgentTraceListener,
+  CachedComplexWorkflow,
   ConversationTurn,
   DialogueModeSessionState,
+  WorkflowDefinition,
 } from './types';
 import { logger } from '../utils/logger';
 
@@ -126,6 +128,56 @@ export class SessionService {
     session.workflow = undefined;
     this.refresh(session);
     logger.debug('SessionService: cleared workflow', { sessionId });
+  }
+
+  setLastComplexWorkflow(
+    sessionId: string,
+    workflow: WorkflowDefinition,
+    metadata: {
+      capabilityIds: string[];
+      userIntent: string;
+      topologyHint?: string;
+    }
+  ): void {
+    const session = this.getOrCreate(sessionId);
+    session.lastComplexWorkflow = {
+      workflow: this.cloneWorkflow(workflow),
+      capabilityIds: [...new Set(metadata.capabilityIds)],
+      userIntent: metadata.userIntent,
+      topologyHint: metadata.topologyHint,
+      savedAt: new Date().toISOString(),
+    };
+    this.refresh(session);
+    logger.debug('SessionService: stored last complex workflow', {
+      sessionId,
+      workflowName: workflow.name,
+      capabilityCount: metadata.capabilityIds.length,
+    });
+  }
+
+  getLastComplexWorkflow(sessionId: string): CachedComplexWorkflow | null {
+    const session = this.getSession(sessionId);
+    const cached = session?.lastComplexWorkflow;
+    if (!cached) {
+      return null;
+    }
+
+    return {
+      ...cached,
+      capabilityIds: [...cached.capabilityIds],
+      workflow: this.cloneWorkflow(cached.workflow),
+    };
+  }
+
+  clearLastComplexWorkflow(sessionId: string): void {
+    const session = this.getSession(sessionId);
+    if (!session) {
+      return;
+    }
+
+    session.lastComplexWorkflow = undefined;
+    this.refresh(session);
+    logger.debug('SessionService: cleared last complex workflow', { sessionId });
   }
 
   setConfigAgentState(sessionId: string, state: AgentSession['configAgentState']): void {
@@ -434,6 +486,7 @@ export class SessionService {
       phase: 'understanding',
       history: [],
       workflow: undefined,
+      lastComplexWorkflow: undefined,
       blueprint: undefined,
       intent: undefined,
       orchestratorState: undefined,
@@ -492,5 +545,9 @@ export class SessionService {
 
   private isExpired(session: AgentSession): boolean {
     return session.expiresAt ? new Date(session.expiresAt).getTime() <= Date.now() : false;
+  }
+
+  private cloneWorkflow(workflow: WorkflowDefinition): WorkflowDefinition {
+    return JSON.parse(JSON.stringify(workflow)) as WorkflowDefinition;
   }
 }

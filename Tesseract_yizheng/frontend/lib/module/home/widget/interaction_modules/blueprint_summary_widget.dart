@@ -13,6 +13,7 @@ class BlueprintSummaryWidget extends StatelessWidget {
   final VoidCallback? onContinue;
   final VoidCallback? onConfirm;
   final bool isBuilt;
+  final bool isContinuing;
   final double? maxButtonWidth;
 
   const BlueprintSummaryWidget({
@@ -25,6 +26,7 @@ class BlueprintSummaryWidget extends StatelessWidget {
     this.onContinue,
     this.onConfirm,
     this.isBuilt = false,
+    this.isContinuing = false,
     this.maxButtonWidth,
   });
 
@@ -91,9 +93,14 @@ class BlueprintSummaryWidget extends StatelessWidget {
         if (onContinue != null)
           Expanded(
             child: OutlinedButton(
-              onPressed: onContinue,
+              onPressed: isContinuing ? null : onContinue,
               style: spatial.secondaryButtonStyle(),
-              child: const Text('继续交流'),
+              child: interactionActionButtonChild(
+                context,
+                label: isContinuing ? '发送中...' : '继续交流',
+                isLoading: isContinuing,
+                color: spatial.palette.textPrimary,
+              ),
             ),
           ),
         if (onContinue != null && onConfirm != null)
@@ -110,10 +117,11 @@ class BlueprintSummaryWidget extends StatelessWidget {
     );
 
     if (maxButtonWidth != null) {
-      final leftW = measureButtonTitleWidth('继续交流', fontSize: 9);
+      final continueTitle = isContinuing ? '发送中...' : '继续交流';
       final rightTitle = isBuilt ? '已构建' : '确认构建';
+      final continueW = measureButtonTitleWidth(continueTitle, fontSize: 9);
       final rightW = measureButtonTitleWidth(rightTitle, fontSize: 9);
-      final singleMin = (leftW > rightW ? leftW : rightW) + 5;
+      final singleMin = ((continueW > rightW) ? continueW : rightW) + 5;
       final rowMin = 2 * singleMin + 8;
       final minW = rowMin.clamp(0.0, maxButtonWidth!);
       return Center(

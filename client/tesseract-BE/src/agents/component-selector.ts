@@ -53,7 +53,7 @@ const DECISION_KEYWORDS: Record<string, string[]> = {
 const OUTPUT_KEYWORDS: Record<string, string[]> = {
   mechanical_hand_execute: ['手势', '中指', 'v', '大拇指', '比', '竖', '挥手'],
   mechanical_arm_execute: ['机械臂', '抓取', '放下', '递', '夹子'],
-  chassis_move: ['移动', '前进', '后退', '转向', '巡航'],
+  chassis_move: ['移动', '前进', '后退', '转向', '巡航', '小车', '底盘', '麦克纳姆', 'mecanum', 'cart'],
   screen_display: ['显示', '屏幕', '表情', '动画', 'emoji'],
   tts_speaker_output: ['说', '播报', '语音', '喇叭', '安慰', '提醒'],
 };
@@ -216,6 +216,9 @@ export class ComponentSelector {
   private ensureOutputCoverage(outputs: string[], entities: Record<string, string>, normalizedIntent: string): void {
     if (entities.gesture || entities.hand_gestures) {
       this.pushUnique(outputs, 'mechanical_hand_execute');
+    }
+    if (this.hasKeyword(normalizedIntent, ['小车', '底盘', '麦克纳姆', 'mecanum', 'cart'])) {
+      this.pushUnique(outputs, 'chassis_move');
     }
     if (entities.speech_content || this.hasKeyword(normalizedIntent, ['说', '播报', '语音', '喇叭'])) {
       this.pushUnique(outputs, 'tts_speaker_output');

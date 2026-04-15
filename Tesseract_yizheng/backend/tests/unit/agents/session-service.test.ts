@@ -15,6 +15,35 @@ describe('SessionService', () => {
     expect(service.getWorkflow(session.id)).toBeNull();
   });
 
+  it('keeps last complex workflow cache separate from current workflow', () => {
+    const service = new SessionService();
+    const session = service.getOrCreate();
+    const currentWorkflow = { name: 'WF', nodes: [], connections: {} };
+    const complexWorkflow = {
+      name: 'Complex WF',
+      nodes: [{ id: '1', name: 'trigger', type: 'n8n-nodes-base.webhook', position: [0, 0], parameters: {} }],
+      connections: {},
+    };
+
+    service.setWorkflow(session.id, currentWorkflow);
+    service.setLastComplexWorkflow(session.id, complexWorkflow, {
+      capabilityIds: ['camera.snapshot', 'speaker.playback'],
+      userIntent: '检测到人脸后播报欢迎词',
+      topologyHint: 'linear',
+    });
+    service.clearWorkflow(session.id);
+
+    expect(service.getWorkflow(session.id)).toBeNull();
+    expect(service.getLastComplexWorkflow(session.id)).toEqual(
+      expect.objectContaining({
+        workflow: complexWorkflow,
+        capabilityIds: ['camera.snapshot', 'speaker.playback'],
+        userIntent: '检测到人脸后播报欢迎词',
+        topologyHint: 'linear',
+      })
+    );
+  });
+
   it('stores and retrieves intent and confirmation state', () => {
     const service = new SessionService();
     const session = service.getOrCreate();
@@ -61,6 +90,10 @@ describe('SessionService', () => {
     service.appendTurn(session.id, 'user', 'hello');
     service.setPhase(session.id, 'generating');
     service.mergeConfirmedEntities(session.id, { person_name: '老刘' });
+    service.setLastComplexWorkflow(session.id, { name: 'WF', nodes: [], connections: {} }, {
+      capabilityIds: ['demo.capability'],
+      userIntent: 'demo',
+    });
 
     service.resetSession(session.id);
     const resetSession = service.getSession(session.id);
@@ -68,6 +101,7 @@ describe('SessionService', () => {
     expect(resetSession?.phase).toBe('understanding');
     expect(resetSession?.history.length).toBe(0);
     expect(resetSession?.confirmedEntities).toEqual({});
+    expect(resetSession?.lastComplexWorkflow).toBeUndefined();
   });
 
   it('stores and retrieves blueprint in session', () => {

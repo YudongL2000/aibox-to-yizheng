@@ -538,11 +538,18 @@ export function adaptTesseractAgentResponse(
       break;
     }
     case 'hot_plugging': {
-      snapshot['metadata'] = { phase: response.type };
       const requirements = extractHotplugRequirements(response);
       const allPendingHardwareNodeNames: string[] = Array.isArray(response?.metadata?.allPendingHardwareNodeNames)
         ? response.metadata.allPendingHardwareNodeNames
         : [];
+      snapshot['metadata'] = {
+        phase: response.type,
+        assemblyResume: {
+          nodeName: response?.currentNode?.name || null,
+          components: requirements,
+          allPendingHardwareNodeNames,
+        },
+      };
       parts.push(block('aily-button', [
         {
           text: '开始组装硬件',
@@ -582,7 +589,10 @@ export function adaptTesseractAgentResponse(
     }
     case 'config_complete': {
       snapshot['workflowId'] = response?.metadata?.workflowId || null;
-      snapshot['metadata'] = { phase: 'config_complete' };
+      snapshot['metadata'] = {
+        phase: 'config_complete',
+        assemblyResume: null,
+      };
       parts.push(block('aily-state', {
         state: 'done',
         text: response.message || '配置完成',

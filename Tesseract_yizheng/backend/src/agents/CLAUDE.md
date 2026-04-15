@@ -50,7 +50,7 @@ agents/
 - Blueprint 增加 componentSelection 保留旧字段以保证兼容。
 - Orchestrator 持有 Refactor-3 的多轮状态，IntakeAgent 仅保留兼容入口职责。
 - Refactor-4 起，确认构建后的组合-校验-修复循环优先收敛到 `agent-loop.ts`，避免 `orchestrator.ts` 继续吸收验证回路。
-- Refactor-5 起，`confirm` 的主生成路径优先走 `WorkflowArchitect`；`ComponentComposer` 只保留 fallback，避免 discovery 阶段抽取出的实体/拓扑语义在规则层被截断。
+- Refactor-5 起，`confirm` 的主生成路径优先走 `WorkflowArchitect`；主路径未产出可用结果时优先复用 session 内最近一次成功的复杂工作流，只有历史复杂工作流也不可复用时才降级到 `ComponentComposer`，避免 discovery 阶段抽取出的实体/拓扑语义在规则层被截断。
 - Refactor-5 起，`evaluation/` 只允许做 ground truth 对比，不允许把 scene JSON 注入运行时生成管线。
 - LLM 配置缺失时允许 server 启动，真正调用阶段再返回明确错误，避免联调被启动门槛阻塞。
 - 健康探测超时与生成超时拆开配置，避免一个阈值同时绑住“可用性判断”和“业务生成”两种语义。
@@ -59,7 +59,8 @@ agents/
 - 澄清问题通过结构化 clarificationQuestions 回到前端，避免 UI 从 guidance 文案里反向解析问题列表。
 - 所有 `n8n-nodes-base.code` 节点的最小可执行参数必须复用 `src/utils/code-node-parameters.ts`；禁止 composer / architect / prompt template 再次各自手写默认 `jsCode` 或空参数。
 - 配置阶段与 dialogue-mode 的组件挂载结果只能由 `digital-twin-scene.ts` 投影成 scene payload；禁止 server、renderer 或 prompt 层再次各自猜 category->model/interface 映射。
-- 真实可挂载接口只有 5 个：`port_1`、`port_2`、`port_3`、`port_4`、`port_7`；`mic` / `speaker` 只能出现在 `top_controls`，不得再占用外部挂载模型。
+- canonical 外部挂载接口是 5 个通用口 + 1 个 HDMI 口：`port_1`、`port_2`、`port_3`、`port_4`、`port_hdmi`、`port_7`；`mic` / `speaker` 只能出现在 `top_controls`，不得再占用外部挂载模型。
+- raw 物理口别名（如 `3-1.3`、`3-1.6`、`/dev/hdmi`）进入 `digital-twin-scene.ts` 前后都必须收敛成 canonical `port_*`；否则 backend 正式 scene 和前端 assembly overlay 会各自命中不同接口锚点。
 - 配置阶段 `confirm-node` 返回的 `digitalTwinScene` 只可作为过渡态；真正落盘后的挂载结果必须以 `config-state -> digital-twin-scene.ts` 的 read-after-write 投影为准，避免响应先到、状态未稳时把旧 scene 当成真相源。
 - dialogue-mode 对“特定技能请求 / 普通对话”的划分只能由 backend 输出 `branch/relay` 真相源；前端只可代理 MimicLaw WebSocket，不得自己从原文反推教学跳转或 WS 透传。
 - MQTT 心跳与 command 回包必须先进入 `mqtt-hardware-runtime.ts`，再投影成 dialogue-mode / digital-twin scene；禁止 dialogue-mode 直接把 mock hotplug 当成硬件真相。
@@ -116,12 +117,14 @@ agents/
 - 2026-03-14: agent-config.ts 新增 `AGENT_SCENE_SAFETY_NETS` / `AGENT_DISABLE_SCENE_SAFETY_NETS`，scene safety net 可以通过 `.env` 精确开关，不必再改代码才能观察原始模型输出。
 - 2026-03-15: scene safety net 新增 dormant 观测态与 `AGENT_DORMANT_SCENE_SAFETY_NETS`，音频修剪类安全网可以只报警不改写，用于验证退役安全性。
 - 2026-04-01: 新增 digital-twin-scene.ts，配置阶段响应、config-state 查询与 dialogue-mode 硬件响应开始统一附带 digitalTwinScene，前后端不再各自猜默认挂载关系。
-- 2026-04-05: digital-twin-scene.ts 收口为真实 5 口，并把 microphone / speaker 改成 builtin top controls；wifi / mimiclaw 继续只保留运行时语义，不再渲染成外部模型。
+- 2026-04-05: digital-twin-scene.ts 收口为 5 个通用口 + HDMI 口，并把 microphone / speaker 改成 builtin top controls；wifi / mimiclaw 继续只保留运行时语义，不再渲染成外部模型。
 - 2026-04-01: 新增 dialogue-mode/ 子模块，开始把 `/api/agent/chat?interactionMode=dialogue`、硬件校验与 start-deploy 收敛到后端真相源。
 - 2026-04-01: hotplug 协议补齐 `connectedComponents`，`hardware-validation.ts` 改为 snapshot-first；缺失 `portId` 的组件不再被数字孪生假装挂到默认端口。
 - 2026-04-01: ConfigAgent 的 `hot_plugging` 响应开始显式下发 5 口 `hardware_port` 选项，`confirmNodeConfig()` 也接受 `portId` 并统一归一到 canonical topology，mock 插拔终于能实时驱动配置态数字孪生。
 - 2026-04-01: dialogue-mode 新增 `proxy_chat + relay` 分支；非特定技能表述现在由 backend 明确下发 MimicLaw WebSocket 透传指令，未知但明确的技能需求仍保留教学接力。
 - 2026-04-05: 新增 mqtt-hardware-runtime.ts，开始以 MQTT heartbeat/command 协议作为硬件运行时真相源，并把 dialogue-mode / digital-twin scene 统一切到这份 backend-first 状态。
+- 2026-04-15: `digital-twin-scene.ts` 开始复用 `mqtt-hardware-runtime.ts` 的物理口别名规范化，修复 raw `3-1.x` 端口进入正式 scene 时的接口映射歧义。
 - 2026-04-01: dialogue-mode 新增 `dialogue-mode-router.ts`，MimicLaw vs A/B/C 的分流改由 backend LLM 语义判定，正则规则只保留为兜底，不再让硬编码词表主导产品行为。
+- 2026-04-15: `session-service.ts` 新增最近一次复杂工作流缓存；`orchestrator.confirm()` 在 WorkflowArchitect 失败时优先复用历史复杂工作流，再降级到 ComponentComposer，降低 LLM 主路径抖动时的退化幅度。
 
 [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md

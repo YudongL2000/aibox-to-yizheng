@@ -1,6 +1,6 @@
 /**
  * [INPUT]: 依赖 Angular 路由参数、Electron 子窗口初始化数据、Penpal 窗口通信、ConnectionGraphService 的桥接能力，以及 DialogueHardwareBridgeService 与 HardwareRuntimeService 的硬件状态，并消费数字孪生子页 ready-handshake。
- * [OUTPUT]: 对外提供 IframeComponent 子窗口承载器，负责展示外部页面并按需建立数据桥，同时在数字孪生场景下重放当前 scene，在硬件组装模式下转发组件需求与桥接状态、接收完成通知并直接执行端侧 workflow upload/stop 且回传真实 receipt 状态，在预览模式下将 MQTT 心跳设备映射为常驻的 mic/speaker/camera preview session 注入 Flutter 面板，并中继设备控制命令（麦克风/扬声器）到 Electron IPC，并使用更长加载窗容纳 Flutter Web DDC 启动；同 revision 的数字孪生硬刷新会重开 bootstrap grace，避免宿主 5 秒重试与 Flutter DDC fallback 互相打断；iframe 首帧 load/ready 触发的 loading/empty UI 状态改为异步提交，避免 Angular dev-mode 初次检查抛出 NG0100。
+ * [OUTPUT]: 对外提供 IframeComponent 子窗口承载器，负责展示外部页面并按需建立数据桥，同时在数字孪生场景下重放当前 scene，在硬件组装模式下转发组件需求与桥接状态、接收完成通知并直接执行端侧 workflow upload/stop 且回传真实 receipt 状态；组装 checklist 现在保留 workflow 显式要求的 speaker/microphone，避免“只剩音频设备”时检测台被错误判成空清单。在预览模式下继续将 MQTT 心跳设备映射为常驻的 mic/speaker/camera preview session 注入 Flutter 面板，并中继设备控制命令（麦克风/扬声器）到 Electron IPC，并使用更长加载窗容纳 Flutter Web DDC 启动；同 revision 的数字孪生硬刷新会重开 bootstrap grace，避免宿主 5 秒重试与 Flutter DDC fallback 互相打断；iframe 首帧 load/ready 触发的 loading/empty UI 状态改为异步提交，避免 Angular dev-mode 初次检查抛出 NG0100。
  * [POS]: windows/iframe 的通用嵌入窗口，被侧边栏工具、连线图与数字孪生入口复用，是“页面承载”和“数据桥接”之间的薄层。
  * [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md
  */
@@ -121,6 +121,7 @@ export class IframeComponent implements OnInit, OnDestroy, OnChanges {
   private assemblyBridgeSubscription: Subscription | null = null;
   private assemblyRequirementsSent = false;
   private assemblyCompletionForwarded = false;
+  private activeAssemblyRelayKey = '';
 
   // 018-twin-preview-device-control: 设备预览状态注入 + 控制中继
   private previewStateSubscription: Subscription | null = null;
@@ -160,6 +161,7 @@ export class IframeComponent implements OnInit, OnDestroy, OnChanges {
 
     if (changes['frameData'] && changes['frameData'].currentValue !== undefined) {
       this.iframeData = this.frameData;
+      this.handleDigitalTwinFrameDataChange();
       if (this.frameLoaded) {
         void this.pushDataToRemote();
       }
@@ -683,6 +685,13 @@ export class IframeComponent implements OnInit, OnDestroy, OnChanges {
     const windowData = this.iframeData as Record<string, unknown> | null;
     if (!windowData || windowData['mode'] !== 'hardware-assembly') return;
 
+    const relayKey = this.buildAssemblyRelayKey(windowData);
+    if (relayKey !== this.activeAssemblyRelayKey) {
+      this.activeAssemblyRelayKey = relayKey;
+      this.assemblyRequirementsSent = false;
+      this.assemblyCompletionForwarded = false;
+    }
+
     const iframeWindow = this.embeddedFrame?.nativeElement?.contentWindow;
     if (!iframeWindow) return;
 
@@ -697,13 +706,12 @@ export class IframeComponent implements OnInit, OnDestroy, OnChanges {
         ? this.allowedOrigins[0]
         : '*';
 
-    // 发送组件需求列表
-    // mic / speaker 是底座内置，不纳入可插拔清单
-    const BUILTIN_IDS = new Set(['speaker', 'microphone', 'mic', 'spk']);
-    const rawComponents = Array.isArray(windowData['components']) ? windowData['components'] as Array<Record<string, unknown>> : [];
-    const components = rawComponents.filter(
-      c => !BUILTIN_IDS.has(String(c['componentId'] ?? c['id'] ?? '').toLowerCase()),
-    );
+    // 发送组件需求列表。speaker / microphone 虽然在 twin 顶栏有 builtin controls，
+    // 但如果 workflow 显式把它们作为当前硬件节点要求，仍必须保留在 checklist 中，
+    // 否则“只剩扬声器/麦克风”时会被错误判成空清单，后续下发入口无法出现。
+    const components = Array.isArray(windowData['components'])
+      ? windowData['components'] as Array<Record<string, unknown>>
+      : [];
     const sessionId = windowData['sessionId'] ?? '';
     const nodeName = windowData['nodeName'] ?? '';
     const allPendingHardwareNodeNames = Array.isArray(windowData['allPendingHardwareNodeNames'])
@@ -803,6 +811,43 @@ export class IframeComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
+  private handleDigitalTwinFrameDataChange(): void {
+    if (!this.isDigitalTwinWindow) {
+      return;
+    }
+
+    const windowData = this.iframeData as Record<string, unknown> | null;
+    if (!windowData || windowData['mode'] !== 'hardware-assembly') {
+      this.activeAssemblyRelayKey = '';
+      this.assemblyRequirementsSent = false;
+      this.assemblyCompletionForwarded = false;
+      this.stopAssemblyBridgeRelay();
+      return;
+    }
+
+    if (this.frameLoaded && this.digitalTwinChildReady) {
+      this.startAssemblyBridgeRelay();
+    }
+  }
+
+  private buildAssemblyRelayKey(windowData: Record<string, unknown>): string {
+    const rawComponents = Array.isArray(windowData['components'])
+      ? windowData['components'] as Array<Record<string, unknown>>
+      : [];
+
+    return JSON.stringify({
+      sessionId: String(windowData['sessionId'] ?? ''),
+      nodeName: String(windowData['nodeName'] ?? ''),
+      allPendingHardwareNodeNames: Array.isArray(windowData['allPendingHardwareNodeNames'])
+        ? windowData['allPendingHardwareNodeNames']
+        : [],
+      components: rawComponents.map((component) => ({
+        componentId: String(component['componentId'] ?? component['id'] ?? ''),
+        displayName: String(component['displayName'] ?? component['name'] ?? ''),
+      })),
+    });
+  }
+
   private mapMqttDeviceToComponent(
     device: HardwareRuntimeHeartbeatDevice,
   ): {
@@ -822,7 +867,8 @@ export class IframeComponent implements OnInit, OnDestroy, OnChanges {
     else if (/\bhand\b|hand/.test(token)) { componentId = 'mechanical_hand'; displayName = '机械手'; }
     else if (/\bcar\b|\bwheel\b|chassis/.test(token)) { componentId = 'chassis'; displayName = '底盘'; }
     else if (/\bhdmi\b|\bscreen(?:[_ -]?\d+)?\b|\bdisplay(?:[_ -]?\d+)?\b|屏幕|显示屏/.test(token)) { componentId = 'screen'; displayName = '屏幕'; }
-    // mic / speaker 底座内置，不参与可插拔检测
+    else if (/\bmic\b|microphone/.test(token)) { componentId = 'microphone'; displayName = '麦克风'; }
+    else if (/\bspeaker\b/.test(token)) { componentId = 'speaker'; displayName = '扬声器'; }
     if (!componentId) return null;
     const rawStatus = (device.deviceStatus || 'online').toLowerCase();
     const status = /offline|disconnected|removed/.test(rawStatus) ? 'removed' : 'connected';
@@ -1335,6 +1381,7 @@ export class IframeComponent implements OnInit, OnDestroy, OnChanges {
     this.frameLoaded = false;
     this.assemblyRequirementsSent = false;
     this.assemblyCompletionForwarded = false;
+    this.activeAssemblyRelayKey = '';
     this.stopAssemblyBridgeRelay();
     this.stopPreviewStateRelay();
     this.penpalConnection?.destroy();

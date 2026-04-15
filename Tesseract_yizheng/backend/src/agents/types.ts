@@ -115,6 +115,14 @@ export interface WorkflowDefinition {
   meta?: Record<string, unknown>;
 }
 
+export interface CachedComplexWorkflow {
+  workflow: WorkflowDefinition;
+  capabilityIds: string[];
+  userIntent: string;
+  topologyHint?: string;
+  savedAt: string;
+}
+
 // ============================================================
 // NodeCategory & NodeNotes 类型定义（基于 game_nodes.md）
 // [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
@@ -714,6 +722,7 @@ export interface AgentSession {
   phase: AgentPhase;
   history: ConversationTurn[];
   workflow?: WorkflowDefinition;
+  lastComplexWorkflow?: CachedComplexWorkflow;
   blueprint?: WorkflowBlueprint;
   intent?: Intent;
   orchestratorState?: OrchestratorState;

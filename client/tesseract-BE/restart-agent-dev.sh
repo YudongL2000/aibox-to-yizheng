@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # [INPUT]: 依赖 backend/.env 中的 AGENT_PORT、系统进程查询工具(lsof/fuser/ss) 与 Windows netstat/taskkill 桥、npm agent:dev 脚本。
-# [OUTPUT]: 对外提供彻底重启 backend agent 的根目录脚本，负责跨 Linux/WSL 与 Windows 宿主两侧清理占用端口的旧进程后重新拉起开发服务；默认只处理 backend 自身，显式传参时才级联关闭 Electron 父进程。
+# [OUTPUT]: 对外提供彻底重启 backend agent 的根目录脚本，负责跨 Linux/WSL 与 Windows 宿主两侧清理占用端口的旧进程后重新拉起开发服务；默认只处理 backend 自身，显式传参时才级联关闭 Electron 父进程；若端口监听进程被宿主快速拉起，会继续多轮清场直到端口稳定释放。
 # [POS]: backend 根目录的本地运维入口，给手工联调提供稳定的“停旧进程 -> 起新进程”单向流程，也是 WSL + Windows 混合端口占用的单一处置点。
 # [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md
 
@@ -11,51 +11,13 @@ ENV_FILE="$ROOT_DIR/.env"
 DEFAULT_PORT=3006
 START_RETRY_ATTEMPTS=3
 START_RETRY_DELAY_SECONDS=1
+PORT_RELEASE_MAX_ROUNDS=8
+PORT_RELEASE_EMPTY_POLLS=4
 
 STOP_ONLY=0
 DRY_RUN=0
 PORT_OVERRIDE=""
 KILL_ELECTRON_PARENT=0
-
-# ------------------------------------------------------------
-# CLI parsing
-# ------------------------------------------------------------
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --stop-only)
-      STOP_ONLY=1
-      shift
-      ;;
-    --dry-run)
-      DRY_RUN=1
-      shift
-      ;;
-    --port)
-      PORT_OVERRIDE="${2:-}"
-      shift 2
-      ;;
-    -h|--help)
-      cat <<'EOF'
-Usage: ./restart-agent-dev.sh [--stop-only] [--dry-run] [--port <port>] [--kill-electron-parent]
-
-  --stop-only   Only stop the old backend process, do not start a new one.
-  --dry-run     Print detected port/PIDs and intended actions without killing or starting.
-  --port        Override AGENT_PORT from .env for this run.
-  --kill-electron-parent
-                If backend is hosted by aily-blockly Electron, also kill the parent Electron process.
-EOF
-      exit 0
-      ;;
-    --kill-electron-parent)
-      KILL_ELECTRON_PARENT=1
-      shift
-      ;;
-    *)
-      echo "[restart-agent-dev] Unknown option: $1" >&2
-      exit 1
-      ;;
-  esac
-done
 
 read_env_value() {
   local key="$1"
@@ -67,7 +29,7 @@ read_env_value() {
       value = substr($0, index($0, "=") + 1)
       sub(/[[:space:]]*#.*/, "", value)
       gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-      gsub(/^["'"'"'"'"'"'"'"'"']|["'"'"'"'"'"'"'"'"']$/, "", value)
+      gsub(/^['"'"']|['"'"']$/, "", value)
       print value
       exit
     }
@@ -88,11 +50,6 @@ resolve_agent_port() {
   local env_port=""
   env_port="$(read_env_value AGENT_PORT "$ENV_FILE" || true)"
   echo "${env_port:-$DEFAULT_PORT}"
-}
-
-listener_pids_for_port() {
-  local port="$1"
-  linux_listener_pids_for_port "$port"
 }
 
 linux_listener_pids_for_port() {
@@ -164,14 +121,12 @@ windows_process_parent_pid() {
 
 is_backend_commandline() {
   local commandline="$1"
-
   [[ "$commandline" =~ backend[\\/](dist|src)[\\/]agent-server[\\/]index\.(js|ts) ]]
 }
 
 is_aily_blockly_parent_commandline() {
   local commandline="$1"
-
-  [[ "$commandline" =~ aily-blockly[\\/].*electron[\\/]main\.js[[:space:]]+--serve ]]
+  [[ "$commandline" =~ aily-blockly[\\/].*electron[\\/]main\.js([[:space:]]+--serve)? ]]
 }
 
 linux_backend_pids() {
@@ -254,13 +209,27 @@ listener_targets_for_port() {
   fi
 }
 
+collect_release_targets() {
+  local port="$1"
+  {
+    backend_targets_for_port "$port" || true
+    listener_targets_for_port "$port" || true
+  } | awk 'NF && !seen[$0]++'
+}
+
 wait_for_port_release() {
   local port="$1"
   local attempts="${2:-20}"
+  local empty_polls=0
 
   for ((i = 0; i < attempts; i += 1)); do
     if [[ -z "$(listener_targets_for_port "$port")" ]]; then
-      return 0
+      empty_polls=$((empty_polls + 1))
+      if (( empty_polls >= PORT_RELEASE_EMPTY_POLLS )); then
+        return 0
+      fi
+    else
+      empty_polls=0
     fi
     sleep 0.25
   done
@@ -292,64 +261,107 @@ describe_target() {
   echo "<windows-process>"
 }
 
+terminate_target_once() {
+  local scope="$1"
+  local pid="$2"
+
+  if [[ "$scope" == "linux" ]]; then
+    kill -TERM "$pid" 2>/dev/null || true
+    return
+  fi
+
+  if command -v cmd.exe >/dev/null 2>&1 || command -v taskkill.exe >/dev/null 2>&1; then
+    run_windows_cmd "taskkill /PID $pid /T /F" >/dev/null 2>&1 || true
+  fi
+}
+
+force_kill_target_once() {
+  local scope="$1"
+  local pid="$2"
+
+  if [[ "$scope" == "linux" ]]; then
+    if kill -0 "$pid" 2>/dev/null; then
+      kill -KILL "$pid" 2>/dev/null || true
+    fi
+    return
+  fi
+
+  if command -v cmd.exe >/dev/null 2>&1 || command -v taskkill.exe >/dev/null 2>&1; then
+    run_windows_cmd "taskkill /PID $pid /T /F" >/dev/null 2>&1 || true
+  fi
+}
+
 terminate_targets() {
   local port="$1"
-  local targets="$2"
+  local initial_targets="$2"
+  local targets="$initial_targets"
+  local rounds=0
 
   [[ -n "$targets" ]] || return 0
 
-  echo "[restart-agent-dev] Releasing AGENT_PORT=$port"
-  while read -r target; do
-    [[ -n "$target" ]] || continue
-    local scope="${target%%:*}"
-    local pid="${target#*:}"
-    local cmdline=""
-    cmdline="$(describe_target "$scope" "$pid")"
-    echo "[restart-agent-dev] TERM scope=$scope pid=$pid cmd=${cmdline:-<unknown>}"
-    if [[ "$DRY_RUN" -eq 1 ]]; then
-      continue
-    fi
+  while (( rounds < PORT_RELEASE_MAX_ROUNDS )); do
+    rounds=$((rounds + 1))
+    echo "[restart-agent-dev] Releasing AGENT_PORT=$port round=$rounds"
 
-    if [[ "$scope" == "linux" ]]; then
-      kill -TERM "$pid" 2>/dev/null || true
-      continue
-    fi
-
-    if command -v cmd.exe >/dev/null 2>&1 || command -v taskkill.exe >/dev/null 2>&1; then
-      run_windows_cmd "taskkill /PID $pid /T" >/dev/null 2>&1 || true
-    fi
-  done <<< "$targets"
-
-  if [[ "$DRY_RUN" -eq 1 ]]; then
-    return 0
-  fi
-
-  if wait_for_port_release "$port"; then
-    return 0
-  fi
-
-  while read -r target; do
-    [[ -n "$target" ]] || continue
-    local scope="${target%%:*}"
-    local pid="${target#*:}"
-    echo "[restart-agent-dev] KILL scope=$scope pid=$pid"
-
-    if [[ "$scope" == "linux" ]]; then
-      if kill -0 "$pid" 2>/dev/null; then
-        kill -KILL "$pid" 2>/dev/null || true
+    while read -r target; do
+      [[ -n "$target" ]] || continue
+      local scope="${target%%:*}"
+      local pid="${target#*:}"
+      local cmdline=""
+      cmdline="$(describe_target "$scope" "$pid")"
+      echo "[restart-agent-dev] TERM scope=$scope pid=$pid cmd=${cmdline:-<unknown>}"
+      if [[ "$DRY_RUN" -eq 1 ]]; then
+        continue
       fi
-      continue
+      terminate_target_once "$scope" "$pid"
+    done <<< "$targets"
+
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      return 0
     fi
 
-    if command -v cmd.exe >/dev/null 2>&1 || command -v taskkill.exe >/dev/null 2>&1; then
-      run_windows_cmd "taskkill /PID $pid /T /F" >/dev/null 2>&1 || true
+    if wait_for_port_release "$port" 8; then
+      return 0
     fi
-  done <<< "$targets"
 
-  wait_for_port_release "$port" || {
-    echo "[restart-agent-dev] Failed to release port $port" >&2
-    exit 1
-  }
+    local remaining_targets=""
+    remaining_targets="$(collect_release_targets "$port" || true)"
+    if [[ -z "$remaining_targets" ]]; then
+      if wait_for_port_release "$port" 8; then
+        return 0
+      fi
+      break
+    fi
+
+    while read -r target; do
+      [[ -n "$target" ]] || continue
+      local scope="${target%%:*}"
+      local pid="${target#*:}"
+      echo "[restart-agent-dev] KILL scope=$scope pid=$pid"
+      force_kill_target_once "$scope" "$pid"
+    done <<< "$remaining_targets"
+
+    if wait_for_port_release "$port" 8; then
+      return 0
+    fi
+
+    targets="$remaining_targets"
+  done
+
+  echo "[restart-agent-dev] Failed to release port $port after $PORT_RELEASE_MAX_ROUNDS rounds" >&2
+  local final_targets=""
+  final_targets="$(collect_release_targets "$port" || true)"
+  if [[ -n "$final_targets" ]]; then
+    while read -r target; do
+      [[ -n "$target" ]] || continue
+      local scope="${target%%:*}"
+      local pid="${target#*:}"
+      local cmdline=""
+      cmdline="$(describe_target "$scope" "$pid")"
+      echo "[restart-agent-dev] STILL-LISTENING scope=$scope pid=$pid cmd=${cmdline:-<unknown>}" >&2
+    done <<< "$final_targets"
+  fi
+  exit 1
 }
 
 start_agent_dev_with_retry() {
@@ -375,10 +387,7 @@ start_agent_dev_with_retry() {
     if grep -q "EADDRINUSE: address already in use .*:$port" "$log_file"; then
       echo "[restart-agent-dev] Detected EADDRINUSE on port $port during startup"
       local retry_targets=""
-      retry_targets="$(backend_targets_for_port "$port" || true)"
-      if [[ -z "$retry_targets" ]]; then
-        retry_targets="$(listener_targets_for_port "$port" || true)"
-      fi
+      retry_targets="$(collect_release_targets "$port" || true)"
       if [[ -n "$retry_targets" ]]; then
         terminate_targets "$port" "$retry_targets"
       fi
@@ -400,30 +409,55 @@ start_agent_dev_with_retry() {
 }
 
 main() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --stop-only)
+        STOP_ONLY=1
+        shift
+        ;;
+      --dry-run)
+        DRY_RUN=1
+        shift
+        ;;
+      --port)
+        PORT_OVERRIDE="${2:-}"
+        shift 2
+        ;;
+      --kill-electron-parent)
+        KILL_ELECTRON_PARENT=1
+        shift
+        ;;
+      -h|--help)
+        cat <<'EOF'
+Usage: ./restart-agent-dev.sh [--stop-only] [--dry-run] [--port <port>] [--kill-electron-parent]
+
+  --stop-only   Only stop the old backend process, do not start a new one.
+  --dry-run     Print detected port/PIDs and intended actions without killing or starting.
+  --port        Override AGENT_PORT from .env for this run.
+  --kill-electron-parent
+                If backend is hosted by aily-blockly Electron, also kill the parent Electron process.
+EOF
+        exit 0
+        ;;
+      *)
+        echo "[restart-agent-dev] Unknown option: $1" >&2
+        exit 1
+        ;;
+    esac
+  done
+
   local port=""
   local targets=""
-  local listener_targets=""
 
   port="$(resolve_agent_port)"
-  targets="$(backend_targets_for_port "$port" || true)"
+  targets="$(collect_release_targets "$port" || true)"
 
   echo "[restart-agent-dev] root=$ROOT_DIR"
   echo "[restart-agent-dev] port=$port"
   echo "[restart-agent-dev] killElectronParent=$KILL_ELECTRON_PARENT"
 
   if [[ -n "$targets" ]]; then
-    terminate_targets "$port" "$(printf '%s\n' "$targets" | sort -u)"
-  fi
-
-  listener_targets="$(listener_targets_for_port "$port" || true)"
-  if [[ -n "$listener_targets" ]]; then
-    terminate_targets "$port" "$(printf '%s\n' "$listener_targets" | sort -u)"
-  elif [[ -z "$targets" ]]; then
-    echo "[restart-agent-dev] No listener found on port $port"
-  fi
-
-  if [[ -n "$targets" || -n "$listener_targets" ]]; then
-    :
+    terminate_targets "$port" "$targets"
   else
     echo "[restart-agent-dev] No backend target found on port $port"
   fi
@@ -443,4 +477,4 @@ main() {
   start_agent_dev_with_retry "$port"
 }
 
-main
+main "$@"

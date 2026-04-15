@@ -11,6 +11,8 @@ class TextWithConfirmButton extends StatelessWidget {
 
   /// 是否已经点击确认（已拼装完毕）
   final bool isConfirmed;
+  final bool isSubmitting;
+  final String submittingText;
 
   /// 交互按钮最大宽度（如 1/4 内容区宽度）
   final double? maxButtonWidth;
@@ -20,6 +22,8 @@ class TextWithConfirmButton extends StatelessWidget {
     required this.text,
     this.onConfirm,
     this.isConfirmed = false,
+    this.isSubmitting = false,
+    this.submittingText = '确认中...',
     this.maxButtonWidth,
   });
 
@@ -67,13 +71,19 @@ class TextWithConfirmButton extends StatelessWidget {
             Center(
               child: _wrapButton(
                 FilledButton(
-                  onPressed: isConfirmed ? null : onConfirm,
+                  onPressed: (isConfirmed || isSubmitting) ? null : onConfirm,
                   style: spatial.primaryButtonStyle(
                     accent: isConfirmed
                         ? spatial.surfaceElevated
                         : spatial.palette.semSuccess,
                   ),
-                  child: Text(isConfirmed ? '已完成' : '已拼装完毕'),
+                  child: interactionActionButtonChild(
+                    context,
+                    label: isConfirmed
+                        ? '已完成'
+                        : (isSubmitting ? submittingText : '已拼装完毕'),
+                    isLoading: isSubmitting,
+                  ),
                 ),
               ),
             ),
@@ -85,8 +95,8 @@ class TextWithConfirmButton extends StatelessWidget {
 
   Widget _wrapButton(Widget button) {
     if (maxButtonWidth != null) {
-      // 按当前显示标题测量：isConfirmed ?「已完成」:「已拼装完毕」
-      final title = isConfirmed ? '已完成' : '已拼装完毕';
+      final title =
+          isConfirmed ? '已完成' : (isSubmitting ? submittingText : '已拼装完毕');
       final minW = (measureButtonTitleWidth(title, fontSize: 14) + 5)
           .clamp(0.0, maxButtonWidth!);
       return ConstrainedBox(

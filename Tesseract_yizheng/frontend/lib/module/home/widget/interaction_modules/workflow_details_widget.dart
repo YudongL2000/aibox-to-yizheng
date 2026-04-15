@@ -1,6 +1,6 @@
 /*
  * [INPUT]: 依赖 Flutter Material、Spatial design tokens 与 workflow 详情键值。
- * [OUTPUT]: 对外提供 WorkflowDetailsWidget，渲染 workflow 标题、有效详情项与确认/继续 CTA，并保持低圆角矩形结果卡。
+ * [OUTPUT]: 对外提供 WorkflowDetailsWidget，渲染 workflow 标题、有效详情项与确认/继续 CTA，并在继续交流时提供按钮级 loading 反馈。
  * [POS]: module/home/widget/interaction_modules 的 workflow 结果卡片，用于承接 blueprint confirm 后的工作流确认阶段。
  * [PROTOCOL]: 变更时更新此头部，然后检查同目录 README.md / 上层 AGENTS.md。
  */
@@ -17,6 +17,7 @@ class WorkflowDetailsWidget extends StatelessWidget {
   final VoidCallback? onConfirm;
   final bool isCreated;
   final bool isCreating;
+  final bool isContinuing;
   final double? maxButtonWidth;
 
   const WorkflowDetailsWidget({
@@ -26,6 +27,7 @@ class WorkflowDetailsWidget extends StatelessWidget {
     this.onConfirm,
     this.isCreated = false,
     this.isCreating = false,
+    this.isContinuing = false,
     this.maxButtonWidth,
   });
 
@@ -84,9 +86,14 @@ class WorkflowDetailsWidget extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: onContinue,
+            onPressed: isContinuing ? null : onContinue,
             style: spatial.secondaryButtonStyle(),
-            child: const Text('继续交流'),
+            child: interactionActionButtonChild(
+              context,
+              label: isContinuing ? '发送中...' : '继续交流',
+              isLoading: isContinuing,
+              color: spatial.palette.textPrimary,
+            ),
           ),
         ),
         SizedBox(width: spatial.space2),
@@ -105,7 +112,10 @@ class WorkflowDetailsWidget extends StatelessWidget {
     );
 
     if (maxButtonWidth != null) {
-      final leftW = measureButtonTitleWidth('继续交流', fontSize: 9);
+      final leftW = measureButtonTitleWidth(
+        isContinuing ? '发送中...' : '继续交流',
+        fontSize: 9,
+      );
       final rightTitle = isCreated
           ? (isCreating ? '构建中...' : '已创建工作流')
           : (isCreating ? '构建中...' : '确认构建工作流');

@@ -1,6 +1,6 @@
 /*
  * [INPUT]: 依赖数字孪生配置资产、DigitalTwinConsoleController、DigitalTwinSceneEnvelope、AiInteractionWindow、model_3d_viewer.dart 提供的场景/preview runtime state 和 iframe ready-handshake/JSON-safe postMessage 协议，以及 assembly_checklist_panel.dart 提供的组装清单面板组件与数据模型。
- * [OUTPUT]: 对外提供 HomeWorkspacePage，根据入口选择"纯数字孪生嵌入模式"或"顶部浏览器式 tabs 的数字孪生 + Workflow 工作台模式"，并默认把常规工作台落到 Digital Twin 主视图；嵌入模式中继续归一化跨运行时消息后消费/重放 scene envelope、preview sessions、top controls 与 assembly checklist，同时把 consumed revision、模型选择、顶部控制事件与组装工作流动作回传给父窗口，并把工作台压成单层矩形 tabs + 带单层 wireframe grid backdrop 的内容区；配件 preview 不再占用独立工作区，而是作为画布内 overlay 叠加在数字孪生 stage 上，同时通过 PointerInterceptor 保证 overlay/top-control 在 HtmlElementView viewer 之上仍可点击，并让 Digital Twin 与 Workflow 共用同一套页面基底配色与宿主 theme token。
+ * [OUTPUT]: 对外提供 HomeWorkspacePage，根据入口选择"纯数字孪生嵌入模式"或"顶部浏览器式 tabs 的数字孪生 + Workflow 工作台模式"，并默认把常规工作台落到 Digital Twin 主视图；嵌入模式中继续归一化跨运行时消息后消费/重放 scene envelope、preview sessions、top controls 与 assembly checklist，同时把 consumed revision、模型选择、顶部控制事件与组装工作流动作回传给父窗口，并把工作台压成单层矩形 tabs + 带单层 wireframe grid backdrop 的内容区；配件 preview 不再占用独立工作区，而是作为画布内 overlay 叠加在数字孪生 stage 上，同时通过 PointerInterceptor 保证 overlay/top-control 在 HtmlElementView viewer 之上仍可点击，并让 Digital Twin 与 Workflow 共用同一套页面基底配色与宿主 theme token；硬件组装 overlay 还会把运行时 raw `portId` 规范化为 canonical interface id，再并入本地 scene。
  * [POS]: module/home 的工作台总装页，负责保住嵌入入口的单画布形态，同时把数字孪生页与 Workflow 页组织成同级主视图，也是 embedded twin 向 Electron 回报用户交互的唯一出口与 Flutter 工作台 shell/grid 语言收口点。
  * [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md
  */
@@ -801,13 +801,14 @@ class _HomeWorkspacePageState extends State<HomeWorkspacePage> {
     final detectedComponents =
         (payload['components'] as List<dynamic>?)?.map((dynamic c) {
               final Map<String, dynamic> m = c as Map<String, dynamic>;
+              final rawPortId =
+                  m['portId'] as String? ?? m['port_id'] as String? ?? '';
               return DetectedHardwareComponent(
                 componentId: m['componentId'] as String? ?? '',
                 deviceId: m['deviceId'] as String? ?? '',
                 displayName: m['displayName'] as String? ?? '',
                 status: m['status'] as String? ?? 'connected',
-                portId:
-                    m['portId'] as String? ?? m['port_id'] as String? ?? '',
+                portId: normalizeDigitalTwinInterfaceId(rawPortId),
                 modelId:
                     m['modelId'] as String? ?? m['model_id'] as String? ?? '',
               );
@@ -834,16 +835,23 @@ class _HomeWorkspacePageState extends State<HomeWorkspacePage> {
         .toList();
     final Set<String> occupiedPorts = preservedModels
         .where((DigitalTwinModelItem model) => model.id != scene.baseModelId)
-        .map((DigitalTwinModelItem model) => model.interfaceId ?? '')
+        .map(
+          (DigitalTwinModelItem model) =>
+              normalizeDigitalTwinInterfaceId(model.interfaceId),
+        )
         .where((String interfaceId) => interfaceId.isNotEmpty)
         .toSet();
     final List<DigitalTwinModelItem> overlayModels = <DigitalTwinModelItem>[];
 
-    for (final DetectedHardwareComponent component in _assemblyDetectedComponents) {
+    for (final DetectedHardwareComponent component
+        in _assemblyDetectedComponents) {
+      final normalizedPortId =
+          normalizeDigitalTwinInterfaceId(component.portId);
       if (!_isAssemblyRenderableComponent(component)) {
         continue;
       }
-      if (occupiedPorts.contains(component.portId)) {
+      if (normalizedPortId.isEmpty ||
+          occupiedPorts.contains(normalizedPortId)) {
         continue;
       }
       final _AssemblySceneModelPreset? preset =
@@ -853,10 +861,9 @@ class _HomeWorkspacePageState extends State<HomeWorkspacePage> {
       }
       overlayModels.add(
         DigitalTwinModelItem(
-          id:
-              '$_kAssemblyOverlayModelPrefix${preset.kind}-${component.deviceId}',
+          id: '$_kAssemblyOverlayModelPrefix${preset.kind}-${component.deviceId}',
           url: preset.url,
-          interfaceId: component.portId,
+          interfaceId: normalizedPortId,
           position: const <double>[0, 0, 0],
           rotation: const <double>[0, 0, 0],
           scale: preset.scale,
@@ -880,7 +887,8 @@ class _HomeWorkspacePageState extends State<HomeWorkspacePage> {
     );
   }
 
-  DigitalTwinSceneConfig _stripAssemblyOverlayModels(DigitalTwinSceneConfig scene) {
+  DigitalTwinSceneConfig _stripAssemblyOverlayModels(
+      DigitalTwinSceneConfig scene) {
     final List<DigitalTwinModelItem> preservedModels = scene.models
         .where(
           (DigitalTwinModelItem model) =>
@@ -915,7 +923,8 @@ class _HomeWorkspacePageState extends State<HomeWorkspacePage> {
     });
   }
 
-  _AssemblySceneModelPreset? _resolveAssemblySceneModelPreset(String componentId) {
+  _AssemblySceneModelPreset? _resolveAssemblySceneModelPreset(
+      String componentId) {
     final String kind = _normalizeAssemblyComponentKind(componentId);
     return _kAssemblySceneModelPresets[kind];
   }
@@ -1074,7 +1083,9 @@ class _HomeWorkspacePageState extends State<HomeWorkspacePage> {
               label: const Text('停止工作流'),
               style: spatial.dangerButtonStyle(),
             ),
-            if ((_assemblyWorkflowActionStatus ?? '').trim().isNotEmpty) ...<Widget>[
+            if ((_assemblyWorkflowActionStatus ?? '')
+                .trim()
+                .isNotEmpty) ...<Widget>[
               const SizedBox(height: 12),
               Text(
                 _assemblyWorkflowActionStatus!,
@@ -1126,7 +1137,8 @@ class _HomeWorkspacePageState extends State<HomeWorkspacePage> {
   Widget _buildCanvasStage({required bool isCompact}) {
     final bool showAssemblyPanel =
         _assemblyRequirements != null && _assemblyRequirements!.isNotEmpty;
-    final bool showWorkflowActionPanel = _shouldShowStandaloneWorkflowActionPanel;
+    final bool showWorkflowActionPanel =
+        _shouldShowStandaloneWorkflowActionPanel;
 
     final Widget canvas = ClipRect(
       child: LayoutBuilder(
@@ -1186,16 +1198,18 @@ class _HomeWorkspacePageState extends State<HomeWorkspacePage> {
 
     final Widget sidePanel = showAssemblyPanel
         ? SizedBox(
-      width: isCompact ? double.infinity : 280,
-      child: AssemblyChecklistPanel(
-        requirements: _assemblyRequirements!,
-        detectedComponents: _assemblyDetectedComponents,
-        onUploadWorkflowPressed: () => _requestAssemblyWorkflowAction('upload'),
-        onStopWorkflowPressed: () => _requestAssemblyWorkflowAction('stop'),
-        workflowActionLoading: _assemblyWorkflowActionLoading,
-        workflowActionStatus: _assemblyWorkflowActionStatus,
-      ),
-    )
+            width: isCompact ? double.infinity : 280,
+            child: AssemblyChecklistPanel(
+              requirements: _assemblyRequirements!,
+              detectedComponents: _assemblyDetectedComponents,
+              onUploadWorkflowPressed: () =>
+                  _requestAssemblyWorkflowAction('upload'),
+              onStopWorkflowPressed: () =>
+                  _requestAssemblyWorkflowAction('stop'),
+              workflowActionLoading: _assemblyWorkflowActionLoading,
+              workflowActionStatus: _assemblyWorkflowActionStatus,
+            ),
+          )
         : SizedBox(
             width: isCompact ? double.infinity : 280,
             child: _buildWorkflowActionPanel(),

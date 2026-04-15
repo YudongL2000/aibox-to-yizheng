@@ -12,6 +12,9 @@ class ImagePreview extends StatelessWidget {
   final String? profile;
   final VoidCallback? onConfirm;
   final VoidCallback? onReselect;
+  final bool isSubmitting;
+  final String confirmText;
+  final String submittingText;
 
   const ImagePreview({
     super.key,
@@ -20,6 +23,9 @@ class ImagePreview extends StatelessWidget {
     this.profile,
     this.onConfirm,
     this.onReselect,
+    this.isSubmitting = false,
+    this.confirmText = '确认',
+    this.submittingText = '处理中...',
   });
 
   @override
@@ -51,7 +57,7 @@ class ImagePreview extends StatelessWidget {
                 const Spacer(),
                 interactionStatusChip(
                   context,
-                  label: 'READY',
+                  label: isSubmitting ? 'PROCESSING' : 'READY',
                   tone: InteractionTone.info,
                 ),
               ],
@@ -74,7 +80,7 @@ class ImagePreview extends StatelessWidget {
                   if (onReselect != null)
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: onReselect,
+                        onPressed: isSubmitting ? null : onReselect,
                         style: spatial.secondaryButtonStyle(),
                         child: const Text('重新选择'),
                       ),
@@ -85,9 +91,13 @@ class ImagePreview extends StatelessWidget {
                     Expanded(
                       flex: onReselect != null ? 2 : 1,
                       child: FilledButton(
-                        onPressed: onConfirm,
+                        onPressed: isSubmitting ? null : onConfirm,
                         style: spatial.primaryButtonStyle(accent: accent),
-                        child: const Text('确认'),
+                        child: interactionActionButtonChild(
+                          context,
+                          label: isSubmitting ? submittingText : confirmText,
+                          isLoading: isSubmitting,
+                        ),
                       ),
                     ),
                 ],

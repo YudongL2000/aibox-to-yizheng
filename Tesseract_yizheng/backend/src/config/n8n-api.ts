@@ -23,6 +23,7 @@ const n8nApiConfigSchema = z.object({
 // Track if we've loaded env vars
 let envLoaded = false;
 const EMBEDDED_API_ACCESS_FILE = path.join('.tesseract-runtime', 'n8n', 'api-access.json');
+const LOCAL_N8N_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 
 type EmbeddedApiAccess = {
   baseUrl?: string;
@@ -31,10 +32,27 @@ type EmbeddedApiAccess = {
 };
 
 function normalizeApiBaseUrl(baseUrl?: string | null): string {
-  return String(baseUrl ?? '')
+  const normalizedBaseUrl = String(baseUrl ?? '')
     .trim()
     .replace(/\/+$/, '')
     .replace(/\/api\/v1$/, '/api/v1');
+
+  if (!normalizedBaseUrl) {
+    return '';
+  }
+
+  try {
+    const parsedUrl = new URL(normalizedBaseUrl);
+    if (LOCAL_N8N_HOSTNAMES.has(parsedUrl.hostname)) {
+      parsedUrl.hostname = '127.0.0.1';
+    }
+
+    return `${parsedUrl.protocol}//${parsedUrl.host}${parsedUrl.pathname}`
+      .replace(/\/+$/, '')
+      .replace(/\/api\/v1$/, '/api/v1');
+  } catch (_error) {
+    return normalizedBaseUrl;
+  }
 }
 
 function getEmbeddedApiAccessCandidates(): string[] {
