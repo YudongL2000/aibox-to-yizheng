@@ -1,0 +1,5 @@
+.altcha-widget {
+  --altcha-max-width: 100%;
+  color: var(--text-primary);
+  display: none;
+}

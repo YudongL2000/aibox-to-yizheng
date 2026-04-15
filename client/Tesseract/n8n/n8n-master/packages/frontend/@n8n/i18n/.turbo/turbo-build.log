@@ -1,0 +1,33 @@
+
+> @n8n/i18n@2.5.0 build /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/i18n
+> tsdown
+
+[34mℹ[39m tsdown [2mv0.16.5[22m powered by rolldown [2mv1.0.0-beta.50[22m
+[34mℹ[39m Using tsdown config: [4m/Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/i18n/tsdown.config.ts[24m
+[34mℹ[39m entry: [34msrc/index.ts, src/types.ts, src/utils.ts[39m
+[34mℹ[39m tsconfig: [34mtsconfig.json[39m
+[34mℹ[39m Build start
+[34mℹ[39m [33m[CJS][39m [2mdist/[22m[1mindex.cjs[22m       [2m350.82 kB[22m [2m│ gzip: 79.53 kB[22m
+[34mℹ[39m [33m[CJS][39m [2mdist/[22m[1mutils.cjs[22m       [2m  0.29 kB[22m [2m│ gzip:  0.15 kB[22m
+[34mℹ[39m [33m[CJS][39m [2mdist/[22m[1mtypes.cjs[22m       [2m  0.00 kB[22m [2m│ gzip:  0.02 kB[22m
+[34mℹ[39m [33m[CJS][39m [2mdist/[22mindex.cjs.map   [2m444.28 kB[22m [2m│ gzip: 89.86 kB[22m
+[34mℹ[39m [33m[CJS][39m [2mdist/[22mutils2.cjs.map  [2m  3.42 kB[22m [2m│ gzip:  1.35 kB[22m
+[34mℹ[39m [33m[CJS][39m [2mdist/[22mutils2.cjs      [2m  2.69 kB[22m [2m│ gzip:  1.02 kB[22m
+[34mℹ[39m [33m[CJS][39m 6 files, total: 801.50 kB
+[34mℹ[39m [33m[CJS][39m [2mdist/[22m[32m[1mindex.d.cts[22m[39m   [2m226.71 kB[22m [2m│ gzip: 30.55 kB[22m
+[34mℹ[39m [33m[CJS][39m [2mdist/[22m[32m[1mutils.d.cts[22m[39m   [2m  0.46 kB[22m [2m│ gzip:  0.25 kB[22m
+[34mℹ[39m [33m[CJS][39m [2mdist/[22m[32m[1mtypes.d.cts[22m[39m   [2m  0.20 kB[22m [2m│ gzip:  0.14 kB[22m
+[34mℹ[39m [33m[CJS][39m [2mdist/[22m[32mtypes2.d.cts[39m  [2m214.72 kB[22m [2m│ gzip: 29.48 kB[22m
+[34mℹ[39m [33m[CJS][39m 4 files, total: 442.10 kB
+[34mℹ[39m [34m[ESM][39m [2mdist/[22m[1mindex.mjs[22m       [2m350.42 kB[22m [2m│ gzip: 79.51 kB[22m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22m[1mutils.mjs[22m       [2m  0.22 kB[22m [2m│ gzip:  0.15 kB[22m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22m[1mtypes.mjs[22m       [2m  0.01 kB[22m [2m│ gzip:  0.03 kB[22m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22mindex.mjs.map   [2m444.19 kB[22m [2m│ gzip: 89.81 kB[22m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22mutils2.mjs.map  [2m  3.42 kB[22m [2m│ gzip:  1.35 kB[22m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22mutils2.mjs      [2m  2.27 kB[22m [2m│ gzip:  0.96 kB[22m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22m[32m[1mindex.d.mts[22m[39m     [2m226.71 kB[22m [2m│ gzip: 30.55 kB[22m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22m[32m[1mutils.d.mts[22m[39m     [2m  0.46 kB[22m [2m│ gzip:  0.25 kB[22m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22m[32m[1mtypes.d.mts[22m[39m     [2m  0.20 kB[22m [2m│ gzip:  0.14 kB[22m
+[34mℹ[39m [34m[ESM][39m [2mdist/[22m[32mtypes2.d.mts[39m    [2m214.72 kB[22m [2m│ gzip: 29.48 kB[22m
+[34mℹ[39m [34m[ESM][39m 10 files, total: 1242.62 kB
+[32m✔[39m Build complete in [32m5174ms[39m

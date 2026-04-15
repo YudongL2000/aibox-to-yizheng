@@ -1,0 +1,70 @@
+<!--
+  [INPUT]: 依赖 ZLMRTCClient.js 与 p2p_preview.js 提供的 camera p2p 连接能力。
+  [OUTPUT]: 对外提供 camera p2p preview iframe 宿主页，承载视频画面与隐藏诊断节点；视觉层只保留扁平视频区，不再重复输出 badge/header/底部状态壳，也不再显示浏览器原生播放器控件。
+  [POS]: web/model_viewer 的 camera 预览静态入口，被 Flutter preview pane 通过 iframe 嵌入。
+  [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Camera P2P Preview</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #05070d;
+        color: rgba(255, 255, 255, 0.88);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial, sans-serif;
+      }
+      .shell {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      .video-wrap {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #05070d;
+      }
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        background: #05070d;
+      }
+      .diagnostics {
+        display: none;
+      }
+    </style>
+    <script src="./ZLMRTCClient.js"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="diagnostics" aria-hidden="true">
+        <span id="stream-url">等待 streamUrl</span>
+        <span id="status">等待 streamUrl</span>
+      </div>
+      <div class="video-wrap">
+        <video
+          id="video"
+          autoplay
+          playsinline
+          muted
+          disablepictureinpicture
+          controlslist="nodownload nofullscreen noplaybackrate"
+        ></video>
+      </div>
+    </div>
+    <script type="module" src="./p2p_preview.js"></script>
+  </body>
+</html>

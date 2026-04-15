@@ -1,0 +1,70 @@
+@if(loaded){
+<div class="float-zone">
+  <div class="float-sider" [ngClass]="{'show': show}">
+    @if (workspaceMode === 'tesseract') {
+      @if (hasProjectContext) {
+        <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+          nzTooltipTitle="项目设置" data-label="项目设置" aria-label="项目设置" (click)="openSettings()">
+          <i class="fa-light fa-folder-bookmark"></i>
+        </button>
+        <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+          nzTooltipTitle="3D 模型" data-label="3D 模型" aria-label="3D 模型" (click)="openThreeDModel()">
+          <i class="fa-light fa-cubes"></i>
+        </button>
+      }
+      <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+        nzTooltipTitle="模型库" data-label="模型库" aria-label="模型库" (click)="openModelLibrary()">
+        <i class="fa-light fa-microchip-ai"></i>
+      </button>
+      <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+        nzTooltipTitle="工作流模板" data-label="工作流模板" aria-label="工作流模板" (click)="openWorkflowTemplates()">
+        <i class="fa-light fa-sitemap"></i>
+      </button>
+      @if (hasProjectContext) {
+        <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+          nzTooltipTitle="文档" data-label="文档" aria-label="文档" (click)="openDocUrl()">
+          <i class="fa-light fa-book"></i>
+        </button>
+      }
+      <div class="line" aria-hidden="true"></div>
+      <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+        nzTooltipTitle="反馈" data-label="反馈" aria-label="反馈" (click)="openFeedback()">
+        <i class="fa-light fa-message-pen"></i>
+      </button>
+    } @else if (workspaceMode === 'legacy') {
+      <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+        [nzTooltipTitle]="'FLOAT_SIDER.PROJECT_SETTINGS' | translate"
+        [attr.data-label]="'FLOAT_SIDER.PROJECT_SETTINGS' | translate"
+        [attr.aria-label]="'FLOAT_SIDER.PROJECT_SETTINGS' | translate" (click)="openSettings()">
+        <i class="fa-light fa-folder-bookmark"></i>
+      </button>
+      <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+        [nzTooltipTitle]="'FLOAT_SIDER.PINMAP' | translate"
+        [attr.data-label]="'FLOAT_SIDER.PINMAP' | translate"
+        [attr.aria-label]="'FLOAT_SIDER.PINMAP' | translate" (click)="showPinmap()">
+        <i class="fa-light fa-microchip"></i>
+      </button>
+      <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+        [nzTooltipTitle]="'FLOAT_SIDER.CIRCUIT' | translate"
+        [attr.data-label]="'FLOAT_SIDER.CIRCUIT' | translate"
+        [attr.aria-label]="'FLOAT_SIDER.CIRCUIT' | translate" (click)="showCircuit()">
+        <i class="fa-light fa-code-branch"></i>
+      </button>
+      <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+        [nzTooltipTitle]="'FLOAT_SIDER.DOCUMENTATION' | translate"
+        [attr.data-label]="'FLOAT_SIDER.DOCUMENTATION' | translate"
+        [attr.aria-label]="'FLOAT_SIDER.DOCUMENTATION' | translate" (click)="openDocUrl()">
+        <i class="fa-light fa-book"></i>
+      </button>
+      <div class="line" aria-hidden="true"></div>
+      <button type="button" class="item ccenter" nz-tooltip nzTooltipPlacement="left"
+        [nzTooltipTitle]="'FLOAT_SIDER.FEEDBACK' | translate"
+        [attr.data-label]="'FLOAT_SIDER.FEEDBACK' | translate"
+        [attr.aria-label]="'FLOAT_SIDER.FEEDBACK' | translate" (click)="openFeedback()">
+        <i class="fa-light fa-message-pen"></i>
+      </button>
+    }
+  </div>
+</div>
+<app-image-viewer #imageViewer></app-image-viewer>
+}

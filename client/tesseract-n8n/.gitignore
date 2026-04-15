@@ -1,0 +1,4 @@
+# 忽略大体积镜像/压缩包，避免误提交
+n8n-master/n8nio_local_image.tar
+node_modules
+n8n-master/packages

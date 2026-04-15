@@ -1,0 +1,126 @@
+<div class="skill-center-shell">
+  <button type="button" class="close-btn ccenter" (click)="close()">
+    <i class="fa-regular fa-xmark"></i>
+  </button>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo-accent">Tesseract</span>
+      <span class="logo-text">Studio</span>
+    </div>
+
+    <nav class="nav-list">
+      @for (item of navItems; track item.key) {
+        <button
+          type="button"
+          class="nav-item"
+          [class.active]="item.key === activeView"
+          [class.disabled]="item.disabled"
+          [disabled]="item.disabled"
+          (click)="setActiveView(item.key)"
+        >
+          <i class="{{ item.icon }}"></i>
+          <span>{{ item.label }}</span>
+        </button>
+      }
+    </nav>
+
+    <div class="sidebar-footer">{{ versionLabel }}</div>
+  </aside>
+
+  <section class="content">
+    @switch (activeView) {
+      @case ('library') {
+        <header class="content-header">
+          <div>
+            <p class="eyebrow">Local Skills</p>
+            <h1>我的 Skills 库</h1>
+            <p class="subtitle">这里承接教学模式真正学会的本地技能。确认存入后，后续对话模式会直接从这里做语义检索与分流。</p>
+          </div>
+          <div class="create-btn skill-count">{{ librarySkills.length }} 个已存储</div>
+        </header>
+
+        @if (librarySkills.length > 0) {
+          <div class="card-grid">
+            @for (skill of currentPageSkills; track trackSkill($index, skill)) {
+              <article class="skill-card" [class.incoming]="isIncoming(skill.skillId)">
+                <button type="button" class="delete-btn" title="删除" (click)="deleteSkill(skill); $event.stopPropagation()">
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+                <p class="card-category">WORKFLOW SKILL</p>
+                <h2>{{ skill.workflowName || skill.displayName }}</h2>
+                <p class="card-summary">{{ skill.summary }}</p>
+                <div class="card-meta">
+                  @for (tag of requiredHardwareLabels(skill); track tag) {
+                    <span>{{ tag }}</span>
+                  }
+                </div>
+                <p class="card-footer">来源会话：{{ skill.sourceSessionId || '未绑定' }}</p>
+                <div class="card-actions">
+                  <button type="button" class="action-btn secondary" [disabled]="!canTrace(skill)" (click)="traceSkill(skill)">回溯教学流程</button>
+                  <button type="button" class="action-btn primary" [disabled]="!canPublish(skill)" (click)="publishSkill(skill)">发布到广场</button>
+                </div>
+                @if (isIncoming(skill.skillId)) {
+                  <div class="incoming-pill">NEW</div>
+                }
+              </article>
+            }
+          </div>
+
+          @if (librarySkills.length > pageSize) {
+            <nz-pagination
+              class="skill-pagination"
+              [nzPageIndex]="pageIndex"
+              [nzTotal]="librarySkills.length"
+              [nzPageSize]="pageSize"
+              [nzShowSizeChanger]="false"
+              (nzPageIndexChange)="onPageChange($event)"
+            ></nz-pagination>
+          }
+        } @else {
+          <section class="empty-state">
+            <p class="eyebrow">EMPTY LIBRARY</p>
+            <h2>这里暂时还是空的</h2>
+            <p>当你在教学模式里完成一个工作流，并点击“确认存入 Skills 库”后，新技能就会以 JSON 形式落到本地库，并在这里飞入显示。</p>
+          </section>
+        }
+      }
+
+      @case ('market') {
+        <header class="content-header market">
+          <div>
+            <p class="eyebrow">Skill Market</p>
+            <h1>Skill 广场</h1>
+            <p class="subtitle">广场数据还没有接入真实后端，所以这里不再展示任何 mock skill。等接线完成后，它才会重新出现。</p>
+          </div>
+        </header>
+
+        <section class="featured-card placeholder-card">
+          <div class="featured-copy">
+            <h2>广场正在接线</h2>
+            <p>现在我们只保留真实的本地 Skills 库，避免假数据干扰对话模式与工作流调试。广场接入完成后，会从真实源加载内容。</p>
+          </div>
+          <div class="featured-orbit">
+            <i class="fa-light fa-sparkles"></i>
+          </div>
+        </section>
+      }
+
+      @default {
+        <header class="content-header">
+          <div>
+            <p class="eyebrow">Cloud Backup</p>
+            <h1>云端备份</h1>
+            <p class="subtitle">这一层还没接线，后续会支持跨设备同步 skills 库与教学产物。</p>
+          </div>
+        </header>
+
+        <section class="empty-state">
+          <p class="eyebrow">COMING SOON</p>
+          <h2>先把本地 Skills 库跑通</h2>
+          <p>当前阶段我们优先确保“教学完成 -> 本地入库 -> 对话检索 -> 分支 A/B/C”这条主链正确，再去谈备份和同步。</p>
+        </section>
+      }
+    }
+  </section>
+</div>

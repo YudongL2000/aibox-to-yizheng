@@ -1,0 +1,457 @@
+{
+  "name": "机器人个性化手势交互（底盘随机巡航 + 摄像头识别触发手势/TTS/喇叭）",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "id": "8e4af4b4-51f1-4748-a816-f9d5506b33df",
+      "name": "schedule_trigger_30s",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2480,
+        256
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "定期开启新一轮任务",
+        "subtitle": "系统的“起搏器”。每隔30秒自动发出一个启动信号，驱动机器人开始新一轮的寻找目标任务。",
+        "category": "BASE",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {
+          "seconds": 30
+        },
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{$env.CAMERA_SNAPSHOT_URL || \"http://robot.local/api/camera/snapshot\"}}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "57359106-8408-4cd2-8d3b-9d11e1506c1b",
+      "name": "http_request_camera_snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -2256,
+        256
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "视觉影像捕获",
+        "subtitle": "调用摄像头硬件，在信号触发的瞬间截取一张现场照片，作为系统后续分析的原始素材。",
+        "category": "CAM",
+        "topology": "usb2",
+        "session_ID": "123334",
+        "sub": {
+          "output": "camera1"
+        },
+        "device_ID": "cam1"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "21512995-5f63-41da-ba71-958447359e9e",
+      "name": "set_face_net_recognition",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2032,
+        256
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "AI 特征识别器",
+        "subtitle": "核心分析单元。利用视觉模型分析图片，从中寻找并标注老刘或老付的身份特征。",
+        "category": "FACE-NET",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {
+          "facenet_input": "camera1",
+          "facenet_output": "facenet_output",
+          "face_url": "用户上传的人脸图片地址",
+          "face_info": "用户上传的人脸图片对应名字"
+        },
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "identity-c1",
+              "leftValue": "facenet_output",
+              "rightValue": "liu",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0798b651-6c05-42e0-8baf-78860de435bc",
+      "name": "if_identity_is_liu",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1808,
+        64
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "身份验证网关",
+        "subtitle": "条件分流核心。根据识别出的姓名决定进入惩罚模式（老刘）或欢迎模式（老付）。",
+        "category": "BASE",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "identity-c2",
+              "leftValue": "facenet_output",
+              "rightValue": "fu",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a5501d91-b872-4e7d-b053-3c837a62ab45",
+      "name": "if_identity_is_fu",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1808,
+        448
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "身份验证网关",
+        "subtitle": "条件分流核心。根据识别出的姓名决定进入惩罚模式（老刘）或欢迎模式（老付）。",
+        "category": "BASE",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {},
+      "id": "5fa01987-d8be-473a-9f81-c2b9a70f2f09",
+      "name": "code_hand_execute_liu",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        -32
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "手势肢体传动",
+        "subtitle": "物理交互单元。驱动机械手完成指定手势动作（如竖中指、比V）。",
+        "category": "HAND",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "execute_gesture": "Middle_Finger"
+        },
+        "device_ID": "hand1"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "5c73d4a5-8dcc-4af9-b0c2-9c26d41389f3",
+      "name": "set_tts_text_liu",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1584,
+        160
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "语音合成算法",
+        "subtitle": "表达转换单元。将文字脚本实时合成为可播放的音频流。",
+        "category": "TTS",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {
+          "TTS_input": "滚",
+          "audio_name": "audio_liu"
+        },
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {},
+      "id": "80f42540-3427-49b3-a6bd-a9077895e545",
+      "name": "code_speaker_play_audio_liu",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1360,
+        160
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "音频回响器",
+        "subtitle": "物理反馈单元。通过扬声器播放语音合成内容，完成语言互动。",
+        "category": "SPEAKER",
+        "topology": "usb3",
+        "session_ID": "123334",
+        "sub": {
+          "audio_name": "audio_liu"
+        },
+        "device_ID": "speaker1"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "66105f71-a4e1-4820-b361-9a779d87eba9",
+      "name": "code_hand_execute_fu",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        544
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "手势肢体传动",
+        "subtitle": "物理交互单元。驱动机械手完成指定手势动作（如竖中指、比V）。",
+        "category": "HAND",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "execute_gesture": "Victory"
+        },
+        "device_ID": "hand1"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "7f6f3d9e-959a-4f36-890b-481986f9be4c",
+      "name": "set_tts_text_fu",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1584,
+        352
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "语音合成算法",
+        "subtitle": "表达转换单元。将文字脚本实时合成为可播放的音频流。",
+        "category": "TTS",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {
+          "TTS_input": "你长得好帅",
+          "audio_name": "audio_fu"
+        },
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {},
+      "id": "6f850430-629e-4641-b0a8-fcee46c8980c",
+      "name": "code_speaker_play_audio_fu",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1360,
+        352
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "音频回响器",
+        "subtitle": "物理反馈单元。通过扬声器播放语音合成内容，完成语言互动。",
+        "category": "SPEAKER",
+        "topology": "usb3",
+        "session_ID": "123334",
+        "sub": {
+          "audio_name": "audio_fu"
+        },
+        "device_ID": "speaker1"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "schedule_trigger_30s": {
+      "main": [
+        [
+          {
+            "node": "http_request_camera_snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "http_request_camera_snapshot": {
+      "main": [
+        [
+          {
+            "node": "set_face_net_recognition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_face_net_recognition": {
+      "main": [
+        [
+          {
+            "node": "if_identity_is_liu",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_identity_is_fu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_identity_is_liu": {
+      "main": [
+        [
+          {
+            "node": "code_hand_execute_liu",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "set_tts_text_liu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "if_identity_is_fu": {
+      "main": [
+        [
+          {
+            "node": "code_hand_execute_fu",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "set_tts_text_fu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_tts_text_liu": {
+      "main": [
+        [
+          {
+            "node": "code_speaker_play_audio_liu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_tts_text_fu": {
+      "main": [
+        [
+          {
+            "node": "code_speaker_play_audio_fu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "22f2d6d7-e9b4-42e8-ae77-a835212f89df",
+  "meta": {
+    "instanceId": "0795f6e691ed97ac8b772b9418608998db3b01465bd650712d19abec7f26dc8d"
+  },
+  "id": "UIEQ71y6L_n85wVjCF2cb",
+  "tags": [
+    {
+      "updatedAt": "2026-01-20T10:19:56.154Z",
+      "createdAt": "2026-01-20T10:19:56.154Z",
+      "id": "G56AiLQvAzhDvgeV",
+      "name": "robot"
+    },
+    {
+      "updatedAt": "2026-01-20T10:19:56.147Z",
+      "createdAt": "2026-01-20T10:19:56.147Z",
+      "id": "I7DS20VSWRBAgh9G",
+      "name": "emotion"
+    },
+    {
+      "updatedAt": "2026-01-20T10:19:56.136Z",
+      "createdAt": "2026-01-20T10:19:56.136Z",
+      "id": "OQqAkbB8FL0HRt8I",
+      "name": "n8n"
+    }
+  ]
+}

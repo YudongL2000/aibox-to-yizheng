@@ -1,0 +1,82 @@
+.act-btn {
+  width: 38px;
+  height: 38px;
+  transition: var(--transition);
+  position: relative;
+  cursor: pointer;
+
+  .lloading {
+    cursor: wait;
+  }
+
+  .qq {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    background: var(--surface-muted);
+  }
+
+  .qq2 {
+    border-color: var(--border-subtle);
+    position: absolute;
+  }
+
+  > div {
+    width: 100%;
+    height: 100%;
+
+    i {
+      font-size: 19px;
+    }
+
+    &.lloading {
+      i.fa-spinner-third {
+        font-size: 22px;
+      }
+    }
+
+    // 编译
+    .fa-check {
+      font-size: 14px;
+      margin-top: 2px;
+      color: var(--sem-info);
+    }
+
+    // 运行
+    .fa-play {
+      font-size: 14px;
+      margin-left: 2px;
+      margin-top: 0.5px;
+      color: var(--sem-success);
+    }
+
+    // 调试
+    .fa-rocket {
+      font-size: 13px;
+      margin-top: 1px;
+      margin-left: -2px;
+      color: var(--sem-warning);
+    }
+
+    .fa-xmark {
+      color: var(--sem-danger);
+      font-size: 14px;
+      margin-left: -1px;
+      margin-top: 1px;
+    }
+
+    .fa-face-smile {
+      font-size: 22px;
+    }
+
+    .fa-face-smile-wink {
+      font-size: 22px;
+    }
+
+    .fa-exclamation {
+      color: var(--sem-warning);
+      font-size: 13px;
+    }
+  }
+}

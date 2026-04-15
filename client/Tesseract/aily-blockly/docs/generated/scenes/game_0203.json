@@ -1,0 +1,1587 @@
+{
+  "name": "猜拳游戏：倒数 -> 摄像头识别手势 -> 判输赢 -> 表情+语音",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "id": "a4789450-fcc1-47d9-9f07-2880d99ef68c",
+      "name": "schedule_trigger_5s",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2144,
+        5488
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "游戏开始触发器",
+        "subtitle": "游戏的“发令枪”。每隔5秒自动开启一轮新的游戏流程，确保游戏能循环进行。",
+        "category": "BASE",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {
+          "seconds": 5
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "fe26a3a1-deb7-48c5-aa03-1e005b36f73b",
+      "name": "set_audio_generate_countdown",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1920,
+        5488
+      ],
+      "notes": {
+        "extra": "configuring | configured",
+        "title": "倒数语音合成",
+        "subtitle": "表达转换单元。将“3, 2, 1”文字实时转化为语音文件，用于播报。",
+        "category": "TTS",
+        "topology": null,
+        "session_ID": "1233",
+        "sub": {
+          "TTS_input": "三、二、一！",
+          "audio_name": "count_down"
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {},
+      "id": "5e35cc74-0ffc-4175-a9f0-c0ced8b0263e",
+      "name": "code_speaker_execute_countdown",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1696,
+        5488
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "倒数音频播报",
+        "subtitle": "物理反馈单元。通过喇叭播放倒数语音，提醒用户准备出拳。",
+        "category": "SPEAKER",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {
+          "audio_name": "count_down"
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "47b332d9-cca2-4004-9a47-f5ab12086084",
+      "name": "set_generate_random_n",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1472,
+        5488
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "随机出拳计算",
+        "subtitle": "机器人“出拳”决策单元。利用随机算法在1-3之间选一个数，作为机器人本次出的招式。",
+        "category": "RAM",
+        "topology": null,
+        "session_ID": "1233",
+        "sub": {
+          "random_rule": 3,
+          "output": "n"
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "n",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "n5-c1",
+              "leftValue": "n",
+              "rightValue": "1",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b977ea35-8265-4fa1-b453-f66376eb4272",
+      "name": "if_robot_n_eq_1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1248,
+        5296
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "机器人出拳分拣",
+        "subtitle": "内部逻辑开关。根据随机计算的结果，把流程引向对应的机器人动作分支。",
+        "category": "BASE",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "n6-c1",
+              "leftValue": "n",
+              "rightValue": "2",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "56984587-4428-49c7-938a-07de45836c9b",
+      "name": "if_robot_n_eq_2",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1248,
+        5488
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "机器人出拳分拣",
+        "subtitle": "内部逻辑开关。根据随机计算的结果，把流程引向对应的机器人动作分支。",
+        "category": "BASE",
+        "topology": "usb1 | usb2 | usb3",
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": "硬件侧组件id字段"
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "n7-c1",
+              "leftValue": "n",
+              "rightValue": "3",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "75da4f54-61f2-4e11-82a0-853655b69b68",
+      "name": "if_robot_n_eq_3",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1248,
+        5680
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "机器人出拳分拣",
+        "subtitle": "内部逻辑开关。根据随机计算的结果，把流程引向对应的机器人动作分支。",
+        "category": "BASE",
+        "topology": "usb1 | usb2 | usb3",
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": "硬件侧组件id字段"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "25384765-7d28-4ea9-8d39-45c6faa5f89a",
+      "name": "code_hand_execute_rock",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        5296
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "物理手势驱动",
+        "subtitle": "物理动作单元。驱动机械手实时摆出对应的石头、剪刀或布的形状。",
+        "category": "HAND",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "execute_gesture": "Rock"
+        },
+        "device_ID": "hand1"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "98d7c246-0432-4ec6-bd2f-922b811d6d21",
+      "name": "code_hand_execute_scissors",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        5488
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "物理手势驱动",
+        "subtitle": "物理动作单元。驱动机械手实时摆出对应的石头、剪刀或布的形状。",
+        "category": "HAND",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "execute_gesture": "Scissors"
+        },
+        "device_ID": "hand1"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "cb4f8d5b-1487-41d1-aa8e-bd6b392de924",
+      "name": "code_hand_execute_paper",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        5680
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "物理手势驱动",
+        "subtitle": "物理动作单元。驱动机械手实时摆出对应的石头、剪刀或布的形状。",
+        "category": "HAND",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "execute_gesture": "Paper"
+        },
+        "device_ID": "hand1"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://robot.local/api/camera/snapshot",
+        "options": {}
+      },
+      "id": "bdd2331d-d9d3-420d-804a-25ce2146bc9b",
+      "name": "http_request_camera_snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -576,
+        5488
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "用户快照",
+        "subtitle": "调用摄像头，在倒数结束的瞬间捕捉用户的手势画面。",
+        "category": "CAM",
+        "topology": "usb2",
+        "session_ID": "123334",
+        "sub": {
+          "output": "camera1"
+        },
+        "device_ID": "cam1"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "2b20ae32-8f5b-4516-b34c-e2c5f129ac4f",
+      "name": "set_rps_recognition",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -352,
+        5488
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "用户出拳结果登记",
+        "subtitle": "数据登记单元。将AI认出的用户手势标签存入系统，准备与机器人结果进行PK。",
+        "category": "YOLO-RPS",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {
+          "yolov_input": "camera1",
+          "yolov_output": "userGesture"
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "n13-c1",
+              "leftValue": "userGesture",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "fffb45e6-6624-4d9f-8e8a-249e660391ec",
+      "name": "if_user_gesture_empty",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        4816
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "胜负裁判网关",
+        "subtitle": "核心逻辑枢纽。对比机器人和用户的两个标签，根据游戏规则（如石头胜剪刀）判定最终胜负方向。",
+        "category": "BASE",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "n14-c1",
+              "leftValue": "userGesture",
+              "rightValue": "robotGesture",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2714f24b-76d0-42ae-b0e7-0bbd05292099",
+      "name": "if_draw",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        5008
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "胜负裁判网关",
+        "subtitle": "核心逻辑枢纽。对比机器人和用户的两个标签，根据游戏规则（如石头胜剪刀）判定最终胜负方向。",
+        "category": "BASE",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "n15-1",
+              "leftValue": "robotGesture",
+              "rightValue": "rock",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "n15-2",
+              "leftValue": "userGesture",
+              "rightValue": "scissors",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0fde07d4-b200-4e83-990c-930d1258c546",
+      "name": "if_robot_rock_user_scissors_win",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        5200
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "胜负裁判网关",
+        "subtitle": "核心逻辑枢纽。对比机器人和用户的两个标签，根据游戏规则（如石头胜剪刀）判定最终胜负方向。",
+        "category": "BASE",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "n16-1",
+              "leftValue": "robotGesture",
+              "rightValue": "scissors",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "n16-2",
+              "leftValue": "userGesture",
+              "rightValue": "paper",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9101ffa6-3327-4e68-a993-808b99149f5c",
+      "name": "if_robot_scissors_user_paper_win",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        5392
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "胜负裁判网关",
+        "subtitle": "核心逻辑枢纽。对比机器人和用户的两个标签，根据游戏规则（如石头胜剪刀）判定最终胜负方向。",
+        "category": "BASE",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "n17-1",
+              "leftValue": "robotGesture",
+              "rightValue": "paper",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "n17-2",
+              "leftValue": "userGesture",
+              "rightValue": "rock",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ffe2b295-8e82-4ac5-a80f-727a0d9d617d",
+      "name": "if_robot_paper_user_rock_win",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        5584
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "胜负裁判网关",
+        "subtitle": "核心逻辑枢纽。对比机器人和用户的两个标签，根据游戏规则（如石头胜剪刀）判定最终胜负方向。",
+        "category": "BASE",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "n18-1",
+              "leftValue": "robotGesture",
+              "rightValue": "rock",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "n18-2",
+              "leftValue": "userGesture",
+              "rightValue": "paper",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0e61daeb-457d-4246-968c-e956ac94df30",
+      "name": "if_robot_rock_user_paper_lose",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        5776
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "胜负裁判网关",
+        "subtitle": "核心逻辑枢纽。对比机器人和用户的两个标签，根据游戏规则（如石头胜剪刀）判定最终胜负方向。",
+        "category": "BASE",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "n19-1",
+              "leftValue": "robotGesture",
+              "rightValue": "scissors",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "n19-2",
+              "leftValue": "userGesture",
+              "rightValue": "rock",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b9e7e827-a647-424f-82e5-71b3df1dd1b4",
+      "name": "if_robot_scissors_user_rock_lose",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        5968
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "胜负裁判网关",
+        "subtitle": "核心逻辑枢纽。对比机器人和用户的两个标签，根据游戏规则（如石头胜剪刀）判定最终胜负方向。",
+        "category": "BASE",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "n20-1",
+              "leftValue": "robotGesture",
+              "rightValue": "paper",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "n20-2",
+              "leftValue": "userGesture",
+              "rightValue": "scissors",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "75813d98-5dfd-4391-8e47-1cdfd37f1527",
+      "name": "if_robot_paper_user_scissors_lose",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -128,
+        6160
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "胜负裁判网关",
+        "subtitle": "核心逻辑枢纽。对比机器人和用户的两个标签，根据游戏规则（如石头胜剪刀）判定最终胜负方向。",
+        "category": "BASE",
+        "topology": "usb1 | usb2 | usb3",
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": "硬件侧组件id字段"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "242470be-6c6f-452b-a04b-e06669b4abdc",
+      "name": "code_screen_execute_empty_angry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        4816
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "胜负表情展示",
+        "subtitle": "物理显示单元。根据裁判结果，在屏幕上显示出机器人此时的情绪眼神。",
+        "category": "SCREEN",
+        "topology": "usb3",
+        "session_ID": "123334",
+        "sub": {
+          "execute_emoji": "Angry"
+        },
+        "device_ID": "screen1"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "4c5540cd-2f53-49dc-9c13-8781e5d84e23",
+      "name": "set_audio_generate_empty",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        4816
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "对战脚本合成",
+        "subtitle": "策略编排单元。根据输赢结果，匹配对应的表情（开心/难过）和对应的回复文字。",
+        "category": "TTS",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {
+          "TTS_input": "你怎么能耍赖呢！",
+          "audio_name": "user_cheat_audio"
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {},
+      "id": "d0d25027-f342-4ec0-aff8-4456afbc0532",
+      "name": "code_speaker_execute_empty",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        4816
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "结果音频播报",
+        "subtitle": "物理表达单元。最后播放出语音反馈，完成本轮游戏交互。",
+        "category": "SPEAKER",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "audio_name": "user_cheat_audio"
+        },
+        "device_ID": "speaker1"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "3492d85a-e07d-4ad0-af33-e03111a9942c",
+      "name": "code_screen_execute_win_happy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        5392
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "胜负表情展示",
+        "subtitle": "物理显示单元。根据裁判结果，在屏幕上显示出机器人此时的情绪眼神。",
+        "category": "SCREEN",
+        "topology": "usb3",
+        "session_ID": "123334",
+        "sub": {
+          "execute_emoji": "Happy"
+        },
+        "device_ID": "硬件侧组件id字段"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "2c7a16b1-700b-4ab9-8f44-a92736f4ad30",
+      "name": "set_audio_generate_win",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        5392
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "对战脚本合成",
+        "subtitle": "策略编排单元。根据输赢结果，匹配对应的表情（开心/难过）和对应的回复文字。",
+        "category": "TTS",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {
+          "TTS_input": "我赢啦！",
+          "audio_name": "win_audio"
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {},
+      "id": "1e812738-2dc6-4149-b2ac-54e5913d3951",
+      "name": "code_speaker_execute_win",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        5392
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "结果音频播报",
+        "subtitle": "物理表达单元。最后播放出语音反馈，完成本轮游戏交互。",
+        "category": "SPEAKER",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "audio_name": "win_audio"
+        },
+        "device_ID": "硬件侧组件id字段"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "d52dc2f6-996c-4b05-9cbb-c469620fc780",
+      "name": "code_screen_execute_lose_sad",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        5968
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "胜负表情展示",
+        "subtitle": "物理显示单元。根据裁判结果，在屏幕上显示出机器人此时的情绪眼神。",
+        "category": "SCREEN",
+        "topology": "usb3",
+        "session_ID": "123334",
+        "sub": {
+          "execute_emoji": "Sad"
+        },
+        "device_ID": "硬件侧组件id字段"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "bed59eac-4720-46e0-b0ab-e06a665b611a",
+      "name": "set_audio_generate_lose",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        5968
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "对战脚本合成",
+        "subtitle": "策略编排单元。根据输赢结果，匹配对应的表情（开心/难过）和对应的回复文字。",
+        "category": "TTS",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {
+          "TTS_input": "算你厉害。",
+          "audio_name": "lose_audio"
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {},
+      "id": "ab845db3-fc59-4d48-a4a7-ebe0a4a4519e",
+      "name": "code_speaker_execute_lose",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        5968
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "结果音频播报",
+        "subtitle": "物理表达单元。最后播放出语音反馈，完成本轮游戏交互。",
+        "category": "SPEAKER",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "audio_name": "lose_audio"
+        },
+        "device_ID": "硬件侧组件id字段"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "e1b5aeed-f51f-44ff-888b-b11f9680fc95",
+      "name": "code_screen_execute_draw_angry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        5008
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "胜负表情展示",
+        "subtitle": "物理显示单元。根据裁判结果，在屏幕上显示出机器人此时的情绪眼神。",
+        "category": "SCREEN",
+        "topology": "usb3",
+        "session_ID": "123334",
+        "sub": {
+          "execute_emoji": "Angry"
+        },
+        "device_ID": "screen1"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "0286354d-b595-4ba6-9358-7704908381f0",
+      "name": "set_audio_generate_draw",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        5008
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "对战脚本合成",
+        "subtitle": "策略编排单元。根据输赢结果，匹配对应的表情（开心/难过）和对应的回复文字。",
+        "category": "TTS",
+        "topology": null,
+        "session_ID": "123334",
+        "sub": {
+          "TTS_input": "平局，再来",
+          "audio_name": "draw_audio"
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {},
+      "id": "d548093d-1291-40fc-af7d-ea74f94c1033",
+      "name": "code_speaker_execute_draw",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        5008
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "结果音频播报",
+        "subtitle": "物理表达单元。最后播放出语音反馈，完成本轮游戏交互。",
+        "category": "SPEAKER",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "audio_name": "draw_audio"
+        },
+        "device_ID": "speaker1"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "df920ac9-7c3c-4042-8289-75fcbb3366ec",
+      "name": "set_robot_gesture_paper",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -800,
+        5680
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "机器人手势赋值",
+        "subtitle": "数据记录单元。将随机生成的数字翻译成具体的游戏手势标签，存入内存。",
+        "category": "ASSIGN",
+        "topology": null,
+        "session_ID": "1233",
+        "sub": {
+          "robotGesture": "paper"
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "e6ccd23a-9cd4-4351-9caa-ce5a02f09f5e",
+      "name": "set_robot_gesture_rock",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -800,
+        5296
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "机器人手势赋值",
+        "subtitle": "数据记录单元。将随机生成的数字翻译成具体的游戏手势标签，存入内存。",
+        "category": "ASSIGN",
+        "topology": null,
+        "session_ID": "1233",
+        "sub": {
+          "robotGesture": "rock"
+        },
+        "device_ID": null
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "0904140c-05b8-4e6b-93db-436b144a50b1",
+      "name": "set_robot_gesture_scissors",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -800,
+        5488
+      ],
+      "notes": {
+        "extra": "configured",
+        "title": "机器人手势赋值",
+        "subtitle": "数据记录单元。将随机生成的数字翻译成具体的游戏手势标签，存入内存。",
+        "category": "ASSIGN",
+        "topology": null,
+        "session_ID": "1233",
+        "sub": {
+          "robotGesture": "scissors"
+        },
+        "device_ID": null
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "schedule_trigger_5s": {
+      "main": [
+        [
+          {
+            "node": "set_audio_generate_countdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_audio_generate_countdown": {
+      "main": [
+        [
+          {
+            "node": "code_speaker_execute_countdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_robot_n_eq_1": {
+      "main": [
+        [
+          {
+            "node": "code_hand_execute_rock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_robot_n_eq_2": {
+      "main": [
+        [
+          {
+            "node": "code_hand_execute_scissors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_robot_n_eq_3": {
+      "main": [
+        [
+          {
+            "node": "code_hand_execute_paper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "http_request_camera_snapshot": {
+      "main": [
+        [
+          {
+            "node": "set_rps_recognition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_rps_recognition": {
+      "main": [
+        [
+          {
+            "node": "if_user_gesture_empty",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_draw",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_robot_rock_user_scissors_win",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_robot_scissors_user_paper_win",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_robot_paper_user_rock_win",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_robot_rock_user_paper_lose",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_robot_scissors_user_rock_lose",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_robot_paper_user_scissors_lose",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_user_gesture_empty": {
+      "main": [
+        [
+          {
+            "node": "code_screen_execute_empty_angry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code_screen_execute_empty_angry": {
+      "main": [
+        [
+          {
+            "node": "set_audio_generate_empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_audio_generate_empty": {
+      "main": [
+        [
+          {
+            "node": "code_speaker_execute_empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_draw": {
+      "main": [
+        [
+          {
+            "node": "code_screen_execute_draw_angry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code_screen_execute_draw_angry": {
+      "main": [
+        [
+          {
+            "node": "set_audio_generate_draw",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_audio_generate_draw": {
+      "main": [
+        [
+          {
+            "node": "code_speaker_execute_draw",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_robot_rock_user_scissors_win": {
+      "main": [
+        [
+          {
+            "node": "code_screen_execute_win_happy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_robot_scissors_user_paper_win": {
+      "main": [
+        [
+          {
+            "node": "code_screen_execute_win_happy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_robot_paper_user_rock_win": {
+      "main": [
+        [
+          {
+            "node": "code_screen_execute_win_happy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code_screen_execute_win_happy": {
+      "main": [
+        [
+          {
+            "node": "set_audio_generate_win",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_audio_generate_win": {
+      "main": [
+        [
+          {
+            "node": "code_speaker_execute_win",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_robot_rock_user_paper_lose": {
+      "main": [
+        [
+          {
+            "node": "code_screen_execute_lose_sad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_robot_scissors_user_rock_lose": {
+      "main": [
+        [
+          {
+            "node": "code_screen_execute_lose_sad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_robot_paper_user_scissors_lose": {
+      "main": [
+        [
+          {
+            "node": "code_screen_execute_lose_sad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code_screen_execute_lose_sad": {
+      "main": [
+        [
+          {
+            "node": "set_audio_generate_lose",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_audio_generate_lose": {
+      "main": [
+        [
+          {
+            "node": "code_speaker_execute_lose",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code_hand_execute_rock": {
+      "main": [
+        [
+          {
+            "node": "set_robot_gesture_rock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code_hand_execute_scissors": {
+      "main": [
+        [
+          {
+            "node": "set_robot_gesture_scissors",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code_hand_execute_paper": {
+      "main": [
+        [
+          {
+            "node": "set_robot_gesture_paper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_robot_gesture_paper": {
+      "main": [
+        [
+          {
+            "node": "http_request_camera_snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_robot_gesture_scissors": {
+      "main": [
+        [
+          {
+            "node": "http_request_camera_snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_robot_gesture_rock": {
+      "main": [
+        [
+          {
+            "node": "http_request_camera_snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code_speaker_execute_countdown": {
+      "main": [
+        [
+          {
+            "node": "set_generate_random_n",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_generate_random_n": {
+      "main": [
+        [
+          {
+            "node": "if_robot_n_eq_3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_robot_n_eq_2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_robot_n_eq_1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "280e2e29-6429-4598-89ec-cc8e934d0bfc",
+  "meta": {
+    "instanceId": "0795f6e691ed97ac8b772b9418608998db3b01465bd650712d19abec7f26dc8d"
+  },
+  "id": "YPGQioFb2HJbGV7qQ8z7D",
+  "tags": [
+    {
+      "updatedAt": "2026-01-20T10:20:15.908Z",
+      "createdAt": "2026-01-20T10:20:15.908Z",
+      "id": "49opGnBkKcs34Tei",
+      "name": "game"
+    },
+    {
+      "updatedAt": "2026-01-20T10:19:56.136Z",
+      "createdAt": "2026-01-20T10:19:56.136Z",
+      "id": "OQqAkbB8FL0HRt8I",
+      "name": "n8n"
+    },
+    {
+      "updatedAt": "2026-01-20T10:20:15.896Z",
+      "createdAt": "2026-01-20T10:20:15.896Z",
+      "id": "pFhummzFeBrTWsRk",
+      "name": "rps"
+    }
+  ]
+}

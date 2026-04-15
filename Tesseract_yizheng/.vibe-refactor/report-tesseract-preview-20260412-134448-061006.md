@@ -1,0 +1,811 @@
+# Workspace Vibe Refactor Report
+
+- Generated at: 2026-04-12T13:44:48
+- Workspace: `/Users/skylerwang/Documents/yudong/Tesseract`
+- Sync user claude: `False` (`/Users/skylerwang/.claude`)
+- Mode: `preview`
+- Agent targets: `claude, codex, copilot, cursor`
+- Include hidden: `True`
+- Excludes: `.git, .hg, .svn, node_modules, .venv, venv, .pytest_cache, .mypy_cache, .cache, dist, build, target, .gradle, .idea, .next, .nuxt, .turbo, coverage, .coverage, .vibe-refactor, *_backup, backend/**, frontend/**, aily-blockly/**, n8n/**, specs/**, test/**`
+- Validate commands: `0` (on_apply=False, strict=False)
+- Hardcoding scan: `True` (strict=False, max_findings=0)
+- Blocking status: `ok`
+
+## Summary
+- Planned changes: **46**
+- Manual required: **0**
+- Warnings: **2**
+- Rule checks: **21**
+- Validation commands: **0**
+- Hardcoding findings: **17**
+
+## Warnings
+- workspace: excluded/pruned paths = 72
+- hardcoding: detected 17 finding(s).
+
+## Hardcoding Findings
+- `.specify/scripts/bash/create-new-feature.sh:208` | `threshold_literal` | `local max_words=3`
+- `.specify/scripts/bash/create-new-feature.sh:209` | `threshold_literal` | `if [ ${#meaningful_words[@]} -eq 4 ]; then max_words=4; fi`
+- `.specify/scripts/bash/create-new-feature.sh:266` | `threshold_literal` | `MAX_BRANCH_LENGTH=244`
+- `.specify/scripts/bash/update-agent-context.sh:124` | `absolute_path` | `rm -f /tmp/agent_update_*_$$`
+- `.specify/scripts/bash/update-agent-context.sh:125` | `absolute_path` | `rm -f /tmp/manual_additions_$$`
+- `docs/dev/ZLMRTCClient.js:1847` | `threshold_literal` | `var maxptime = 0;`
+- `docs/dev/ZLMRTCClient.js:2007` | `threshold_literal` | `maxMessageSize = 65536;`
+- `docs/dev/ZLMRTCClient.js:5113` | `threshold_literal` | `let maxMessageSize = 65536;`
+- `docs/dev/ZLMRTCClient.js:5120` | `threshold_literal` | `maxMessageSize = 65535;`
+- `docs/dev/ZLMRTCClient.js:5132` | `threshold_literal` | `maxMessageSize = 2147483637;`
+- `docs/dev/ZLMRTCClient.js:7126` | `threshold_literal` | `timeout: 0,`
+- `docs/dev/ZLMRTCClient.js:9131` | `threshold_literal` | `maxBitrate: 1000000`
+- `docs/dev/ZLMRTCClient.js:9135` | `threshold_literal` | `maxBitrate: 500000,`
+- `docs/dev/ZLMRTCClient.js:9140` | `threshold_literal` | `maxBitrate: 200000,`
+- `docs/dev/cloud_mqtt_example.py:225` | `threshold_literal` | `self.client.reconnect_delay_set(min_delay=1, max_delay=5)`
+- `docs/dev/cloud_mqtt_example.py:235` | `threshold_literal` | `if not self.connected_event.wait(timeout=5):`
+- `docs/dev/cloud_mqtt_example.py:396` | `threshold_literal` | `publish_result.wait_for_publish(timeout=2)`
+
+## Rule Checklist
+- `workspace.claude_pointer` | `pass` | Root CLAUDE pointer block exists.
+- `workspace.root_update_contract` | `pass` | Root update contract exists.
+- `workspace.global_first_no_hardcoding` | `pass` | Global-first no-hardcoding rule exists in root CLAUDE.
+- `workspace.claude_line_budget` | `pass` | CLAUDE.md lines=21 (target<=200).
+- `workspace.today_rollover` | `pass` | today.md date=2026-04-12 expected=2026-04-12.
+- `workspace.today_log_migration` | `pass` | Today logs migrated out of root CLAUDE.
+- `workspace.structure_scan_doc` | `pass` | Workspace structure doc exists.
+- `workspace.rules_reference_doc` | `pass` | Rules reference doc exists.
+- `workspace.no_hardcoding_rule_doc` | `pass` | No-hardcoding rule doc exists.
+- `workspace.tech_stack_doc` | `pass` | Tech stack doc exists.
+- `workspace.session_start_doc` | `pass` | Session start doc exists.
+- `workspace.folder_docs_coverage` | `pass` | Every scanned folder has .folder.md.
+- `workspace.folder_function_descriptions` | `pass` | Each folder doc contains Function description line.
+- `workspace.cursor_rules` | `pass` | Required .cursor rules exist.
+- `workspace.cursor_rule_frontmatter` | `pass` | Cursor rule frontmatter includes alwaysApply/globs.
+- `workspace.cursor_folder_docs` | `fail` | Missing .cursor/.folder.md or .cursor/rules/.folder.md.
+- `workspace.agents_entry` | `pass` | AGENTS.md entry exists.
+- `workspace.copilot_entry` | `pass` | Copilot instruction file exists.
+- `architecture.low_coupling_high_cohesion` | `manual` | Requires semantic review; cannot be safely auto-verified.
+- `architecture.no_feature_overlap` | `manual` | Requires domain-level overlap inspection; reported for manual review.
+- `automation.hardcoding_scan` | `fail` | 17 hardcoding finding(s) detected.
+
+## Planned Changes
+- `workspace:.cursor/rules/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:.cursor/rules/vibe-component-reuse.mdc` | `create` | `create_component_reuse_rule`
+- `workspace:.cursor/rules/vibe-doc-sync.mdc` | `create` | `create_doc_sync_rule`
+- `workspace:.cursor/rules/vibe-engineering.mdc` | `create` | `create_engineering_rule`
+- `workspace:.cursor/rules/vibe-loading.mdc` | `create` | `create_loading_rule`
+- `workspace:.folder.md` | `create` | `folder_plan_sync`
+- `workspace:.github/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:.github/copilot-instructions.md` | `update` | `create_copilot_instructions`
+- `workspace:.specify/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:.specify/memory/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:.specify/scripts/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:.specify/scripts/bash/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:.specify/scripts/bash/check-prerequisites.sh` | `update` | `header_sync`
+- `workspace:.specify/scripts/bash/common.sh` | `update` | `header_sync`
+- `workspace:.specify/scripts/bash/create-new-feature.sh` | `update` | `header_sync`
+- `workspace:.specify/scripts/bash/setup-plan.sh` | `update` | `header_sync`
+- `workspace:.specify/scripts/bash/update-agent-context.sh` | `update` | `header_sync`
+- `workspace:.specify/templates/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:.vscode/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:AGENTS.md` | `update` | `create_agents_doc`
+- `workspace:CLAUDE.md` | `update` | `claude_pointer_sync`
+- `workspace:aily-blockly/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:backend/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:dev-up-macos.sh` | `update` | `header_sync`
+- `workspace:docs/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:docs/claude-legacy.md` | `create` | `claude_legacy_archive`
+- `workspace:docs/dev/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:docs/dev/ZLMRTCClient.js` | `update` | `header_sync`
+- `workspace:docs/dev/cloud_mqtt_example.py` | `update` | `header_sync`
+- `workspace:docs/loading-index.md` | `create` | `create_loading_index_doc`
+- `workspace:docs/rules/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:docs/rules/README.md` | `create` | `create_rules_reference_doc`
+- `workspace:docs/rules/component-reuse.md` | `create` | `create_component_reuse_doc`
+- `workspace:docs/rules/no-hardcoding.md` | `create` | `create_no_hardcoding_doc`
+- `workspace:docs/session-start.md` | `create` | `create_session_start_doc`
+- `workspace:docs/tech-stack.md` | `create` | `create_tech_stack_doc`
+- `workspace:docs/workspace-structure.md` | `create` | `create_workspace_structure_doc`
+- `workspace:frontend/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:n8n/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:patterns.md` | `create` | `create_patterns_doc`
+- `workspace:scripts/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:scripts/docs-check.sh` | `create` | `guard_script_sync`
+- `workspace:scripts/pre-commit-folder-check.sh` | `create` | `guard_script_sync`
+- `workspace:specs/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:test/.folder.md` | `create` | `folder_plan_sync`
+- `workspace:today.md` | `create` | `create_today`
+
+## Diff Snippets
+### workspace:.cursor/rules/.folder.md
+```diff
+--- a/workspace/.cursor/rules/.folder.md
++++ b/workspace/.cursor/rules/.folder.md
+@@ -0,0 +1,16 @@
++# Folder Plan: .cursor/rules
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: .cursor/rules
++- Function: Rules and prompt-governance configuration.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `vibe-component-reuse.mdc` | `doc` | Workspace rule that pushes reuse before adding new implementations |
++| `vibe-doc-sync.mdc` | `doc` | Workspace rule that keeps docs, folder maps, and file headers aligned |
++| `vibe-engineering.mdc` | `doc` | Workspace rule for architecture, hardcoding, and overlap guardrails |
++| `vibe-loading.mdc` | `doc` | Workspace rule for three-layer loading discipline |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:.cursor/rules/vibe-component-reuse.mdc
+```diff
+--- a/workspace/.cursor/rules/vibe-component-reuse.mdc
++++ b/workspace/.cursor/rules/vibe-component-reuse.mdc
+@@ -0,0 +1,30 @@
++---
++name: vibe-component-reuse
++description: Prefer reuse of existing components/modules over introducing new implementations.
++alwaysApply: true
++globs:
++  - "**/*.py"
++  - "**/*.js"
++  - "**/*.jsx"
++  - "**/*.ts"
++  - "**/*.tsx"
++  - "**/*.go"
++  - "**/*.rs"
++  - "**/*.java"
++---
++
++# Vibe Component Reuse Rules
++
++## Reuse First
++- Before adding a new component/module/page/script, search existing implementation first.
++- If an existing unit can satisfy >=70% semantics, extend or reuse it.
++- Avoid parallel implementations that overlap in behavior.
++
++## New Creation Gate
++- Create a new component/module only when reuse is clearly not viable.
++- Document why reuse is not possible in the nearest folder doc.
++- Keep new units single-purpose and composable.
++
++## Refactor Preference
++- When requirements change, prefer refactoring current modules over spawning alternates.
++- Remove dead/duplicate paths after migration to prevent overlap drift.
+```
+
+### workspace:.cursor/rules/vibe-doc-sync.mdc
+```diff
+--- a/workspace/.cursor/rules/vibe-doc-sync.mdc
++++ b/workspace/.cursor/rules/vibe-doc-sync.mdc
+@@ -0,0 +1,40 @@
++---
++name: vibe-doc-sync
++description: Enforce root/folder/file documentation sync contracts and semantic Input->Pos linking.
++alwaysApply: true
++globs:
++  - "**/*.md"
++  - "**/*.py"
++  - "**/*.sh"
++  - "**/*.js"
++  - "**/*.jsx"
++  - "**/*.ts"
++  - "**/*.tsx"
++  - "**/*.go"
++  - "**/*.rs"
++  - "**/*.java"
++---
++
++# Vibe Doc Sync Rules
++
++## Root Contract
++- Root `CLAUDE.md` is pointer-only and must include update contract.
++- Any functional, architectural, or coding-style change must update related child docs before session end.
++
++## Folder Contract
++- Every scanned folder must have `.folder.md` (including empty folders).
++- Keep architecture summary within 3 lines.
++- Maintain file table with `File | Pos | Function`.
++- Folder changed => update the same folder's `.folder.md`.
++
++## File Header Contract
++- Every supported source file must keep header lines:
++  - `[Input]`
++  - `[Output]`
++  - `[Pos]`
++  - `[Sync]`
++- File changed => update header and owner `.folder.md`.
++
++## Semantic Link Network
++- In `[Input]`, prefer direct references to dependency file paths and their `[Pos]`.
++- Import-resolution fallback is owner `.folder.md` contract path.
+```
+
+### workspace:.cursor/rules/vibe-engineering.mdc
+```diff
+--- a/workspace/.cursor/rules/vibe-engineering.mdc
++++ b/workspace/.cursor/rules/vibe-engineering.mdc
+@@ -0,0 +1,32 @@
++---
++name: vibe-engineering
++description: Enforce low coupling/high cohesion, centralized configuration, no hard-coded business variables, and no overlapping feature implementations.
++alwaysApply: true
++globs:
++  - "**/*.py"
++  - "**/*.sh"
++  - "**/*.js"
++  - "**/*.jsx"
++  - "**/*.ts"
++  - "**/*.tsx"
++  - "**/*.go"
++  - "**/*.rs"
++  - "**/*.java"
++---
++
++# Vibe Engineering Rules
++
++## Architecture Principles
++- Keep modules low-coupled and high-cohesion.
++- Enforce single responsibility per component/service.
++- Reuse existing modules before adding new entities.
++
++## Hard-Coding Guardrail
++- Do not hard-code business identifiers, paths, model params, or thresholds in feature code.
++- Store configurable values in centralized config files or settings modules.
++- Any new constant must include source-of-truth location and purpose.
++
++## Overlap Guardrail
++- Do not implement duplicate features with parallel code paths.
++- Extend existing workflow if semantics overlap > 70%.
++- If a new implementation is required, record why reuse is not possible.
+```
+
+### workspace:.cursor/rules/vibe-loading.mdc
+```diff
+--- a/workspace/.cursor/rules/vibe-loading.mdc
++++ b/workspace/.cursor/rules/vibe-loading.mdc
+@@ -0,0 +1,21 @@
++---
++name: vibe-loading
++description: Apply three-layer loading discipline: hot data, rules, and heavy docs with anti-bloat limits.
++alwaysApply: true
++globs:
++  - "**/*.md"
++  - "**/*.mdc"
++---
++
++# Vibe Loading Rules
++
++## Three Layers
++1. Hot: `CLAUDE.md`, `today.md`
++2. Rules: `.cursor/rules/*.mdc`
++3. Heavy: `docs/*.md` (on-demand only)
++
++## Anti-Bloat
++- Never pre-load all heavy docs.
++- Keep at most two heavy docs active simultaneously.
++- Summarize and release old heavy docs before loading new ones.
++- Declare each load action with target and purpose.
+```
+
+### workspace:.folder.md
+```diff
+--- a/workspace/.folder.md
++++ b/workspace/.folder.md
+@@ -0,0 +1,31 @@
++# Folder Plan: root
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: root
++- Function: Workspace control and cross-module orchestration.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `.DS_Store` | `module` | Provide .DS Store capability for root |
++| `.env_backend` | `module` | Provide .env backend capability for root |
++| `.github/` | `dir` | Subfolder anchor for .github under root |
++| `.gitignore` | `module` | Provide .gitignore capability for root |
++| `.specify/` | `dir` | Subfolder anchor for .specify under root |
++| `.vscode/` | `dir` | Subfolder anchor for .vscode under root |
++| `AGENTS.md` | `doc` | Codex/Copilot entry instructions for working inside this vault |
++| `CLAUDE.md` | `doc` | Root pointer file that defines how the workspace should be loaded |
++| `aily-blockly/` | `dir` | Subfolder anchor for aily-blockly under root |
++| `backend/` | `dir` | Subfolder anchor for backend under root |
++| `dev-up-macos.sh` | `script` | Provide dev up macos capability for root |
++| `docs/` | `dir` | Subfolder anchor for docs under root |
++| `frontend/` | `dir` | Subfolder anchor for frontend under root |
++| `n8n/` | `dir` | Subfolder anchor for n8n under root |
++| `patterns.md` | `doc` | Reusable lessons and operating patterns captured from previous work |
++| `quickstart.md` | `doc` | Provide quickstart capability for root |
++| `specs/` | `dir` | Subfolder anchor for specs under root |
++| `test/` | `dir` | Subfolder anchor for test under root |
++| `today.md` | `doc` | Daily checkpoint for the current workspace session |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:.github/.folder.md
+```diff
+--- a/workspace/.github/.folder.md
++++ b/workspace/.github/.folder.md
+@@ -0,0 +1,13 @@
++# Folder Plan: .github
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: .github
++- Function: GitHub automation and instruction mirror for this workspace.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `copilot-instructions.md` | `doc` | GitHub Copilot instructions mirrored from the workspace contract |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:.github/copilot-instructions.md
+```diff
+--- a/workspace/.github/copilot-instructions.md
++++ b/workspace/.github/copilot-instructions.md
+@@ -281,3 +281,17 @@
+ 维护三层完整，执行回环约束，拒绝孤立变更。
+ Keep the map aligned with the terrain, or the terrain will be lost.
+ </INVOCATION>
++
++<!-- vibe-copilot:start -->
++## Delivery Contract
++- Apply changes with minimal blast radius and preserve existing architecture.
++- Reuse existing components/modules before creating new ones.
++- Do not hard-code business IDs, thresholds, or local machine paths.
++
++## Documentation Sync
++- If a folder changes, update its `.folder.md`.
++- If a source file changes, update `[Input]/[Output]/[Pos]/[Sync]` header.
++
++## Validation
++- Execute configured validation commands and include pass/fail evidence.
++<!-- vibe-copilot:end -->
+```
+
+### workspace:.specify/.folder.md
+```diff
+--- a/workspace/.specify/.folder.md
++++ b/workspace/.specify/.folder.md
+@@ -0,0 +1,16 @@
++# Folder Plan: .specify
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: .specify
++- Function: Local module responsibilities for .specify.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `init-options.json` | `module` | Provide init options capability for .specify |
++| `memory/` | `dir` | Subfolder anchor for memory under .specify |
++| `scripts/` | `dir` | Subfolder anchor for scripts under .specify |
++| `templates/` | `dir` | Subfolder anchor for templates under .specify |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:.specify/memory/.folder.md
+```diff
+--- a/workspace/.specify/memory/.folder.md
++++ b/workspace/.specify/memory/.folder.md
+@@ -0,0 +1,13 @@
++# Folder Plan: .specify/memory
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: .specify/memory
++- Function: Local module responsibilities for .specify/memory.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `constitution.md` | `doc` | Provide constitution capability for .specify/memory |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:.specify/scripts/.folder.md
+```diff
+--- a/workspace/.specify/scripts/.folder.md
++++ b/workspace/.specify/scripts/.folder.md
+@@ -0,0 +1,13 @@
++# Folder Plan: .specify/scripts
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: .specify/scripts
++- Function: Local module responsibilities for .specify/scripts.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `bash/` | `dir` | Subfolder anchor for bash under .specify/scripts |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:.specify/scripts/bash/.folder.md
+```diff
+--- a/workspace/.specify/scripts/bash/.folder.md
++++ b/workspace/.specify/scripts/bash/.folder.md
+@@ -0,0 +1,17 @@
++# Folder Plan: .specify/scripts/bash
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: .specify/scripts/bash
++- Function: Local module responsibilities for .specify/scripts/bash.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `check-prerequisites.sh` | `script` | Provide check prerequisites capability for .specify/scripts/bash |
++| `common.sh` | `script` | Provide common capability for .specify/scripts/bash |
++| `create-new-feature.sh` | `script` | Provide create new feature capability for .specify/scripts/bash |
++| `setup-plan.sh` | `script` | Provide setup plan capability for .specify/scripts/bash |
++| `update-agent-context.sh` | `script` | Provide update agent context capability for .specify/scripts/bash |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:.specify/scripts/bash/check-prerequisites.sh
+```diff
+--- a/workspace/.specify/scripts/bash/check-prerequisites.sh
++++ b/workspace/.specify/scripts/bash/check-prerequisites.sh
+@@ -1,4 +1,8 @@
+ #!/usr/bin/env bash
++# [Input] Consume upstream contracts defined by `.specify/scripts/bash/.folder.md`[Pos].
++# [Output] Provide check prerequisites capability to downstream modules.
++# [Pos] script node in .specify/scripts/bash
++# [Sync] If this file changes, update this header and `.specify/scripts/bash/.folder.md`.
+ 
+ # Consolidated prerequisite checking script
+ #
+```
+
+### workspace:.specify/scripts/bash/common.sh
+```diff
+--- a/workspace/.specify/scripts/bash/common.sh
++++ b/workspace/.specify/scripts/bash/common.sh
+@@ -1,4 +1,9 @@
+ #!/usr/bin/env bash
++# [Input] Consume upstream contracts defined by `.specify/scripts/bash/.folder.md`[Pos].
++# [Output] Provide common capability to downstream modules.
++# [Pos] script node in .specify/scripts/bash
++# [Sync] If this file changes, update this header and `.specify/scripts/bash/.folder.md`.
++
+ # Common functions and variables for all scripts
+ 
+ # Find repository root by searching upward for .specify directory
+```
+
+### workspace:.specify/scripts/bash/create-new-feature.sh
+```diff
+--- a/workspace/.specify/scripts/bash/create-new-feature.sh
++++ b/workspace/.specify/scripts/bash/create-new-feature.sh
+@@ -1,4 +1,8 @@
+ #!/usr/bin/env bash
++# [Input] Consume upstream contracts defined by `.specify/scripts/bash/.folder.md`[Pos].
++# [Output] Provide create new feature capability to downstream modules.
++# [Pos] script node in .specify/scripts/bash
++# [Sync] If this file changes, update this header and `.specify/scripts/bash/.folder.md`.
+ 
+ set -e
+ 
+```
+
+### workspace:.specify/scripts/bash/setup-plan.sh
+```diff
+--- a/workspace/.specify/scripts/bash/setup-plan.sh
++++ b/workspace/.specify/scripts/bash/setup-plan.sh
+@@ -1,4 +1,8 @@
+ #!/usr/bin/env bash
++# [Input] Consume upstream contracts defined by `.specify/scripts/bash/.folder.md`[Pos].
++# [Output] Provide setup plan capability to downstream modules.
++# [Pos] script node in .specify/scripts/bash
++# [Sync] If this file changes, update this header and `.specify/scripts/bash/.folder.md`.
+ 
+ set -e
+ 
+```
+
+### workspace:.specify/scripts/bash/update-agent-context.sh
+```diff
+--- a/workspace/.specify/scripts/bash/update-agent-context.sh
++++ b/workspace/.specify/scripts/bash/update-agent-context.sh
+@@ -1,4 +1,8 @@
+ #!/usr/bin/env bash
++# [Input] Consume upstream contracts defined by `.specify/scripts/bash/.folder.md`[Pos].
++# [Output] Provide update agent context capability to downstream modules.
++# [Pos] script node in .specify/scripts/bash
++# [Sync] If this file changes, update this header and `.specify/scripts/bash/.folder.md`.
+ 
+ # Update agent context files with information from plan.md
+ #
+```
+
+### workspace:.specify/templates/.folder.md
+```diff
+--- a/workspace/.specify/templates/.folder.md
++++ b/workspace/.specify/templates/.folder.md
+@@ -0,0 +1,18 @@
++# Folder Plan: .specify/templates
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: .specify/templates
++- Function: Testing, validation, and regression safeguards.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `agent-file-template.md` | `doc` | Provide agent file template capability for .specify/templates |
++| `checklist-template.md` | `doc` | Provide checklist template capability for .specify/templates |
++| `constitution-template.md` | `doc` | Provide constitution template capability for .specify/templates |
++| `plan-template.md` | `doc` | Provide plan template capability for .specify/templates |
++| `spec-template.md` | `doc` | Provide spec template capability for .specify/templates |
++| `tasks-template.md` | `doc` | Provide tasks template capability for .specify/templates |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:.vscode/.folder.md
+```diff
+--- a/workspace/.vscode/.folder.md
++++ b/workspace/.vscode/.folder.md
+@@ -0,0 +1,14 @@
++# Folder Plan: .vscode
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: .vscode
++- Function: Local module responsibilities for .vscode.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `AGENTS.md` | `doc` | Provide AGENTS capability for .vscode |
++| `settings.json` | `module` | Provide settings capability for .vscode |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:AGENTS.md
+```diff
+--- a/workspace/AGENTS.md
++++ b/workspace/AGENTS.md
+@@ -66,3 +66,20 @@
+ - 016-twin-assembly-checklist: Moved hardware assembly detection from aily-blockly dialogue to Flutter digital twin. Added `AssemblyChecklistPanel` widget, postMessage relay in `iframe.component.ts`, completion handler in `aily-chat.component.ts`.
+ - 020-workflow-gen-resilience: Backend confirm pipeline never throws HTTP 500 — all failures return structured `AgentResponse` with Chinese error messages and escalating suggestions. Frontend catches IPC AbortError, guards deploy chain on non-workflow_ready, synthesizes client-side error response. Electron timeout formula widened from `llmTimeout + 15s` to `llmTimeout * 1.2 + 30s` with confirm-specific 1.5x multiplier.
+ - 021-mqtt-image-upload: Face image upload flow changed from backend disk-write to MQTT `rec_img` base64 publish. Added `publishRecImg()` to `MqttHardwareRuntime`, `publishImageViaMqtt()` to `AgentService`, and structured upload/publish logs. Flutter `AiInteractionWindow` now sends image `width` / `height`, stores `imageId`, and confirms FACE-NET with `face_info` only after upload.
++
++<!-- vibe-agents:start -->
++## Vibe Contract
++- Any functional, architectural, or coding-style change must update affected folder docs and file headers before session end.
++- Prefer reuse-first refactor: search existing modules/components before adding new implementations.
++- Avoid hard-coded business IDs/thresholds/paths; resolve to higher-level config first.
++
++## Source Of Truth
++- Root pointer: `CLAUDE.md`
++- Folder contracts: `**/.folder.md`
++- Rules index: `docs/rules/README.md`
++- Cursor rules: `.cursor/rules/*.mdc`
++
++## Validation
++- Run requested validation commands after meaningful changes.
++- Report concrete evidence (command + exit code + key output) in final summary.
++<!-- vibe-agents:end -->
+```
+
+### workspace:CLAUDE.md
+```diff
+--- a/workspace/CLAUDE.md
++++ b/workspace/CLAUDE.md
+@@ -1,298 +1,21 @@
+ # CLAUDE.md
+ 
+-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+-
+-## Project Overview
+-
+-Tesseract is a multi-module robotics and automation platform that combines:
+-- **Backend**: n8n-based MCP agent system for workflow generation (TypeScript)
+-- **Frontend**: Flutter mobile/tablet client for robot control and interaction
+-- **Aily Blockly**: Angular/Electron visual programming IDE for hardware development
+-- **n8n**: Forked n8n workflow automation engine
+-
+-The system enables natural language to workflow conversion, hardware robot control, and visual block-based programming for embedded systems.
+-
+-## Repository Structure
+-
+-```
+-Tesseract/
+-├── backend/           # Agent + MCP services (TypeScript)
+-├── frontend/          # Flutter client (Dart)
+-├── aily-blockly/      # Visual programming IDE (Angular + Electron)
+-├── n8n/n8n-master/    # Forked n8n monorepo
+-└── AGENTS.md          # Cross-module development guidelines
+-```
+-
+-## Common Development Commands
+-
+-### Backend (n8n-mcp Agent)
+-```bash
+-cd backend
+-
+-# Build and Setup
+-npm run build              # Build TypeScript
+-npm run rebuild            # Rebuild node database from n8n packages
+-npm run validate           # Validate all node data
+-npm run agent:db:init      # Initialize agent database
+-
+-# Testing
+-npm test                   # Run all tests
+-npm run test:unit          # Unit tests only
+-npm run test:integration   # Integration tests
+-npm run test:coverage      # Coverage report
+-
+-# Run single test file
+-npm test -- tests/unit/services/property-filter.test.ts
+-
+-# Type Checking
+-npm run lint               # Check TypeScript types
+-npm run typecheck          # Alias for lint
+-
+-# Running Servers
+-npm run agent:dev          # Start agent server (http://localhost:3005)
+-npm run start:http         # Start MCP server in HTTP mode
+-npm run dev                # Build + rebuild + validate
+-npm run dev:http           # HTTP server with auto-reload
+-
+-# Agent UI
+-cd apps/agent-ui
+-npm run dev                # Start UI dev server (http://localhost:5173)
+-```
+-
+-### Frontend (Flutter)
+-```bash
+-cd frontend
+-
+-# Setup
+-flutter pub get            # Install dependencies
+-
+-# Development
+-flutter run                # Run app (select device)
+-flutter run -d chrome      # Run on Chrome
+-flutter run -d android     # Run on Android
+-
+-# Testing & Analysis
+-flutter test               # Run tests
+-flutter analyze            # Static analysis
+-flutter doctor             # Check environment setup
+-```
+-
+-### Aily Blockly (Visual IDE)
+-```bash
+-cd aily-blockly
+-
+-# Development
+-npm start                  # Angular dev server (http://localhost:4200)
+-npm run electron           # Run Electron desktop app
+-
+-# Build
+-npm run build              # Build for production
+-npm run build:mac          # Build macOS app
+-```
+-
+-### n8n Fork
+-```bash
+-cd n8n/n8n-master
+-
+-# Setup
+-pnpm install               # Install dependencies
+-
+-# Development
+-pnpm dev                   # Start n8n dev server
+-pnpm lint                  # Lint code
+-pnpm test                  # Run tests
+-```
+-
+-## High-Level Architecture
+-
+-### Backend Agent System
+-The backend is an AI agent that converts natural language requirements into n8n workflows for hardware robots.
+-
+-**Key Components:**
+-- **IntakeAgent** (`src/agents/intake-agent.ts`): Parses user intent and extracts entities
+-- **ComponentSelector** (`src/agents/component-selector.ts`): Generates component blueprints
+-- **WorkflowArchitect** (`src/agents/workflow-architect.ts`): Assembles prompts, generates workflow JSON, validates and auto-fixes
+-- **MCP Server** (`src/mcp/server.ts`): Model Context Protocol for AI assistants
+-- **Agent API** (`src/agent-server/`): HTTP/WebSocket API for chat and workflow management
+-- **SessionService** (`src/agents/session-service.ts`): Multi-session state management
+```
+
+### workspace:aily-blockly/.folder.md
+```diff
+--- a/workspace/aily-blockly/.folder.md
++++ b/workspace/aily-blockly/.folder.md
+@@ -0,0 +1,13 @@
++# Folder Plan: aily-blockly
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: aily-blockly
++- Function: Reserved folder contract; update when files are added.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `(empty)` | `n/a` | Keep folder contract and update when files appear. |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:backend/.folder.md
+```diff
+--- a/workspace/backend/.folder.md
++++ b/workspace/backend/.folder.md
+@@ -0,0 +1,13 @@
++# Folder Plan: backend
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: backend
++- Function: Reserved folder contract; update when files are added.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `(empty)` | `n/a` | Keep folder contract and update when files appear. |
++<!-- vibe-folder-map:end -->
+```
+
+### workspace:dev-up-macos.sh
+```diff
+--- a/workspace/dev-up-macos.sh
++++ b/workspace/dev-up-macos.sh
+@@ -1,4 +1,9 @@
+ #!/usr/bin/env bash
++# [Input] Consume upstream contracts defined by `./.folder.md`[Pos].
++# [Output] Provide dev up macos capability to downstream modules.
++# [Pos] script node in root
++# [Sync] If this file changes, update this header and `./.folder.md`.
++
+ # [INPUT]: 依赖 backend/restart-agent-dev.sh、frontend/dev_web_start.sh、aily-blockly package scripts 与 macOS 上可用的 osascript/open。 
+ # [OUTPUT]: 对外提供 Apple Silicon macOS 单入口开发启动脚本，按固定顺序拉起 backend、Flutter 数字孪生 Web、Angular dev server 与 Electron 外部 backend 模式。
+ # [POS]: 根仓本地 orchestration 入口，服务于 macOS 开发机，把四段启动链压成一个命令，同时保持 backend 与客户端生命周期解耦。
+```
+
+### workspace:docs/.folder.md
+```diff
+--- a/workspace/docs/.folder.md
++++ b/workspace/docs/.folder.md
+@@ -0,0 +1,17 @@
++# Folder Plan: docs
++
++<!-- vibe-folder-map:start -->
++## Architecture
++- Scope: docs
++- Function: Workspace governance, loading protocol, and operating documentation.
++- Sync: if this folder changes, update this file immediately.
++
++## Files
++| File | Pos | Function |
++|---|---|---|
++| `dev/` | `dir` | Subfolder anchor for dev under docs |
++| `loading-index.md` | `doc` | Scenario-to-document map for loading workspace context on demand |
++| `session-start.md` | `doc` | Short startup checklist before making meaningful changes |
++| `tech-stack.md` | `doc` | Workspace tooling baseline, including Obsidian-specific context |
++| `workspace-structure.md` | `doc` | High-level map of folders, their responsibilities, and anchor entries |
++<!-- vibe-folder-map:end -->
+```

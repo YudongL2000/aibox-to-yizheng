@@ -1,0 +1,85 @@
+:host {
+  display: block;
+}
+
+.aily-think-viewer {
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  overflow: hidden;
+
+  .think-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    font-family: var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+
+    &:hover {
+      background: var(--surface-muted);
+      margin: -10px -12px;
+      padding: 10px 12px;
+    }
+
+    .think-title {
+      display: flex;
+      align-items: center;
+
+      .think-icon {
+        font-size: 14px;
+        margin-right: 5px;
+        flex-shrink: 0;
+
+        .loading {
+          color: var(--sem-info);
+
+          i {
+            animation: spin 1s linear infinite;
+          }
+        }
+
+        .done {
+          color: var(--sem-success);
+        }
+      }
+
+      .think-label {
+        font-size: 12px;
+        color: var(--text-primary);
+      }
+    }
+
+    .think-toggle {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+  }
+
+  .think-content {
+    padding: 8px 2px;
+    margin: 5px -10px 0 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: var(--font-mono);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

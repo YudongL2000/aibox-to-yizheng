@@ -1,0 +1,123 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+
+///
+/// create_user: zhengzaihong
+/// email:1096877329@qq.com
+/// create_date: 2022/11/17
+/// create_time: 17:44
+/// describe: 开关按钮组件
+/// eg:
+//   HxSwitch(
+//     isOpen: false,
+//     labelRight: true,
+//     isInnerStyle: true,
+//     label: const Text("测试"),
+//     activeColor: Colors.red,
+//     scale: 0.7,
+//     activeTrackColor: Colors.orange,
+//     inactiveThumbColor: Colors.blueAccent,
+//     inactiveTrackColor: Colors.purple,
+//     onChange:(v){
+//       print("----->$v");
+//     }),
+
+class HxSwitch extends StatefulWidget {
+  final bool isOpen;
+  final ValueChanged<bool>? onChange;
+  final bool labelRight;
+  final Widget? label;
+  final double? margin;
+  final double scale;
+  final Color? activeColor;
+  final Color? activeTrackColor;
+  final Color? inactiveThumbColor;
+  final Color? inactiveTrackColor;
+
+  ///开关的样式 true内含样式ios 风格， false滑动模块外突android风格
+  final bool? isInnerStyle;
+  final bool? enableFirstCallBack;
+  const HxSwitch(
+      {this.isOpen = true,
+      this.onChange,
+      this.labelRight = false,
+      this.isInnerStyle = true,
+      this.label = const SizedBox(),
+      this.enableFirstCallBack = false,
+      this.margin = 0,
+      this.scale = 0.7,
+      this.activeColor,
+      this.activeTrackColor,
+      this.inactiveThumbColor,
+      this.inactiveTrackColor,
+      Key? key})
+      : super(key: key);
+
+  @override
+  State<HxSwitch> createState() => _HxSwitchState();
+}
+
+class _HxSwitchState extends State<HxSwitch> {
+  late bool isOpen;
+  @override
+  void initState() {
+    super.initState();
+    isOpen = widget.isOpen;
+    if (widget.enableFirstCallBack!) {
+      widget.onChange?.call(isOpen);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    isOpen = widget.isOpen;
+    return widget.labelRight
+        ? Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            buildStyleSwitch(),
+            SizedBox(width: widget.margin),
+            widget.label ?? SizedBox()
+          ])
+        : Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            widget.label ?? SizedBox(),
+            SizedBox(width: widget.margin),
+            buildStyleSwitch(),
+          ]);
+  }
+
+  Widget buildStyleSwitch() {
+    if (widget.isInnerStyle!) {
+      return Transform.scale(
+        scale: widget.scale,
+        child: CupertinoSwitch(
+          value: isOpen,
+          onChanged: (v) {
+            widget.onChange?.call(v);
+            setState(() {
+              isOpen = !isOpen;
+            });
+          },
+          activeColor: widget.activeColor,
+          trackColor: widget.inactiveTrackColor,
+          thumbColor: widget.inactiveThumbColor,
+          // activeTrackColor: widget.activeTrackColor,
+        ),
+      );
+    }
+    return Transform.scale(
+      scale: widget.scale,
+      child: Switch(
+        value: isOpen,
+        onChanged: (v) {
+          widget.onChange?.call(v);
+          setState(() {
+            isOpen = !isOpen;
+          });
+        },
+        activeColor: widget.activeColor,
+        inactiveTrackColor: widget.inactiveTrackColor,
+        inactiveThumbColor: widget.inactiveThumbColor,
+        activeTrackColor: widget.activeTrackColor,
+      ),
+    );
+  }
+}

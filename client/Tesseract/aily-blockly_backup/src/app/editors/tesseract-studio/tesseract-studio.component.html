@@ -1,0 +1,59 @@
+<div class="studio-shell" [class.chromeless]="isChromelessWorkspace">
+  @if (hasProjectWorkspace) {
+    <div class="studio-toolbar">
+      <div>
+        <p class="eyebrow">Tesseract Studio</p>
+        <h1>{{ workspaceTitle }}</h1>
+        <p class="path">{{ workspaceDescription }}</p>
+      </div>
+
+      <div class="actions">
+        <button nz-button nzType="default" (click)="refreshWorkspace()">刷新运行时</button>
+        <button nz-button nzType="default" (click)="saveSnapshot()">保存快照</button>
+        <button nz-button nzType="primary" (click)="deployWorkflow()">部署到 n8n</button>
+        <button nz-button nzType="default" (click)="openExternally()">浏览器打开</button>
+      </div>
+    </div>
+
+    <div class="studio-status">
+      <span class="badge" [class.ok]="agentStatus?.healthy">
+        Agent {{ agentStatus?.healthy ? 'online' : 'offline' }}
+      </span>
+      <span class="badge" [class.ok]="n8nStatus?.healthy">
+        n8n {{ n8nStatus?.healthy ? 'online' : 'offline' }}
+      </span>
+      @if (snapshot?.workflowId) {
+        <span class="badge workflow">Workflow {{ snapshot?.workflowId }}</span>
+      }
+    </div>
+  }
+
+  @if (loading) {
+    <div class="studio-empty" [class.chromeless]="isChromelessWorkspace">
+      <h2>正在初始化本地运行时</h2>
+      <p>正在拉起 Tesseract Agent 与本地 n8n。</p>
+    </div>
+  } @else if (showWorkflowPlaceholder) {
+    <div class="studio-empty workflow-placeholder" [class.chromeless]="isChromelessWorkspace">
+      <h2>工作流画布将在这里出现</h2>
+      <p>当前活动工作区还没有目标工作流。</p>
+      <p>当你在右侧完成“创建工作流”后，这个区域会自动切换成对应的 workflow 画布。</p>
+      <p>在此之前，这里不会展示 n8n 主页、默认示例或第三方工作流，避免调试时把别的内容误认为当前结果。</p>
+    </div>
+  } @else if (showWorkflowSyncPending) {
+    <div class="studio-empty workflow-pending" [class.chromeless]="isChromelessWorkspace">
+      <h2>正在对齐工作流画布</h2>
+      <p>客户端已经拿到目标 workflow 引用，正在把左侧工作区切换到对应画布。</p>
+      <p>在切换完成之前，这里不会回退到 n8n 主页或历史流程列表，避免把无关内容误认为创建结果。</p>
+    </div>
+  } @else if (safeEditorUrl) {
+    <div class="studio-frame" [class.chromeless]="isChromelessWorkspace">
+      <webview #workspaceFrame [attr.src]="editorUrl" allowpopups></webview>
+    </div>
+  } @else {
+    <div class="studio-empty" [class.chromeless]="isChromelessWorkspace">
+      <h2>n8n 编辑器未就绪</h2>
+      <p>{{ n8nStatus?.lastError || agentStatus?.lastError || '本地运行时未能启动。' }}</p>
+    </div>
+  }
+</div>

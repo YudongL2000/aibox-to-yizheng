@@ -1,0 +1,14 @@
+<div class="digital-twin-panel">
+  <div class="panel-frame">
+    <app-iframe
+      [embeddedMode]="true"
+      [enableDigitalTwinBridge]="true"
+      [showWindowChrome]="false"
+      [iframeUrl]="iframeUrl"
+      [frameTitle]="frameTitle"
+      [frameData]="frameData"
+      [sandboxPolicy]="'allow-scripts allow-same-origin allow-downloads'"
+      [referrerPolicy]="'no-referrer'"
+    ></app-iframe>
+  </div>
+</div>

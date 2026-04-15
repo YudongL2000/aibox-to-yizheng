@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-04-12T10:43:09.906Z",
+  "module": "aily-blockly",
+  "modules": [
+    {
+      "module": "src",
+      "scanned": 543,
+      "violations": 61,
+      "bypassed": 0
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+# Mock user/chatbot clients (user.py, chatbot.py)
+websocket-client>=1.6.0

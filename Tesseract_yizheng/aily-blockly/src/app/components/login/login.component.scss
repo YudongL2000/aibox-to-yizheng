@@ -1,0 +1,206 @@
+.login-box {
+  padding: 15px;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  background: color-mix(in srgb, var(--shell-bg-strong) 50%, transparent);
+  flex-direction: column;
+  z-index: 10;
+
+  .inner {
+    background: var(--shell-control);
+    width: 100%;
+    padding: 15px;
+    border-radius: 5px;
+  }
+}
+
+.description {
+    width: 100%;
+    min-height: 200px;
+}
+
+.phone-login-box {
+    width: 100%;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+
+.text2 {
+  color: var(--shell-control-text);
+}
+
+.line {
+  border-bottom: 0.5px solid var(--shell-shell-divider);
+  margin-bottom: 10px;
+}
+
+.btns {
+    display: flex;
+    justify-content: center;
+
+    .item {
+        flex-direction: column;
+        padding: 15px;
+        cursor: pointer;
+        color: var(--shell-control-text-muted);
+        transition: all 0.3s;
+
+        i {
+            font-size: 30px;
+        }
+
+        &:hover {
+        color: var(--text-primary);
+        }
+
+        &.active {
+        color: var(--text-primary);
+        }
+
+        &.wechat-active {
+            color: var(--text-primary);
+
+            i {
+                color: var(--status-ok);
+            }
+        }
+
+        .icon {
+            width: 35px;
+            height: 35px;
+        }
+
+        .fa-mobile {
+            font-size: 28px;
+        }
+    }
+}
+
+.login-btn {
+    margin-top: 15px;
+
+    button {
+        width: 100%;
+    }
+}
+
+.wechat {
+    flex-direction: column;
+    justify-content: flex-start;
+    height: 200px;
+    padding-top: 10px;
+
+    .qrcode {
+        width: 150px;
+        height: 150px;
+        border: 1px solid var(--shell-shell-divider);
+        border-radius: 3px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .loading-icon {
+            i {
+                font-size: 48px;
+                color: var(--shell-control-text-muted);
+            }
+        }
+
+        .error-text {
+            color: var(--status-warn);
+            font-size: 14px;
+            text-align: center;
+            padding: 10px;
+        }
+    }
+
+    .wechat-status {
+        width: 100%;
+        text-align: center;
+
+        .status-message {
+            color: var(--shell-control-text);
+            font-size: 14px;
+
+            &.success {
+                color: var(--status-ok);
+            }
+
+            &.expired,
+            &.error {
+                color: var(--status-warn);
+            }
+        }
+    }
+}
+
+.phone-login-box {
+    margin-top: 23px;
+
+    .item {
+        display: flex;
+        margin-bottom: 15px;
+
+        >div:first-child {
+            width: 40px;
+            line-height: 32px;
+            margin-right: 10px;
+        }
+
+        i {
+            font-size: 20px;
+        }
+
+        input {
+            background: var(--shell-panel);
+            color: color-mix(in srgb, var(--text-primary) 72%, transparent) !important;
+            flex: 1;
+
+            &[type="password"] {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+        }
+
+        .send-code-btn {
+            margin-left: 10px;
+            min-width: 100px;
+            white-space: nowrap;
+        }
+    }
+
+    .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        button {
+            width: 100%;
+
+            &[nz-button][nzType="link"] {
+                padding: 0;
+                height: auto;
+                margin-top: 5px;
+            }
+        }
+    }
+
+    .username {
+        font-weight: 500;
+        font-size: 16px;
+        line-height: 32px;
+    }
+}

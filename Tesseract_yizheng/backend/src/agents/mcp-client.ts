@@ -1,0 +1,352 @@
+/**
+ * [INPUT]: 依赖 NodeRepository、UnifiedValidator、WorkflowAutoFixer 与 DiffEngine
+ * [OUTPUT]: 对外提供节点检索、单一验证入口与工作流自动修复包装
+ * [POS]: agents 与 services/mcp 之间的轻量适配层，屏蔽底层验证与 diff 细节
+ * [PROTOCOL]: 变更时更新此头部，然后检查 CLAUDE.md
+ */
+
+import { NodeRepository } from '../database/node-repository';
+import { EnhancedConfigValidator } from '../services/enhanced-config-validator';
+import { UnifiedValidationResult, UnifiedValidationTarget, UnifiedValidator } from '../services/unified-validator';
+import { WorkflowAutoFixer } from '../services/workflow-auto-fixer';
+import { WorkflowDiffEngine } from '../services/workflow-diff-engine';
+import { WorkflowValidator, ValidationIssue } from '../services/workflow-validator';
+import { SimpleCache } from '../utils/simple-cache';
+import { logger } from '../utils/logger';
+import type { WorkflowDefinition } from './types';
+import { ALLOWED_NODE_TYPES } from './allowed-node-types';
+
+export interface SearchNodesParams {
+  query: string;
+  limit?: number;
+  mode?: 'OR' | 'AND' | 'FUZZY';
+  includeExamples?: boolean;
+}
+
+export interface SearchNodesResult {
+  nodes: Array<{
+    nodeType: string;
+    displayName: string;
+    description?: string;
+    category?: string;
+    exampleConfig?: object;
+  }>;
+  total: number;
+}
+
+export interface GetNodeParams {
+  nodeType: string;
+  detail?: 'minimal' | 'standard' | 'full';
+  includeExamples?: boolean;
+}
+
+export interface GetNodeResult {
+  nodeType: string;
+  displayName: string;
+  description?: string;
+  defaultVersion?: number;
+  properties?: any[];
+  operations?: any[];
+  credentials?: any[];
+  exampleConfig?: object;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  disposition?: 'valid' | 'autoFixable' | 'needsModel' | 'needsUser';
+  errors: ValidationIssue[];
+  warnings: ValidationIssue[];
+  suggestions: string[];
+  statistics: {
+    totalNodes: number;
+    enabledNodes: number;
+    triggerNodes: number;
+    validConnections: number;
+    invalidConnections: number;
+    expressionsValidated: number;
+  };
+}
+
+export interface MCPClientOptions {
+  cacheTtlSeconds?: number;
+  allowedNodeTypes?: string[];
+  workflowValidator?: {
+    validateWorkflow: (
+      workflow: WorkflowDefinition,
+      options?: {
+        validateNodes?: boolean;
+        validateConnections?: boolean;
+        validateExpressions?: boolean;
+        profile?: 'minimal' | 'runtime' | 'ai-friendly' | 'strict';
+      }
+    ) => Promise<{
+      valid: boolean;
+      errors: ValidationIssue[];
+      warnings: ValidationIssue[];
+      statistics: ValidationResult['statistics'];
+      suggestions: string[];
+    }>;
+  };
+  unifiedValidator?: Pick<UnifiedValidator, 'validate'>;
+  autoFixer?: WorkflowAutoFixer;
+  diffEngine?: WorkflowDiffEngine;
+}
+
+export class MCPClient {
+  private cache: SimpleCache;
+  private cacheTtlSeconds: number;
+  private allowedNodeTypes: Set<string> | null;
+  private unifiedValidator: Pick<UnifiedValidator, 'validate'>;
+  private autoFixer: WorkflowAutoFixer;
+  private diffEngine: WorkflowDiffEngine;
+
+  constructor(
+    private nodeRepository: NodeRepository,
+    options: MCPClientOptions = {}
+  ) {
+    this.cache = new SimpleCache();
+    this.cacheTtlSeconds = options.cacheTtlSeconds ?? 600;
+    const allowed = options.allowedNodeTypes ?? ALLOWED_NODE_TYPES;
+    this.allowedNodeTypes = allowed ? new Set(allowed) : null;
+    if (options.unifiedValidator) {
+      this.unifiedValidator = options.unifiedValidator;
+    } else {
+      const validator = options.workflowValidator
+        ? new UnifiedValidator(this.nodeRepository, {
+            workflowValidator: options.workflowValidator as any,
+          })
+        : new UnifiedValidator(this.nodeRepository, {
+            workflowValidator: new WorkflowValidator(this.nodeRepository, EnhancedConfigValidator),
+          });
+      this.unifiedValidator = validator;
+    }
+    this.autoFixer = options.autoFixer ?? new WorkflowAutoFixer();
+    this.diffEngine = options.diffEngine ?? new WorkflowDiffEngine();
+  }
+
+  async validate(target: UnifiedValidationTarget): Promise<UnifiedValidationResult> {
+    return this.unifiedValidator.validate(target);
+  }
+
+  async searchNodes(params: SearchNodesParams): Promise<SearchNodesResult> {
+    const cacheKey = `search:${params.query}:${params.mode ?? 'OR'}:${params.limit ?? 20}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      return cached as SearchNodesResult;
+    }
+
+    const nodes = this.nodeRepository.searchNodes(
+      params.query,
+      params.mode ?? 'OR',
+      params.limit ?? 20
+    );
+    const filtered = this.allowedNodeTypes
+      ? nodes.filter((node) => this.allowedNodeTypes?.has(node.nodeType))
+      : nodes;
+
+    const result: SearchNodesResult = {
+      nodes: filtered.map((node) => ({
+        nodeType: node.nodeType,
+        displayName: node.displayName,
+        description: node.description,
+        category: node.category,
+        exampleConfig: params.includeExamples ? this.getExampleConfig(node.nodeType) : undefined,
+      })),
+      total: filtered.length,
+    };
+
+    this.cache.set(cacheKey, result, this.cacheTtlSeconds);
+    return result;
+  }
+
+  async getNode(params: GetNodeParams): Promise<GetNodeResult> {
+    if (this.allowedNodeTypes && !this.allowedNodeTypes.has(params.nodeType)) {
+      throw new Error(`Node type not allowed: ${params.nodeType}`);
+    }
+    const cacheKey = `node:${params.nodeType}:${params.detail ?? 'standard'}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      return cached as GetNodeResult;
+    }
+
+    const node = this.nodeRepository.getNodeByType(params.nodeType);
+    if (!node) {
+      throw new Error(`Node not found: ${params.nodeType}`);
+    }
+
+    const detail = params.detail ?? 'standard';
+    const properties =
+      detail === 'full' ? node.properties : this.filterEssentialProperties(node.properties || []);
+
+    const result: GetNodeResult = {
+      nodeType: node.nodeType,
+      displayName: node.displayName,
+      description: node.description,
+      defaultVersion: node.version,
+      properties,
+      operations: detail === 'minimal' ? undefined : node.operations,
+      credentials: detail === 'minimal' ? undefined : node.credentials,
+      exampleConfig: params.includeExamples ? this.getExampleConfig(node.nodeType) : undefined,
+    };
+
+    this.cache.set(cacheKey, result, this.cacheTtlSeconds);
+    return result;
+  }
+
+  async validateWorkflow(workflow: WorkflowDefinition): Promise<ValidationResult> {
+    const disallowed = this.validateAllowedNodes(workflow);
+    if (disallowed.length > 0) {
+      logger.warn('MCPClient: workflow contains disallowed nodes', {
+        workflowName: workflow.name,
+        errors: disallowed.map((error) => error.message),
+        summary: this.summarizeWorkflow(workflow),
+      });
+      return {
+        isValid: false,
+        errors: disallowed,
+        warnings: [],
+        suggestions: [],
+        statistics: this.buildBasicStatistics(workflow),
+      };
+    }
+
+    const result = await this.unifiedValidator.validate({
+      kind: 'workflow',
+      workflow,
+      options: {
+        validateNodes: true,
+        validateConnections: true,
+        validateExpressions: true,
+        profile: 'runtime',
+      },
+    });
+
+    if (result.kind !== 'workflow') {
+      throw new Error('UnifiedValidator returned unexpected result kind for workflow validation');
+    }
+
+    if (!result.valid) {
+      logger.warn('MCPClient: workflow validation failed', {
+        workflowName: workflow.name,
+        errors: result.errors.map((error) => ({
+          message: error.message,
+          nodeName: error.nodeName,
+          nodeId: error.nodeId,
+          code: error.code,
+        })),
+        summary: this.summarizeWorkflow(workflow),
+      });
+    }
+
+    return {
+      isValid: result.valid,
+      disposition: result.disposition,
+      errors: result.errors,
+      warnings: result.warnings,
+      suggestions: result.suggestions,
+      statistics: result.statistics,
+    };
+  }
+
+  async autofixWorkflow(workflow: WorkflowDefinition): Promise<WorkflowDefinition> {
+    const validation = await this.validateWorkflow(workflow);
+    if (validation.isValid) {
+      return workflow;
+    }
+
+    const fixes = await this.autoFixer.generateFixes(workflow as any, validation as any, [], {
+      applyFixes: true,
+      confidenceThreshold: 'medium',
+      maxFixes: 20,
+    });
+
+    if (fixes.operations.length === 0) {
+      return workflow;
+    }
+
+    const result = await this.diffEngine.applyDiff(workflow as any, {
+      id: workflow.name || 'autofix',
+      operations: fixes.operations,
+      validateOnly: false,
+    });
+
+    return (result.workflow as WorkflowDefinition) ?? workflow;
+  }
+
+  private filterEssentialProperties(properties: any[]): any[] {
+    return properties.filter(
+      (prop) =>
+        prop.required ||
+        ['resource', 'operation', 'url', 'method', 'authentication'].includes(prop.name)
+    );
+  }
+
+  private validateAllowedNodes(workflow: WorkflowDefinition): ValidationIssue[] {
+    if (!this.allowedNodeTypes) {
+      return [];
+    }
+
+    const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
+    return nodes
+      .filter((node) => {
+        const type = node?.type as string | undefined;
+        return typeof type === 'string' && !this.allowedNodeTypes?.has(type);
+      })
+      .map((node) => ({
+        type: 'error',
+        nodeId: node?.id as string | undefined,
+        nodeName: node?.name as string | undefined,
+        message: `Node type not allowed: ${node?.type}`,
+        code: 'NODE_TYPE_NOT_ALLOWED',
+      }));
+  }
+
+  private buildBasicStatistics(workflow: WorkflowDefinition): ValidationResult['statistics'] {
+    const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
+    const triggerTypes = new Set(['n8n-nodes-base.webhook', 'n8n-nodes-base.scheduleTrigger']);
+    return {
+      totalNodes: nodes.length,
+      enabledNodes: nodes.length,
+      triggerNodes: nodes.filter((node) => triggerTypes.has((node?.type as string) || '')).length,
+      validConnections: 0,
+      invalidConnections: 0,
+      expressionsValidated: 0,
+    };
+  }
+
+  private summarizeWorkflow(workflow: WorkflowDefinition) {
+    const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
+    const nodeTypes = nodes.reduce<Record<string, number>>((acc, node) => {
+      const type = node?.type as string | undefined;
+      if (type) {
+        acc[type] = (acc[type] ?? 0) + 1;
+      }
+      return acc;
+    }, {});
+
+    const ifNodes = nodes
+      .filter((node) => node?.type === 'n8n-nodes-base.if')
+      .map((node) => {
+        const params = (node?.parameters ?? {}) as Record<string, unknown>;
+        return {
+          id: node?.id as string | undefined,
+          name: node?.name as string | undefined,
+          hasCombinator: typeof params.combinator !== 'undefined',
+          hasConditions: typeof params.conditions !== 'undefined',
+          combinator: params.combinator,
+          conditions: params.conditions,
+          filters: params.filters,
+        };
+      });
+
+    return {
+      nodeCount: nodes.length,
+      nodeTypes,
+      ifNodes,
+    };
+  }
+
+  private getExampleConfig(_nodeType: string): object | undefined {
+    return undefined;
+  }
+}

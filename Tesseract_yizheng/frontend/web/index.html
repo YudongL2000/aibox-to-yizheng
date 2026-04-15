@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="aitesseract">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>aitesseract</title>
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- model-viewer 脚本（model_viewer_plus Web 平台必需） -->
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script>
+    /*
+     * [INPUT]: 依赖 Flutter DDC 注入的 window.$dartRunMain 与 $dartMainExecuted。
+     * [OUTPUT]: 在 DWDS 未主动触发 main() 时提供有限次数启动兜底；嵌入
+     * aily-blockly 的 digital twin 场景只延后 fallback，不会彻底禁用。
+     * [POS]: Web 开发入口的启动保险丝，避免嵌入 Electron/Edge 时 DDC 已加载但 runApp 从未执行。
+     * [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md
+     */
+    (() => {
+      // 730 个 DDC 脚本在嵌入容器里可能超过 20 秒；新 Flutter 版本会更早暴露
+      // $dartRunMain，但此时 web_entrypoint 可能尚未注册完成。嵌入场景下延后兜底，
+      // 避免在 Electron iframe 中提前抢跑导致 "Library not defined"。
+      const isEmbedded = window.parent && window.parent !== window;
+      const embeddedSource =
+        new URLSearchParams(window.location.search).get('source') || '';
+      const minFallbackDelayMs =
+        isEmbedded && embeddedSource === 'aily-blockly' ? 12000 : 2000;
+      const maxAttempts = Math.ceil(Math.max(minFallbackDelayMs, 60000) / 250);
+      const startedAt = Date.now();
+      let attempts = 0;
+      const timer = window.setInterval(() => {
+        attempts += 1;
+        if (window.$dartMainExecuted === true) {
+          window.clearInterval(timer);
+          return;
+        }
+        if (Date.now() - startedAt < minFallbackDelayMs) {
+          return;
+        }
+        if (typeof window.$dartRunMain === 'function') {
+          console.warn(
+            `[FlutterBootstrap] DWDS did not start main(); running fallback after ${minFallbackDelayMs}ms.`,
+          );
+          window.$dartRunMain();
+          window.clearInterval(timer);
+          return;
+        }
+        if (attempts >= maxAttempts) {
+          window.clearInterval(timer);
+        }
+      }, 250);
+    })();
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+
+> n8n-workflow@2.5.0 build /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/workflow
+> tsc --build tsconfig.build.esm.json tsconfig.build.cjs.json
+

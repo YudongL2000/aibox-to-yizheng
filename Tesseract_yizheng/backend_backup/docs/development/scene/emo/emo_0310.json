@@ -1,0 +1,657 @@
+{
+  "name": "情绪共情交互：语音(ASR+StructBERT+LLM) & 摄像头(表情/手势yolov8) -> 屏幕emoji + 机械臂动作 + TTS+喇叭",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "id": "5d7739de-569a-49d0-8e41-2237a934efdd",
+      "name": "schedule_trigger_30s",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        864,
+        416
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "共情感知脉冲",
+        "subtitle": "系统的“生物钟”。每隔30秒自动激活一次全感官扫描，让机器人定期观察和倾听主人的状态。",
+        "category": "BASE",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {
+          "seconds": 5
+        },
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{$env.CAMERA_SNAPSHOT_URL || \"http://robot.local/api/camera/snapshot\"}}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "99f60f91-acaa-4193-aa57-056ab65491d7",
+      "name": "http_request_camera_snapshot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1088,
+        240
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "视觉环境快照",
+        "subtitle": "调用摄像头硬件，捕捉当前主人的面部表情图像。",
+        "category": "CAM",
+        "topology": "usb2",
+        "session_ID": "123334",
+        "sub": {
+          "output": "camera1"
+        },
+        "device_ID": "cam1"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {},
+        "includeOtherFields": false
+      },
+      "id": "dfbf6d9d-d57a-4c0f-b0a1-e1572e912068",
+      "name": "set_yolov8_expression",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1328,
+        240
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "手势识别",
+        "subtitle": "手势识别模块",
+        "category": "YOLO-HAND",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {
+          "yolov_input": "camera1",
+          "yolov_output": "visionLabel"
+        },
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{$env.MIC_CAPTURE_URL || \"http://robot.local/api/mic/capture\"}}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "39c53e11-132f-4745-856c-a5ac13ce94de",
+      "name": "http_request_microphone_capture",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1552,
+        240
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "语音音频拾取",
+        "subtitle": "调动麦克风硬件，录制主人的语音片段，捕捉声音中的情绪信息。",
+        "category": "MIC",
+        "topology": "usb2",
+        "session_ID": "123334",
+        "sub": {
+          "output": "microphone1"
+        },
+        "device_ID": "mic1"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {},
+        "includeOtherFields": false
+      },
+      "id": "f76a351e-0df4-4e11-b3f0-ed78c5f33168",
+      "name": "set_asr_recognition",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1776,
+        240
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "用户语音识别",
+        "subtitle": "用户语音识别模块，用于将用户的语音转换成文字。",
+        "category": "ASR",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {
+          "asr_input": "microphone1",
+          "asr_output": "asr_output"
+        },
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {},
+        "includeOtherFields": false
+      },
+      "id": "1bfa4ade-ba97-4a8b-a81f-e1d60fb39d29",
+      "name": "set_llm_emotion",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2000,
+        240
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "AI情绪分类器",
+        "subtitle": "AI情绪分类器模块",
+        "category": "LLM-EMO",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {
+          "system_prompt": "你是一个情绪分类机器人，基于用户输入，仅判断用户情绪是[开心、悲伤、愤怒、平静]后输出对应的情绪关键词",
+          "llm_emo_input": "asr_output",
+          "llm_emo_output": "emotionText"
+        },
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "18f01383-0673-441f-84ee-6b3436614d10",
+              "leftValue": "emotionText",
+              "rightValue": "happy",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "f0b0b3fd-4868-4e54-993d-b5a9b1587be2",
+              "leftValue": "visionLabel",
+              "rightValue": "happy",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "18490748-7984-4f91-b435-1893b97049db",
+      "name": "if_emotion_is_happy",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        240
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "开心情绪闸门",
+        "subtitle": "仅当条件为真时进入开心执行分支，否则继续下一判断。",
+        "category": "BASE",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "f5c4cb4d-e4d3-4fd5-9013-b8fe08d95787",
+              "leftValue": "emotionText",
+              "rightValue": "sad",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "f6c7ea43-6531-4504-9bb7-c184c3976fdf",
+              "leftValue": "visionLabel",
+              "rightValue": "sad",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "b1658ea3-b380-4a1e-b84b-2c1894e2e591",
+      "name": "if_emotion_is_sad",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2464,
+        240
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "难过情绪闸门",
+        "subtitle": "仅当条件为真时进入难过执行分支。",
+        "category": "BASE",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {},
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {},
+        "includeOtherFields": false
+      },
+      "id": "a65faa53-ea8a-4439-85aa-7b6ac0e27d93",
+      "name": "set_tts_text_happy",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2704,
+        144
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "开心语音合成",
+        "subtitle": "开心分支语音文本与音频名赋值。",
+        "category": "TTS",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {
+          "TTS_input": "主人高兴我也高兴",
+          "audio_name": "audio_happy"
+        },
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {},
+      "id": "ab87044e-7f90-46ac-87a7-be86139d2c96",
+      "name": "code_screen_execute_emoji_happy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2704,
+        48
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "开心表情执行",
+        "subtitle": "开心条件命中后显示 Happy。",
+        "category": "SCREEN",
+        "topology": "usb3",
+        "session_ID": "123334",
+        "sub": {
+          "execute_emoji": "Happy"
+        },
+        "device_ID": "screen1"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "7bc144e7-2498-4fed-8724-64cfb1b58f86",
+      "name": "code_hand_execute_happy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2704,
+        240
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "开心动作执行",
+        "subtitle": "开心条件命中后执行挥手动作。",
+        "category": "HAND",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "execute_gesture": "Waving"
+        },
+        "device_ID": "hand1"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "41e27f62-b07a-4050-b540-80f2c18ec8b1",
+      "name": "code_speaker_play_audio_happy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2944,
+        144
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "开心语音播报",
+        "subtitle": "播放开心分支音频。",
+        "category": "SPEAKER",
+        "topology": "usb3",
+        "session_ID": "123334",
+        "sub": {
+          "audio_name": "audio_happy"
+        },
+        "device_ID": "speaker1"
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {},
+        "includeOtherFields": false
+      },
+      "id": "05df6a62-f663-4a55-b4b5-a9697948f8f6",
+      "name": "set_tts_text_sad",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2944,
+        336
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "难过语音合成",
+        "subtitle": "难过分支语音文本与音频名赋值。",
+        "category": "TTS",
+        "topology": "",
+        "session_ID": "123334",
+        "sub": {
+          "TTS_input": "怎么了呀主人",
+          "audio_name": "audio_sad"
+        },
+        "device_ID": ""
+      }
+    },
+    {
+      "parameters": {},
+      "id": "0d89dea4-47a5-4e88-8ffc-cd8003e972f9",
+      "name": "code_screen_execute_emoji_sad",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2944,
+        240
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "难过表情执行",
+        "subtitle": "难过条件命中后显示 Sad。",
+        "category": "SCREEN",
+        "topology": "usb3",
+        "session_ID": "123334",
+        "sub": {
+          "execute_emoji": "Sad"
+        },
+        "device_ID": "screen1"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "e1bcb721-b2f4-410b-b7e7-1ad0d3ec25e1",
+      "name": "code_hand_execute_sad",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2944,
+        432
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "安抚动作执行",
+        "subtitle": "难过条件命中后执行放下动作。",
+        "category": "HAND",
+        "topology": "usb1",
+        "session_ID": "123334",
+        "sub": {
+          "execute_gesture": "Put_down"
+        },
+        "device_ID": "hand1"
+      }
+    },
+    {
+      "parameters": {},
+      "id": "d8794e21-11bc-4ab6-83e7-d2d30474fa88",
+      "name": "code_speaker_play_audio_sad",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3184,
+        336
+      ],
+      "notes": {
+        "extra": "前端状态自定义字段",
+        "title": "难过语音播报",
+        "subtitle": "播放难过分支音频。",
+        "category": "SPEAKER",
+        "topology": "usb3",
+        "session_ID": "123334",
+        "sub": {
+          "audio_name": "audio_sad"
+        },
+        "device_ID": "speaker1"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "schedule_trigger_30s": {
+      "main": [
+        [
+          {
+            "node": "http_request_camera_snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "http_request_camera_snapshot": {
+      "main": [
+        [
+          {
+            "node": "set_yolov8_expression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_yolov8_expression": {
+      "main": [
+        [
+          {
+            "node": "http_request_microphone_capture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "http_request_microphone_capture": {
+      "main": [
+        [
+          {
+            "node": "set_asr_recognition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_asr_recognition": {
+      "main": [
+        [
+          {
+            "node": "set_llm_emotion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_llm_emotion": {
+      "main": [
+        [
+          {
+            "node": "if_emotion_is_happy",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "if_emotion_is_sad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_emotion_is_happy": {
+      "main": [
+        [
+          {
+            "node": "set_tts_text_happy",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "code_screen_execute_emoji_happy",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "code_hand_execute_happy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "if_emotion_is_sad": {
+      "main": [
+        [
+          {
+            "node": "set_tts_text_sad",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "code_screen_execute_emoji_sad",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "code_hand_execute_sad",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "set_tts_text_happy": {
+      "main": [
+        [
+          {
+            "node": "code_speaker_play_audio_happy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set_tts_text_sad": {
+      "main": [
+        [
+          {
+            "node": "code_speaker_play_audio_sad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "74258166-5be5-455c-b8e5-cdbe3fe8f7bc",
+  "meta": {
+    "instanceId": "45754d6d5f7f2bed817205dbe77e9a7a8a3cf052118fe99a211ce0703085696d"
+  },
+  "id": "Z2hn8oYoLi7cO7Rn",
+  "tags": [
+    {
+      "updatedAt": "2026-01-03T19:57:43.318Z",
+      "createdAt": "2026-01-03T19:57:43.318Z",
+      "id": "LSuiAO6s1BdFzJCE",
+      "name": "n8n"
+    },
+    {
+      "updatedAt": "2026-01-07T08:48:44.790Z",
+      "createdAt": "2026-01-07T08:48:44.790Z",
+      "id": "ZeSMyr8LdsZMhmye",
+      "name": "emotion"
+    },
+    {
+      "updatedAt": "2026-01-03T19:57:43.348Z",
+      "createdAt": "2026-01-03T19:57:43.348Z",
+      "id": "kWS2m1TcGY5GcRtq",
+      "name": "robot"
+    }
+  ]
+}

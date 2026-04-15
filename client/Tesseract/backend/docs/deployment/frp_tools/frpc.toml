@@ -1,0 +1,26 @@
+serverAddr = "124.70.111.183"
+serverPort = 7000
+
+# n8n webapp 代理
+[[proxies]]
+name = "n8n"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 5678
+remotePort = 5678
+
+# agent webapp 代理
+[[proxies]]
+name = "webapp"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 5173
+remotePort = 5173
+
+# n8n-mcp Agent API/WebSocket 代理
+[[proxies]]
+name = "agent"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 3006
+remotePort = 3006

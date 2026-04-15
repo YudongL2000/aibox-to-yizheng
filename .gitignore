@@ -1,0 +1,29 @@
+.DS_Store
+**/.DS_Store
+
+# Secrets
+*.pem
+*.key
+*.p12
+.env
+.env.*
+**/.env
+**/.env.*
+**/.env_backend
+!.env.example
+!**/.env.example
+!**/.env.*.example
+
+# Local/dev artifacts
+.playwright-cli/
+output/
+**/node_modules/
+**/dist/
+**/build/
+tmp_*
+**/__pycache__/
+*.pyc
+
+# Large archives not suitable for GitHub
+Tesseract-from-yizheng.zip
+client/Tesseract.zip

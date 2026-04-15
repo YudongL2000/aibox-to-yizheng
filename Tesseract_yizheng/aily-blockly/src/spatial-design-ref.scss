@@ -1,0 +1,438 @@
+/*
+ * [INPUT]: Derived from docs/spatial-wireframe-design-ref.md and docs/ref-design.jsx.
+ * [OUTPUT]: Exposes global Spatial Wireframe semantic CSS tokens and a
+ * flatter host-driven shell surface system for Angular/Electron surfaces.
+ * [POS]: aily-blockly/src design-language reference layer, imported by the
+ * global styles entry before component-local SCSS takes effect.
+ * [PROTOCOL]: Update this header when changing behavior, then check AGENTS.md.
+ */
+
+:root,
+html[data-theme='light'],
+app-root.llight {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Hiragino Sans GB', sans-serif;
+  --font-mono: 'Space Mono', 'Courier New', monospace;
+
+  --bg-base: #f4f4f2;
+  --surface: #eaeaea;
+  --surface-hover: #dfdfdf;
+  --border-solid: #222222;
+  --border-dashed: #bbbbbb;
+  --grid-color: rgba(0, 0, 0, 0.03);
+
+  --text-primary: #111111;
+  --text-secondary: #666666;
+  --text-inverse: #f4f4f2;
+
+  --sem-info: #0055ff;
+  --sem-success: #00a859;
+  --sem-warning: #e58a00;
+  --sem-danger: #e0282e;
+  --sem-neural: #6b21a8;
+
+  --status-ok: var(--sem-success);
+  --status-warn: var(--sem-warning);
+  --accent: var(--sem-neural);
+
+  --radius-base: 4px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 999px;
+  --surface-panel: color-mix(in srgb, var(--surface) 94%, var(--bg-base) 6%);
+  --surface-elevated: color-mix(in srgb, var(--surface-panel) 96%, var(--surface-hover) 4%);
+  --surface-muted: color-mix(in srgb, var(--surface-panel) 92%, var(--bg-base) 8%);
+  --surface-overlay: color-mix(in srgb, var(--surface-panel) 90%, var(--bg-base) 10%);
+  --border-subtle: color-mix(in srgb, var(--border-dashed) 78%, transparent);
+  --focus-ring: color-mix(in srgb, var(--accent) 34%, transparent);
+  --text-muted: color-mix(in srgb, var(--text-secondary) 88%, transparent);
+  --shell-bg: var(--bg-base);
+  --shell-panel: var(--surface-panel);
+  --shell-control: var(--surface-muted);
+  --shell-control-text: var(--text-primary);
+  --shell-control-text-muted: var(--text-secondary);
+  --shell-overlay: color-mix(in srgb, var(--border-solid) 4%, transparent);
+  --shell-shell-overlay: color-mix(in srgb, var(--accent) 10%, transparent);
+  --shell-control-bg-disabled: var(--surface-hover);
+  --shell-bg-soft: var(--surface-panel);
+  --shell-bg-mid: var(--surface-elevated);
+  --shell-bg-strong: var(--bg-base);
+  --shell-shell-code: var(--surface-elevated);
+  --shell-shell-divider: var(--border-subtle);
+  --shell-shell-info: var(--sem-info);
+  --shell-shell-violet: var(--accent);
+  --shell-shell-violet-soft: color-mix(in srgb, var(--accent) 58%, var(--surface-panel));
+  --shell-shell-violet-deep: color-mix(in srgb, var(--accent) 70%, black);
+  --shell-shell-success: var(--sem-success);
+  --shell-shell-success-soft: color-mix(in srgb, var(--sem-success) 72%, black);
+  --shell-shell-danger: var(--sem-danger);
+  --shell-shell-danger-soft: color-mix(in srgb, var(--sem-danger) 72%, black);
+  --shell-shell-shadow: color-mix(in srgb, var(--border-solid) 8%, transparent);
+  --shell-loading-title: var(--text-primary);
+  --shell-loading-subtitle: var(--text-secondary);
+  --shell-text-soft: var(--text-primary);
+  --shell-text-muted: var(--text-secondary);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --grid-size: 32px;
+  --wire-line-soft: color-mix(in srgb, var(--border-solid) 10%, transparent);
+  --wire-line-strong: color-mix(in srgb, var(--border-solid) 22%, transparent);
+  --panel-topline: color-mix(in srgb, var(--border-solid) 16%, transparent);
+  --panel-topline-info: color-mix(in srgb, var(--sem-info) 80%, white 20%);
+  --panel-topline-success: color-mix(in srgb, var(--sem-success) 78%, white 22%);
+  --panel-topline-warning: color-mix(in srgb, var(--sem-warning) 78%, white 22%);
+  --panel-topline-danger: color-mix(in srgb, var(--sem-danger) 82%, white 18%);
+  --panel-topline-accent: color-mix(in srgb, var(--accent) 82%, white 18%);
+  --bg-color: var(--surface-panel);
+  --border-color: var(--border-subtle);
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+html[data-theme='dark'],
+app-root.ddark {
+  --bg-base: #121316;
+  --surface: #1e1f24;
+  --surface-hover: #2a2c33;
+  --border-solid: #3a3d45;
+  --border-dashed: #555555;
+  --grid-color: rgba(255, 255, 255, 0.02);
+
+  --text-primary: #f0f0f0;
+  --text-secondary: #8a8d98;
+  --text-inverse: #121316;
+
+  --sem-info: #00e5ff;
+  --sem-success: #cfff04;
+  --sem-warning: #ffc000;
+  --sem-danger: #ff3366;
+  --sem-neural: #b14eff;
+
+  --status-ok: var(--sem-success);
+  --status-warn: var(--sem-warning);
+  --accent: var(--sem-neural);
+
+  --radius-base: 8px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+  --surface-panel: color-mix(in srgb, var(--surface) 94%, var(--bg-base) 6%);
+  --surface-elevated: color-mix(in srgb, var(--surface-panel) 96%, var(--surface-hover) 4%);
+  --surface-muted: color-mix(in srgb, var(--surface-panel) 92%, var(--bg-base) 8%);
+  --surface-overlay: color-mix(in srgb, var(--surface-panel) 90%, var(--bg-base) 10%);
+  --border-subtle: color-mix(in srgb, var(--border-dashed) 78%, transparent);
+  --focus-ring: color-mix(in srgb, var(--accent) 34%, transparent);
+  --text-muted: color-mix(in srgb, var(--text-secondary) 88%, transparent);
+  --shell-bg: #0d0f14;
+  --shell-panel: #2b2d30;
+  --shell-control: #3a3c3f;
+  --shell-control-text: #ddd;
+  --shell-control-text-muted: #999;
+  --shell-overlay: color-mix(in srgb, #ffffff 2%, transparent);
+  --shell-shell-overlay: color-mix(in srgb, var(--shell-loading-title) 18%, transparent);
+  --shell-control-bg-disabled: #2b2d30;
+  --shell-bg-soft: #090b12;
+  --shell-bg-mid: #11131a;
+  --shell-bg-strong: #090b12;
+  --shell-shell-code: #252629;
+  --shell-shell-divider: #4a4c4f;
+  --shell-shell-info: #63b3ed;
+  --shell-shell-violet: #7b4dff;
+  --shell-shell-violet-soft: #b06eff;
+  --shell-shell-violet-deep: #4a298c;
+  --shell-shell-success: #10b981;
+  --shell-shell-success-soft: #059669;
+  --shell-shell-danger: #e53e3e;
+  --shell-shell-danger-soft: #c53030;
+  --shell-shell-shadow: color-mix(in srgb, #000000 35%, transparent);
+  --shell-loading-title: #d8ccff;
+  --shell-loading-subtitle: #b9aadf;
+  --shell-text-soft: #f2edff;
+  --shell-text-muted: #e2e8f0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --grid-size: 32px;
+  --wire-line-soft: color-mix(in srgb, #ffffff 10%, transparent);
+  --wire-line-strong: color-mix(in srgb, #ffffff 18%, transparent);
+  --panel-topline: color-mix(in srgb, #ffffff 18%, transparent);
+  --panel-topline-info: var(--sem-info);
+  --panel-topline-success: var(--sem-success);
+  --panel-topline-warning: var(--sem-warning);
+  --panel-topline-danger: var(--sem-danger);
+  --panel-topline-accent: var(--accent);
+  --bg-color: var(--surface-panel);
+  --border-color: var(--border-subtle);
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+.spatial-mono {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.spatial-panel {
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: var(--transition);
+}
+
+.spatial-data-block {
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.spatial-divider {
+  border-bottom: 1px dashed var(--border-dashed);
+}
+
+.spatial-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background-color: var(--status-ok);
+}
+
+.spatial-status-dot.accent {
+  background-color: var(--accent);
+}
+
+.spatial-status-dot.danger {
+  background-color: var(--sem-danger);
+}
+
+.spatial-status-dot.info {
+  background-color: var(--sem-info);
+}
+
+.spatial-toggle-switch {
+  width: 40px;
+  height: 20px;
+  position: relative;
+  border: 1px solid var(--border-solid);
+  border-radius: 99px;
+  transition: var(--transition);
+}
+
+.spatial-toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  transition: var(--transition);
+}
+
+.spatial-toggle-switch.active::after {
+  left: 22px;
+  background: var(--status-ok);
+}
+
+.spatial-toggle-switch.danger.active::after {
+  background: var(--sem-danger);
+}
+
+.sp-shell-bar {
+  background: var(--surface-panel);
+  border-color: var(--border-subtle);
+}
+
+.sp-shell-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sp-shell-button:hover {
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  border-color: var(--text-primary);
+}
+
+.sp-shell-button.accent {
+  border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--accent);
+}
+
+.sp-shell-button.danger {
+  border-color: color-mix(in srgb, var(--sem-danger) 36%, transparent);
+  color: var(--sem-danger);
+}
+
+.sp-shell-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--text-muted);
+}
+
+.sp-shell-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.sp-shell-chip.info {
+  color: var(--sem-info);
+  border-color: color-mix(in srgb, var(--sem-info) 28%, transparent);
+}
+
+.sp-shell-chip.success {
+  color: var(--sem-success);
+  border-color: color-mix(in srgb, var(--sem-success) 28%, transparent);
+}
+
+.sp-shell-chip.warning {
+  color: var(--sem-warning);
+  border-color: color-mix(in srgb, var(--sem-warning) 28%, transparent);
+}
+
+.sp-shell-chip.danger {
+  color: var(--sem-danger);
+  border-color: color-mix(in srgb, var(--sem-danger) 28%, transparent);
+}
+
+.sp-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px dashed var(--border-subtle);
+  transition: var(--transition);
+}
+
+.sp-list-item:hover {
+  background: linear-gradient(90deg, var(--surface-panel) 0%, transparent 100%);
+  padding-left: 18px;
+}
+
+.sp-input-shell {
+  background: var(--surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.sp-shell-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.sp-shell-kicker::before {
+  content: '';
+  width: 18px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.sp-shell-frame {
+  position: relative;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-solid);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.sp-shell-frame::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  background: var(--panel-topline);
+  pointer-events: none;
+}
+
+.sp-shell-frame.info::before {
+  background: var(--panel-topline-info);
+}
+
+.sp-shell-frame.success::before {
+  background: var(--panel-topline-success);
+}
+
+.sp-shell-frame.warning::before {
+  background: var(--panel-topline-warning);
+}
+
+.sp-shell-frame.danger::before {
+  background: var(--panel-topline-danger);
+}
+
+.sp-shell-frame.accent::before {
+  background: var(--panel-topline-accent);
+}
+
+.sp-shell-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px dashed var(--border-subtle);
+  background: var(--surface-panel);
+}
+
+.sp-shell-data-block {
+  position: relative;
+  background: var(--bg-base);
+  border: 1px solid var(--border-solid);
+  border-radius: var(--radius-base);
+  padding: 14px;
+}
+
+.sp-shell-data-block::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 1px;
+  background: var(--wire-line-strong);
+}

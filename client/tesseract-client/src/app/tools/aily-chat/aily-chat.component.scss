@@ -1,0 +1,582 @@
+/* AI聊天组件主容器布局 - 包含TODO面板和聊天内容 */
+.aily-chat-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  /* 防止内容溢出 */
+}
+
+/* TODO面板容器样式 */
+.todo-panel-container {
+  flex-shrink: 0;
+  /* 不允许收缩，保持TODO面板完整显示 */
+  border-top: 1px solid var(--border-color, #3c3c3c);
+  background: var(--vscode-sideBar-background, #252526);
+  max-height: 300px;
+  /* 限制最大高度防止占用过多空间 */
+  overflow: hidden;
+  transition: all 0.2s ease;
+  /* 平滑的高度变化动画 */
+}
+
+.window-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  /* 占用剩余空间，适应TODO面板高度变化 */
+  min-height: 0;
+  /* 确保可以收缩 */
+  overflow: hidden;
+  /* 防止内容溢出 */
+}
+
+.dialog-list {
+  padding-left: 10px;
+  flex: 1;
+  /* 使用flex:1让对话区域占用剩余空间 */
+  overflow-y: auto;
+  //scroll-behavior: smooth;
+  min-height: 0;
+  /* 确保flex子项可以收缩 */
+
+  .dialogs {
+    padding: 0 10px 10px 0;
+  }
+}
+
+// ===== 对话模式顶部技能卡片条 =====
+.dialogue-skills-strip {
+  margin: 10px 10px 4px 0;
+  padding: 18px 18px 14px;
+  border: 1px solid rgba(165, 102, 255, 0.18);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top left, rgba(143, 77, 255, 0.16), transparent 32%),
+    linear-gradient(180deg, rgba(14, 13, 18, 0.98), rgba(16, 15, 22, 0.96));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  .dialogue-skills-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .dialogue-skills-eyebrow {
+    font-size: 11px;
+    color: rgba(196, 173, 255, 0.5);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .dialogue-skills-label {
+    font-size: 24px;
+    font-weight: 700;
+    color: rgba(247, 242, 255, 0.96);
+    line-height: 1.1;
+  }
+
+  .dialogue-skills-meta {
+    font-size: 12px;
+    color: rgba(196, 173, 255, 0.46);
+    letter-spacing: 0.08em;
+  }
+
+  .dialogue-skills-cards {
+    display: flex;
+    flex-direction: row;
+    gap: 18px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(176, 110, 255, 0.3);
+      border-radius: 2px;
+    }
+  }
+
+  .dialogue-skill-card {
+    flex-shrink: 0;
+    width: 248px;
+    min-height: 248px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    background: rgba(18, 17, 24, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 28px;
+    padding: 20px 18px 18px;
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+
+    &.featured {
+      border-color: rgba(165, 102, 255, 0.82);
+      background:
+        radial-gradient(circle at top left, rgba(165, 102, 255, 0.18), transparent 42%),
+        rgba(22, 16, 34, 0.96);
+      box-shadow: 0 0 0 1px rgba(165, 102, 255, 0.18), 0 18px 36px rgba(112, 52, 214, 0.22);
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      border-color: rgba(176, 110, 255, 0.55);
+      box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    &.ready .skill-card-icon {
+      background: linear-gradient(135deg, rgba(124, 62, 240, 0.95), rgba(214, 112, 255, 0.88));
+      color: #fff;
+    }
+
+    .skill-card-icon {
+      width: 64px;
+      height: 64px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(233, 220, 255, 0.72);
+      font-size: 28px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .skill-card-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(248, 243, 255, 0.96);
+      line-height: 1.2;
+    }
+
+    .skill-card-summary {
+      min-height: 38px;
+      font-size: 13px;
+      color: rgba(184, 169, 218, 0.74);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .skill-card-hardware {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      margin-top: auto;
+    }
+
+    .skill-hardware-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+
+      &.ready {
+        color: #8ff1b8;
+        background: rgba(32, 95, 58, 0.42);
+        border-color: rgba(73, 200, 121, 0.22);
+      }
+
+      &.missing {
+        color: #ff8d9b;
+        background: rgba(104, 32, 48, 0.38);
+        border-color: rgba(255, 114, 136, 0.18);
+      }
+    }
+  }
+}
+
+.sender {
+  position: relative;
+  flex-shrink: 0;
+
+  .settings {
+    height: 40px;
+    position: relative;
+  }
+
+  .s-box {
+    height: calc(100% - 20px);
+  }
+
+  .input-box {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin: 10px;
+    padding: 5px;
+    border-radius: 5px;
+    position: relative;
+    background: #292929;
+
+    .tesseract-submode-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 4px 10px;
+    }
+
+    .submode-btn {
+      border: 1px solid rgba(143, 77, 255, 0.26);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(245, 238, 255, 0.82);
+      padding: 6px 14px;
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+
+      &:hover {
+        border-color: rgba(174, 113, 255, 0.48);
+        color: #fff;
+      }
+
+      &.active {
+        background: linear-gradient(90deg, rgba(128, 70, 255, 0.92), rgba(201, 102, 255, 0.88));
+        border-color: transparent;
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(134, 74, 255, 0.22);
+      }
+    }
+
+    .bridge-state {
+      margin-left: auto;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: rgba(221, 211, 255, 0.74);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+
+      &.connected {
+        color: #7ef0b1;
+        border-color: rgba(126, 240, 177, 0.18);
+        background: rgba(126, 240, 177, 0.08);
+      }
+
+      &.connecting {
+        color: #f4d36c;
+        border-color: rgba(244, 211, 108, 0.18);
+        background: rgba(244, 211, 108, 0.08);
+      }
+
+      &.error {
+        color: #ff9ea7;
+        border-color: rgba(255, 158, 167, 0.18);
+        background: rgba(255, 158, 167, 0.08);
+      }
+    }
+
+    textarea {
+      font-size: 14px;
+      flex-grow: 1;
+      border: none;
+      resize: none;
+      outline: none;
+      padding: 7px 0 0 5px;
+      background: transparent;
+    }
+
+    .btns {
+      width: 100%;
+      display: flex;
+      height: 28px;
+      position: relative;
+
+      .right {
+        position: absolute;
+        right: 0px;
+      }
+
+      .right2 {
+        position: absolute;
+        right: 42px;
+      }
+
+      .right3 {
+        position: absolute;
+        right: 74px;
+      }
+
+      button {
+        height: 28px;
+        line-height: 16px;
+        border-radius: 5px;
+      }
+
+      .btn {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+        color: #eee;
+        padding-top: 1px;
+        border-radius: 5px;
+
+        &:hover {
+          color: #fff;
+          background: #3f3f3f;
+        }
+
+        &.actived {
+          background: rgba(40, 100, 250, 0.8);
+          border-radius: 5px;
+        }
+
+        i.actived {
+          color: #4f77dd;
+        }
+      }
+    }
+
+    // 发送按钮
+    .btn {
+      .stop-box {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+      }
+
+      .spinner-box {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #5a5a5a;
+        border-radius: 50%;
+        box-sizing: border-box;
+      }
+
+      .fa-stop {
+        font-size: 13px;
+      }
+
+      .fa-spinner-third {
+        font-size: 22px;
+      }
+    }
+  }
+}
+
+nz-resize-handle {
+  .line {
+    margin-top: 5px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.historyList {
+  background: #555;
+  position: absolute;
+  top: 40px;
+  right: 0;
+}
+
+.guide-box {
+  height: 100%;
+  flex-direction: column;
+
+  i {
+    font-size: 60px;
+    margin-bottom: 6px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .text {
+    color: #999;
+    text-align: center;
+    padding-right: 10px;
+  }
+}
+
+
+
+.list-box {
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 84px;
+  height: 28px;
+  z-index: 0;
+  pointer-events: none;
+  background: #3f3f3f;
+}
+
+.btn2 {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  color: #ccc;
+  padding-top: 1px;
+  border-radius: 5px;
+  z-index: 999;
+  cursor: pointer;
+
+  &:hover {
+    color: #fff;
+  }
+}
+
+.resource-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+
+  .resource-item {
+    display: flex;
+    align-items: center;
+    font-size: 10px;
+    border-radius: 5px;
+    padding: 0 5px;
+    border-radius: 2px;
+    border: 1px solid #666;
+
+    &:hover {
+      background-color: #444;
+    }
+
+    &.block-item {
+      border-color: #d4a017;
+      background-color: rgba(212, 160, 23, 0.1);
+
+      &:hover {
+        background-color: rgba(212, 160, 23, 0.2);
+      }
+
+      i {
+        color: #d4a017;
+      }
+    }
+
+    .resource-name {
+      margin: 0 5px;
+      color: #fff;
+    }
+
+    .btn {
+      cursor: pointer;
+      font-size: 12px;
+      color: #ccc;
+    }
+  }
+}
+
+
+// 模式切换按钮
+.btn {
+  margin-left: 1px;
+  transition: all 0.2s;
+
+  &.mode {
+    width: auto !important;
+    padding: 0 6px !important;
+
+    span {
+      margin-left: 5px;
+      font-size: 12px;
+    }
+
+  }
+
+  &.active {
+    color: var(--vscode-focusBorder, #007acc) !important;
+    background: rgba(0, 122, 204, 0.1);
+  }
+}
+
+// Token 用量环形指示器
+.token-budget-indicator {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  cursor: default;
+  flex-shrink: 0;
+
+  .token-ring {
+    width: 22px;
+    height: 22px;
+
+    circle {
+      transition: stroke-dashoffset 0.4s ease, stroke 0.4s ease;
+    }
+  }
+
+  .token-percent {
+    position: absolute;
+    font-size: 7px;
+    font-weight: 600;
+    color: #98c379;
+    line-height: 1;
+    pointer-events: none;
+
+    &.warn {
+      color: #e5c07b;
+    }
+
+    &.danger {
+      color: #e06c75;
+    }
+  }
+}
+
+.mode-menu {
+  ::ng-deep {
+    .menu-item {
+      padding: 0 3px !important;
+    }
+  }
+}
+
+::ng-deep {
+  .x-markdown {
+    p {
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+  
+    pre {
+      padding: 0;
+      margin: 0;
+    }
+
+    .x-mermaid-placeholder {
+      background-color: #3a3a3a !important;
+    }
+
+    .x-mermaid-diagram {
+      border-radius: 5px;
+      background-color: #3a3a3a;
+      max-height: 500px;
+      overflow: auto;
+      scrollbar-width: thin !important;
+      scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+
+      > svg {
+        user-select: none;
+      }
+    }
+
+    pre, code, kbd, samp, label, span {
+      font-family: "MiSans Regular", "FiraCode Regular";
+    }
+  }
+}

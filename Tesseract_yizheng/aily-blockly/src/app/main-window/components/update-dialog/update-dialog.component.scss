@@ -1,0 +1,17 @@
+.text {
+  min-height: 32px;
+  line-height: 25px;
+  color: var(--text-secondary);
+}
+
+.progress-container {
+  height: 32px;
+}
+
+.error-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  color: var(--sem-danger);
+}

@@ -1,0 +1,65 @@
+<section class="skills-panel-shell">
+  <header class="panel-toolbar">
+    @if (page === 'library') {
+      <span class="panel-count">{{ librarySkills.length }}</span>
+    }
+    <button type="button" class="manage-btn" (click)="requestManage(page)">
+      {{ manageLabel }}
+    </button>
+  </header>
+
+  @switch (page) {
+    @case ('library') {
+      @if (librarySkills.length > 0) {
+        <div class="skill-list">
+          @for (skill of librarySkills; track trackSkill($index, skill)) {
+            <article class="skill-card" [class.incoming]="isIncoming(skill.skillId)">
+              <div class="card-head">
+                <h3>{{ skill.workflowName || skill.displayName }}</h3>
+                @if (isIncoming(skill.skillId)) {
+                  <span class="incoming-pill">NEW</span>
+                }
+              </div>
+
+              @if (skill.summary) {
+              <p class="card-summary">{{ skill.summary }}</p>
+              }
+
+              <div class="chip-row">
+                @for (tag of requiredHardwareLabels(skill); track tag) {
+                  <span class="chip">{{ tag }}</span>
+                }
+              </div>
+
+              <div class="card-actions">
+                <button type="button" class="action-btn primary" [disabled]="!canRun(skill)" (click)="triggerRun(skill)">
+                  用于当前任务
+                </button>
+                <button type="button" class="action-btn secondary" [disabled]="!canTrace(skill)" (click)="triggerTrace(skill)">
+                  回溯
+                </button>
+                <button type="button" class="action-btn ghost" [disabled]="!canPublish(skill)" (click)="triggerPublish(skill)">
+                  发布
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <section class="empty-state">
+          <h3>还没有 skill</h3>
+          <button type="button" class="action-btn secondary" (click)="requestManage('library')">
+            打开管理
+          </button>
+        </section>
+      }
+    }
+
+    @case ('market') {
+      <section class="placeholder-card">
+        <h3>广场稍后接入</h3>
+        <button type="button" class="action-btn primary" (click)="requestManage('market')">打开广场</button>
+      </section>
+    }
+  }
+</section>

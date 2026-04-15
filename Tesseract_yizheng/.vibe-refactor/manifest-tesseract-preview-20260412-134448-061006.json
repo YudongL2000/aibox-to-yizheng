@@ -1,0 +1,639 @@
+{
+  "generated_at": "2026-04-12T13:44:48",
+  "workspace": "/Users/skylerwang/Documents/yudong/Tesseract",
+  "mode": "preview",
+  "agent_targets": [
+    "claude",
+    "codex",
+    "copilot",
+    "cursor"
+  ],
+  "include_hidden": true,
+  "sync_user_claude": false,
+  "user_claude_home": "/Users/skylerwang/.claude",
+  "excludes": [
+    ".git",
+    ".hg",
+    ".svn",
+    "node_modules",
+    ".venv",
+    "venv",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".cache",
+    "dist",
+    "build",
+    "target",
+    ".gradle",
+    ".idea",
+    ".next",
+    ".nuxt",
+    ".turbo",
+    "coverage",
+    ".coverage",
+    ".vibe-refactor",
+    "*_backup",
+    "backend/**",
+    "frontend/**",
+    "aily-blockly/**",
+    "n8n/**",
+    "specs/**",
+    "test/**"
+  ],
+  "validate_cmds": [],
+  "validate_on_apply": false,
+  "strict_validate": false,
+  "hardcoding_scan": true,
+  "hardcoding_strict": false,
+  "hardcoding_max_findings": 0,
+  "blocked": false,
+  "changes": [
+    {
+      "scope": "workspace",
+      "path": ".cursor/rules/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "8c70ca02ce4bd3f1c9a8f58775785efb307c21bb9742826db03b242ac984e376"
+    },
+    {
+      "scope": "workspace",
+      "path": ".cursor/rules/vibe-component-reuse.mdc",
+      "action": "create",
+      "reason": "create_component_reuse_rule",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "ff9f731033d6a0e5716417fb6606e46f753b9f61a7d9cdf2f39cda7a5475aff0"
+    },
+    {
+      "scope": "workspace",
+      "path": ".cursor/rules/vibe-doc-sync.mdc",
+      "action": "create",
+      "reason": "create_doc_sync_rule",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "41b583d557386088047f39b9a2b7a4ee055b04279ca06ef78557ea42427f3fdc"
+    },
+    {
+      "scope": "workspace",
+      "path": ".cursor/rules/vibe-engineering.mdc",
+      "action": "create",
+      "reason": "create_engineering_rule",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "13ea113472c41bbd94b68905e6e7c3f81b5f0e8ba350fc7a708ce6d72d24bfb5"
+    },
+    {
+      "scope": "workspace",
+      "path": ".cursor/rules/vibe-loading.mdc",
+      "action": "create",
+      "reason": "create_loading_rule",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "5cc1600ac0ece52d2dc7938e94da261bbefd56db0814ff25e8974d231d5d2ad9"
+    },
+    {
+      "scope": "workspace",
+      "path": ".folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "9f2ca45ef5b907f54fc1577331d27553075844d431f1729c0e261d8bf54d5b70"
+    },
+    {
+      "scope": "workspace",
+      "path": ".github/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "784fa0ed60f11fd9307d452ad2ec9fad1323fab6de82a9fe3e6e1e62f1a46f17"
+    },
+    {
+      "scope": "workspace",
+      "path": ".github/copilot-instructions.md",
+      "action": "update",
+      "reason": "create_copilot_instructions",
+      "before_hash": "172147dc982f7932222f6f4ef408932d3a276e9cf0dc363728ecc03043f72ff4",
+      "after_hash": "d9ba67068748009ab013665a31900db865c678a9fd757862da9f322b620160c1"
+    },
+    {
+      "scope": "workspace",
+      "path": ".specify/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "530df5d1460dfc7ee4c9285475d5f837d86844e8d6d49b6cefb84e671ea73b47"
+    },
+    {
+      "scope": "workspace",
+      "path": ".specify/memory/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "21b6008e9e7598d1d74299f2525e6cdcf1418d8e11251a031e7aa81c4c12c539"
+    },
+    {
+      "scope": "workspace",
+      "path": ".specify/scripts/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "bb57eb6b7c2c8d8c5a2fd2534fc766edda8f48c5f921e702960ee3967b93e9d0"
+    },
+    {
+      "scope": "workspace",
+      "path": ".specify/scripts/bash/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "c6d16eda2179a017b6f02d08d56848c658bdf5f3f6a9508ca8dc8aa2542d5b10"
+    },
+    {
+      "scope": "workspace",
+      "path": ".specify/scripts/bash/check-prerequisites.sh",
+      "action": "update",
+      "reason": "header_sync",
+      "before_hash": "aff361639c504b95a2901493f5022788adc01a6792fd37f132de8f57782e4b80",
+      "after_hash": "74e8b6f8c8b50a6f2513e7b8ba9937b51c37dcf19dac4f13002f275015454720"
+    },
+    {
+      "scope": "workspace",
+      "path": ".specify/scripts/bash/common.sh",
+      "action": "update",
+      "reason": "header_sync",
+      "before_hash": "fcc6a655fef31cc741fa6993855ca7b5ed036c4cd3119cd1e35be5d1aca5b7e2",
+      "after_hash": "01e17f24bea52d8a2284df36caeb9c9ef0b3908d33c21a352fc0371e1637603c"
+    },
+    {
+      "scope": "workspace",
+      "path": ".specify/scripts/bash/create-new-feature.sh",
+      "action": "update",
+      "reason": "header_sync",
+      "before_hash": "41768ffc277f327a548276b9f0c45ff434c78945a8ac72cffbf76dde54de37e0",
+      "after_hash": "89f585e665331ceb703697fa6e1c0b6d98129e315cdd77894298dd88983b9c4c"
+    },
+    {
+      "scope": "workspace",
+      "path": ".specify/scripts/bash/setup-plan.sh",
+      "action": "update",
+      "reason": "header_sync",
+      "before_hash": "bcaa0ccbf45b7d9ea9bff04006500d7eb28a2bdf82bcc819986b21e5294bf76c",
+      "after_hash": "10e91d3045583ef4879921da85ce3af2e009f08c6012479ebde139d264920cd7"
+    },
+    {
+      "scope": "workspace",
+      "path": ".specify/scripts/bash/update-agent-context.sh",
+      "action": "update",
+      "reason": "header_sync",
+      "before_hash": "3e58631036c5a62beffb0155117175db46404d6b1d2712f9778c0825635c664a",
+      "after_hash": "537481ffe2a63019863ff820c52c0fd4714f32de5ca5eca16407ef36b1d7de16"
+    },
+    {
+      "scope": "workspace",
+      "path": ".specify/templates/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "14b1348c7361686f5634737d36f864778e69fd79a235720037224221fd0c5f00"
+    },
+    {
+      "scope": "workspace",
+      "path": ".vscode/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "f8f8878a0cdbd18e2e011274b0683c1f6feeeeb80ae77124e4f55d114e89db31"
+    },
+    {
+      "scope": "workspace",
+      "path": "AGENTS.md",
+      "action": "update",
+      "reason": "create_agents_doc",
+      "before_hash": "8af40ee69920976121d3334cf3296a2767e072a85778e82225ccae39e388c065",
+      "after_hash": "64e252d1331814176ff79635527c10ce42f9072230ef7f884f6f66832c822e24"
+    },
+    {
+      "scope": "workspace",
+      "path": "CLAUDE.md",
+      "action": "update",
+      "reason": "claude_pointer_sync",
+      "before_hash": "3ec8f6a5c5ee7f6532166f37d8b5759ef45d6dd15e316d4cea32c4460948228c",
+      "after_hash": "f549ccf9ab6cbc7ede7f02a5f8a29d061bb85f50174a239feaff3fcce2bf9d03"
+    },
+    {
+      "scope": "workspace",
+      "path": "aily-blockly/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "22e5810fb98d068d32dac867748ae5d16b66877831928a293a4063a104c4e97d"
+    },
+    {
+      "scope": "workspace",
+      "path": "backend/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "1004f65df814d49184d7db5b02e4c5d6b9d598d72bea6a2fae225a17df849702"
+    },
+    {
+      "scope": "workspace",
+      "path": "dev-up-macos.sh",
+      "action": "update",
+      "reason": "header_sync",
+      "before_hash": "f911317427891b2432ef7b50732aee67c4d59e2c8333cf6937419d5d053683c3",
+      "after_hash": "dc36669ebe4ac179a0eb207a4239b0ee8c014e8c39259ae9d45b8f38bd4c08ac"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "46514867fba181d7e9741c54c0ef2dbe598009b3f61a818bfb529930584a0ade"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/claude-legacy.md",
+      "action": "create",
+      "reason": "claude_legacy_archive",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "789648201251cb9670df72cc43140a86703cef6a7546848447255b5c27300f28"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/dev/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "9b0ab1f287a65faeff6feee0a2b2a56a2510f74563d182f41767561fac1fba68"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/dev/ZLMRTCClient.js",
+      "action": "update",
+      "reason": "header_sync",
+      "before_hash": "6f4489125bd87b425a7ccb8e8db86afc1daf5ffdaf80d85d9a93d72ae0705dab",
+      "after_hash": "4a37a52fff9a7a8e213bfa0c34debb97d46016daf19e0dadb3cb12d64305d529"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/dev/cloud_mqtt_example.py",
+      "action": "update",
+      "reason": "header_sync",
+      "before_hash": "086854ac72ef0d629c2d6147ef89acfc764cbb6ca73de6e2facce1c8196b960c",
+      "after_hash": "3105d7bacc9e2d2b795f9ff8e27cb753e51c3a8055c5edc5cc770ed5ac33d6ed"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/loading-index.md",
+      "action": "create",
+      "reason": "create_loading_index_doc",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "35470a30545d5976e8a4562b774e42fe15fb52bf83630ef90e939ad608427e3e"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/rules/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "3340405d2483f178b768c8d01ce6a27c15091017d624a16cd2624bbe7ee34324"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/rules/README.md",
+      "action": "create",
+      "reason": "create_rules_reference_doc",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "c7c79063d7f94ef80d6b8c7d0ababb8c9b190789e01cf062c93a01759fc1d430"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/rules/component-reuse.md",
+      "action": "create",
+      "reason": "create_component_reuse_doc",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "66a8ea82b3dd20507b2373a0792c35918cc257036691b79cfa31777788499802"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/rules/no-hardcoding.md",
+      "action": "create",
+      "reason": "create_no_hardcoding_doc",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "6333ec4578ea34e23d531a1c2afe29f4b0c62f0066ba2744409e5f78e55f0e67"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/session-start.md",
+      "action": "create",
+      "reason": "create_session_start_doc",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "050690c6806c9289dbb28014c4b18e0b6aa0d4494750981d1f71d9de303f8060"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/tech-stack.md",
+      "action": "create",
+      "reason": "create_tech_stack_doc",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "714e9f565f73069a0f5e909309473ddf8e92f1c14b11ad0caf65d979c87429b4"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/workspace-structure.md",
+      "action": "create",
+      "reason": "create_workspace_structure_doc",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "d3e928a718dee2e62b9725da593963ad6dc9efc90eb21f5f7f64ab04896c0436"
+    },
+    {
+      "scope": "workspace",
+      "path": "frontend/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "117093f1646788f69f372beb40a553000b69b55bb0252640eb9591badc78072c"
+    },
+    {
+      "scope": "workspace",
+      "path": "n8n/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "d66e969d349bb4339fd0f12fd7cb9971e9ca63b7aebbc7610a77f656a18dacae"
+    },
+    {
+      "scope": "workspace",
+      "path": "patterns.md",
+      "action": "create",
+      "reason": "create_patterns_doc",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "44c7020f25c63adb8de1ef560e0fafdf94906230fe5b2b067a9246e48b8b87ce"
+    },
+    {
+      "scope": "workspace",
+      "path": "scripts/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "0a338b9a54100f44449913493c561ace44000920b791df0f18c7f8b1a5789389"
+    },
+    {
+      "scope": "workspace",
+      "path": "scripts/docs-check.sh",
+      "action": "create",
+      "reason": "guard_script_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "b954d65ef637343f5163a261862bdc2f696d8759292b9e1fdd91b8c9e8429288"
+    },
+    {
+      "scope": "workspace",
+      "path": "scripts/pre-commit-folder-check.sh",
+      "action": "create",
+      "reason": "guard_script_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "88418a39b91aa48991161378d7d02317741f1e09738abd521bda0230afbd09a5"
+    },
+    {
+      "scope": "workspace",
+      "path": "specs/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "994635ac2e3050e251fd6e09269461fb4de188c1fd5155027b8d47603c319c02"
+    },
+    {
+      "scope": "workspace",
+      "path": "test/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "7fead92416fd576014bd5a4f91dcc7990ffd6a87345c332f13288699eaa81c6c"
+    },
+    {
+      "scope": "workspace",
+      "path": "today.md",
+      "action": "create",
+      "reason": "create_today",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "8c961845cc2cea871847d7407fee25d94b8d23ce39b2c30cc86858cb5748a774"
+    }
+  ],
+  "manual_required": [],
+  "warnings": [
+    "workspace: excluded/pruned paths = 72",
+    "hardcoding: detected 17 finding(s)."
+  ],
+  "rule_checks": [
+    {
+      "rule_id": "workspace.claude_pointer",
+      "status": "pass",
+      "detail": "Root CLAUDE pointer block exists."
+    },
+    {
+      "rule_id": "workspace.root_update_contract",
+      "status": "pass",
+      "detail": "Root update contract exists."
+    },
+    {
+      "rule_id": "workspace.global_first_no_hardcoding",
+      "status": "pass",
+      "detail": "Global-first no-hardcoding rule exists in root CLAUDE."
+    },
+    {
+      "rule_id": "workspace.claude_line_budget",
+      "status": "pass",
+      "detail": "CLAUDE.md lines=21 (target<=200)."
+    },
+    {
+      "rule_id": "workspace.today_rollover",
+      "status": "pass",
+      "detail": "today.md date=2026-04-12 expected=2026-04-12."
+    },
+    {
+      "rule_id": "workspace.today_log_migration",
+      "status": "pass",
+      "detail": "Today logs migrated out of root CLAUDE."
+    },
+    {
+      "rule_id": "workspace.structure_scan_doc",
+      "status": "pass",
+      "detail": "Workspace structure doc exists."
+    },
+    {
+      "rule_id": "workspace.rules_reference_doc",
+      "status": "pass",
+      "detail": "Rules reference doc exists."
+    },
+    {
+      "rule_id": "workspace.no_hardcoding_rule_doc",
+      "status": "pass",
+      "detail": "No-hardcoding rule doc exists."
+    },
+    {
+      "rule_id": "workspace.tech_stack_doc",
+      "status": "pass",
+      "detail": "Tech stack doc exists."
+    },
+    {
+      "rule_id": "workspace.session_start_doc",
+      "status": "pass",
+      "detail": "Session start doc exists."
+    },
+    {
+      "rule_id": "workspace.folder_docs_coverage",
+      "status": "pass",
+      "detail": "Every scanned folder has .folder.md."
+    },
+    {
+      "rule_id": "workspace.folder_function_descriptions",
+      "status": "pass",
+      "detail": "Each folder doc contains Function description line."
+    },
+    {
+      "rule_id": "workspace.cursor_rules",
+      "status": "pass",
+      "detail": "Required .cursor rules exist."
+    },
+    {
+      "rule_id": "workspace.cursor_rule_frontmatter",
+      "status": "pass",
+      "detail": "Cursor rule frontmatter includes alwaysApply/globs."
+    },
+    {
+      "rule_id": "workspace.cursor_folder_docs",
+      "status": "fail",
+      "detail": "Missing .cursor/.folder.md or .cursor/rules/.folder.md."
+    },
+    {
+      "rule_id": "workspace.agents_entry",
+      "status": "pass",
+      "detail": "AGENTS.md entry exists."
+    },
+    {
+      "rule_id": "workspace.copilot_entry",
+      "status": "pass",
+      "detail": "Copilot instruction file exists."
+    },
+    {
+      "rule_id": "architecture.low_coupling_high_cohesion",
+      "status": "manual",
+      "detail": "Requires semantic review; cannot be safely auto-verified."
+    },
+    {
+      "rule_id": "architecture.no_feature_overlap",
+      "status": "manual",
+      "detail": "Requires domain-level overlap inspection; reported for manual review."
+    },
+    {
+      "rule_id": "automation.hardcoding_scan",
+      "status": "fail",
+      "detail": "17 hardcoding finding(s) detected."
+    }
+  ],
+  "validation_results": [],
+  "hardcoding_findings": [
+    {
+      "path": ".specify/scripts/bash/create-new-feature.sh",
+      "line": 208,
+      "kind": "threshold_literal",
+      "snippet": "local max_words=3"
+    },
+    {
+      "path": ".specify/scripts/bash/create-new-feature.sh",
+      "line": 209,
+      "kind": "threshold_literal",
+      "snippet": "if [ ${#meaningful_words[@]} -eq 4 ]; then max_words=4; fi"
+    },
+    {
+      "path": ".specify/scripts/bash/create-new-feature.sh",
+      "line": 266,
+      "kind": "threshold_literal",
+      "snippet": "MAX_BRANCH_LENGTH=244"
+    },
+    {
+      "path": ".specify/scripts/bash/update-agent-context.sh",
+      "line": 124,
+      "kind": "absolute_path",
+      "snippet": "rm -f /tmp/agent_update_*_$$"
+    },
+    {
+      "path": ".specify/scripts/bash/update-agent-context.sh",
+      "line": 125,
+      "kind": "absolute_path",
+      "snippet": "rm -f /tmp/manual_additions_$$"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 1847,
+      "kind": "threshold_literal",
+      "snippet": "var maxptime = 0;"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 2007,
+      "kind": "threshold_literal",
+      "snippet": "maxMessageSize = 65536;"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 5113,
+      "kind": "threshold_literal",
+      "snippet": "let maxMessageSize = 65536;"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 5120,
+      "kind": "threshold_literal",
+      "snippet": "maxMessageSize = 65535;"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 5132,
+      "kind": "threshold_literal",
+      "snippet": "maxMessageSize = 2147483637;"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 7126,
+      "kind": "threshold_literal",
+      "snippet": "timeout: 0,"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 9131,
+      "kind": "threshold_literal",
+      "snippet": "maxBitrate: 1000000"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 9135,
+      "kind": "threshold_literal",
+      "snippet": "maxBitrate: 500000,"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 9140,
+      "kind": "threshold_literal",
+      "snippet": "maxBitrate: 200000,"
+    },
+    {
+      "path": "docs/dev/cloud_mqtt_example.py",
+      "line": 225,
+      "kind": "threshold_literal",
+      "snippet": "self.client.reconnect_delay_set(min_delay=1, max_delay=5)"
+    },
+    {
+      "path": "docs/dev/cloud_mqtt_example.py",
+      "line": 235,
+      "kind": "threshold_literal",
+      "snippet": "if not self.connected_event.wait(timeout=5):"
+    },
+    {
+      "path": "docs/dev/cloud_mqtt_example.py",
+      "line": 396,
+      "kind": "threshold_literal",
+      "snippet": "publish_result.wait_for_publish(timeout=2)"
+    }
+  ],
+  "backup_dir": "",
+  "report": "/Users/skylerwang/Documents/yudong/Tesseract/.vibe-refactor/report-tesseract-preview-20260412-134448-061006.md"
+}

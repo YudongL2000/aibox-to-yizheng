@@ -1,0 +1,4 @@
+
+> @n8n/n8n-benchmark@2.1.0 build /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/@n8n/benchmark
+> tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json
+

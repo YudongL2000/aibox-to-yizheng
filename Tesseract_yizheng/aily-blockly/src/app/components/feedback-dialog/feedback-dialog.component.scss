@@ -1,0 +1,191 @@
+.feedback-form {
+  .form-item {
+    margin-bottom: 16px;
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
+
+  nz-radio-group {
+    label {
+      line-height: 2;
+    }
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+
+    .required {
+      color: var(--sem-danger);
+      margin-left: 4px;
+    }
+
+    .more {
+      font-size: 12px;
+      color: var(--shell-control-text-muted);
+    }
+  }
+
+  .form-control {
+    width: 100%;
+    background: var(--shell-control);
+    border: 1px solid var(--shell-shell-divider);
+    border-radius: 4px;
+    color: var(--shell-control-text);
+    transition: all 0.3s;
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--shell-shell-divider) 70%, var(--text-primary));
+    }
+
+    &:focus {
+      border-color: var(--sem-info);
+      outline: none;
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--sem-info) 20%, transparent);
+    }
+
+    &:disabled {
+      background: var(--shell-control-bg-disabled);
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 120px;
+    font-family: inherit;
+    padding: 8px 11px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: none;
+  }
+
+  // GitHub 风格的文本框容器
+  .textarea-wrapper {
+    position: relative;
+    border-radius: 4px;
+    transition: all 0.2s;
+
+    // 拖拽悬停状态
+    &.drag-over {
+      textarea.form-control {
+        border-color: var(--sem-info);
+        background: color-mix(in srgb, var(--sem-info) 5%, transparent);
+      }
+
+      .attach-bar {
+        border-color: var(--sem-info);
+        background: color-mix(in srgb, var(--sem-info) 10%, transparent);
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border: 2px dashed var(--sem-info);
+        border-radius: 4px;
+        pointer-events: none;
+        z-index: 1;
+      }
+    }
+  }
+
+  // GitHub 风格的附件提示栏
+  .attach-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--shell-control);
+    border: 1px solid var(--shell-shell-divider);
+    border-top: 1px dashed var(--shell-shell-divider);
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    font-size: 12px;
+    color: var(--shell-control-text-muted);
+    transition: all 0.2s;
+
+    .attach-hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      i {
+        font-size: 14px;
+        color: var(--text-muted);
+      }
+    }
+
+    .attach-link {
+      color: var(--sem-info);
+      cursor: pointer;
+      text-decoration: none;
+      margin-left: 4px;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  input.form-control {
+    height: 32px;
+    padding: 4px 11px;
+  }
+
+  .char-count {
+    text-align: right;
+    font-size: 12px;
+    color: var(--shell-control-text-muted);
+    margin-top: 4px;
+  }
+
+  .tips {
+    padding: 5px;
+    background: color-mix(in srgb, var(--sem-warning) 12%, transparent);
+    border-radius: 4px;
+    border-left: 3px solid var(--sem-warning);
+    margin: 15px 0;
+    font-size: 14px;
+
+    > div {
+      min-height: 24px;
+    }
+
+    a {
+      color: var(--sem-info);
+      cursor: pointer;
+    }
+  }
+}
+
+// 覆盖 ng-zorro 样式
+::ng-deep {
+  .feedback-form {
+    nz-select {
+      .ant-select-selector {
+        background: var(--shell-control) !important;
+        border-color: var(--shell-shell-divider) !important;
+        color: var(--shell-control-text) !important;
+
+        &:hover {
+          border-color: color-mix(in srgb, var(--shell-shell-divider) 70%, var(--text-primary));
+        }
+      }
+
+      &.ant-select-focused {
+        .ant-select-selector {
+          border-color: var(--sem-info) !important;
+          box-shadow: 0 0 0 2px color-mix(in srgb, var(--sem-info) 20%, transparent) !important;
+        }
+      }
+    }
+  }
+}

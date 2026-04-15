@@ -1,0 +1,12 @@
+[
+  {
+    "file": "frontend/lib/utils/colorUtils/color_util.dart",
+    "reason": "Legacy non-UI conversion utility; must migrate to spatial tokens before token-only enforcement.",
+    "cleanupBy": "2026-06-30"
+  },
+  {
+    "file": "frontend/lib/module/home/controller/digital_twin_console_controller.dart",
+    "reason": "Runtime hex color parsing for viewer scene config payload.",
+    "cleanupBy": "2026-06-30"
+  }
+]

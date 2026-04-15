@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Docs Bootstrap"
+  short_description: "Scaffold standard docs trees and placeholders"
+  default_prompt: "Use $project-docs-bootstrap to scaffold or normalize this repo's docs/ structure."

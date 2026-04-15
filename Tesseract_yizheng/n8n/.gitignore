@@ -1,0 +1,7 @@
+n8n-master/node_modules
+n8n-master/compiled
+n8n-master/dist
+n8n-master/.github
+n8n-master/.vscode
+n8n-master/.gitattributes
+n8n-master/.git-blame-ignore-revs

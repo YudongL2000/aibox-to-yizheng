@@ -1,0 +1,49 @@
+.aily-error-viewer {
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  overflow: hidden;
+  display: flex;
+}
+
+.state-text {
+  color: var(--text-secondary);
+
+  a.link {
+    text-decoration: none;
+    margin: 0 3px;
+    color: var(--sem-info);
+
+    &:hover {
+      color: var(--text-primary);
+    }
+  }
+}
+
+.state-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  margin-right: 5px;
+
+  .lloading {
+    color: var(--sem-info);
+  }
+
+  .done {
+    color: var(--sem-success);
+  }
+
+  .error {
+    color: var(--sem-danger);
+  }
+
+  .warn {
+    color: var(--sem-warning);
+  }
+
+  .info {
+    color: var(--sem-info);
+  }
+}

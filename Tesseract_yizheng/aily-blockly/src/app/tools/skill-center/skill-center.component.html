@@ -1,0 +1,64 @@
+<div class="skill-center-shell">
+  <section class="content">
+    <header class="content-header">
+      <div class="header-main">
+        <h1>{{ pageTitle }}</h1>
+        @if (activeView === 'library') {
+          <span class="create-btn skill-count">{{ librarySkills.length }} 个</span>
+        }
+      </div>
+      <button type="button" class="close-btn ccenter" (click)="close()">
+        <i class="fa-regular fa-xmark"></i>
+      </button>
+    </header>
+
+    @if (activeView === 'library') {
+      @if (librarySkills.length > 0) {
+        <div class="card-grid">
+          @for (skill of currentPageSkills; track trackSkill($index, skill)) {
+            <article class="skill-card" [class.incoming]="isIncoming(skill.skillId)">
+              <button type="button" class="delete-btn" title="删除" (click)="deleteSkill(skill); $event.stopPropagation()">
+                <i class="fa-regular fa-trash-can"></i>
+              </button>
+              <h2>{{ skill.workflowName || skill.displayName }}</h2>
+              @if (skill.summary) {
+                <p class="card-summary">{{ skill.summary }}</p>
+              }
+              <div class="card-meta">
+                @for (tag of requiredHardwareLabels(skill); track tag) {
+                  <span>{{ tag }}</span>
+                }
+              </div>
+              <div class="card-actions">
+                <button type="button" class="action-btn secondary" [disabled]="!canTrace(skill)" (click)="traceSkill(skill)">回溯</button>
+                <button type="button" class="action-btn primary" [disabled]="!canPublish(skill)" (click)="publishSkill(skill)">发布到广场</button>
+              </div>
+              @if (isIncoming(skill.skillId)) {
+                <div class="incoming-pill">NEW</div>
+              }
+            </article>
+          }
+        </div>
+
+        @if (librarySkills.length > pageSize) {
+          <nz-pagination
+            class="skill-pagination"
+            [nzPageIndex]="pageIndex"
+            [nzTotal]="librarySkills.length"
+            [nzPageSize]="pageSize"
+            [nzShowSizeChanger]="false"
+            (nzPageIndexChange)="onPageChange($event)"
+          ></nz-pagination>
+        }
+      } @else {
+        <section class="empty-state">
+          <h2>还没有 skill</h2>
+        </section>
+      }
+    } @else {
+      <section class="empty-state market-state">
+        <h2>广场稍后接入</h2>
+      </section>
+    }
+  </section>
+</div>

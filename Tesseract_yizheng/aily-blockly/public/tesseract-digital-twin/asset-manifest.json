@@ -1,0 +1,41 @@
+{
+  "preparedAt": "2026-04-14T17:58:18.453Z",
+  "mode": "build-time-copy",
+  "entries": [
+    {
+      "name": "viewer",
+      "source": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/frontend/web/model_viewer",
+      "target": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/public/tesseract-digital-twin",
+      "fileCount": 549,
+      "hash": "fd7b98444e399b0cbe50452d74333ba6069dde6dc9b3378305fc5195fe07b3ab"
+    },
+    {
+      "name": "viewer-host-shell",
+      "source": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/scripts/templates/tesseract-digital-twin-host",
+      "target": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/public/tesseract-digital-twin",
+      "fileCount": 2,
+      "hash": "361c3e0f6945148b0ed97662880bd3f4a461cbd82d773b6551c69c38081fb6bf"
+    },
+    {
+      "name": "models-compat",
+      "source": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/frontend/assets/models",
+      "target": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/public/assets/assets/models",
+      "fileCount": 11,
+      "hash": "4c4c18f0a1e4e372a0b82e647969b8ebb9fb809199cd9223d718dba369460d71"
+    },
+    {
+      "name": "config-compat",
+      "source": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/frontend/assets/config",
+      "target": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/public/assets/assets/config",
+      "fileCount": 5,
+      "hash": "5121e2a34413fa00b219755eaeec19cd8c44343071d68297f14b63537bd6f783"
+    },
+    {
+      "name": "videos-compat",
+      "source": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/frontend/assets/videos",
+      "target": "/Users/hanshilian/private/QIALG/projects/AI-tesseract/Tesseract_yizheng/aily-blockly/public/assets/assets/videos",
+      "fileCount": 5,
+      "hash": "2762fedf61b5862eb76ee978f2afa15b05ce9ac2bd5d531bf781a63d79e65037"
+    }
+  ]
+}

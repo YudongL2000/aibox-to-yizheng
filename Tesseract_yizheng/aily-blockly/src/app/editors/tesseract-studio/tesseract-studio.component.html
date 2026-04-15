@@ -1,0 +1,158 @@
+<div class="studio-shell" [class.chromeless]="isChromelessWorkspace">
+  @if (hasProjectWorkspace) {
+    <div class="studio-toolbar">
+      <div>
+        <p class="eyebrow">Tesseract Studio</p>
+        <h1>{{ workspaceTitle }}</h1>
+        <p class="path">{{ workspaceDescription }}</p>
+      </div>
+
+      <div class="actions">
+        <button nz-button nzType="default" (click)="refreshWorkspace()">刷新运行时</button>
+        <button nz-button nzType="default" [disabled]="!canUseAgentActions" (click)="saveSnapshot()">保存 Workflow 快照</button>
+        <button nz-button nzType="primary" [disabled]="!canUseAgentActions" (click)="deployWorkflow()">部署 Workflow 到 n8n</button>
+        <button nz-button nzType="default" (click)="openExternally()">浏览器打开 Workflow</button>
+      </div>
+    </div>
+
+    <div class="studio-status">
+      <span class="badge" [class.ok]="agentStatus?.healthy">
+        Agent {{ agentStatus?.healthy ? 'online' : 'offline' }}
+      </span>
+      <span class="badge" [class.ok]="n8nStatus?.healthy">
+        n8n {{ n8nStatus?.healthy ? 'online' : 'offline' }}
+      </span>
+      @if (snapshot?.workflowId) {
+        <span class="badge workflow">Workflow {{ snapshot?.workflowId }}</span>
+      }
+    </div>
+  }
+
+  @if (showSurfaceTabs) {
+    <div class="studio-tabs" role="tablist" aria-label="Tesseract workspace views">
+      <button
+        type="button"
+        class="surface-tab"
+        [class.active]="isWorkflowSurfaceActive"
+        role="tab"
+        [attr.aria-selected]="isWorkflowSurfaceActive"
+        aria-controls="studio-workflow-surface"
+        (click)="setActiveSurface('workflow')">
+        <span class="surface-tab__traffic" aria-hidden="true">
+          <span class="traffic-dot red"></span>
+          <span class="traffic-dot amber"></span>
+          <span class="traffic-dot green"></span>
+        </span>
+        <span class="surface-tab__copy">
+          <span class="surface-tab__title">Workflow</span>
+          <span class="surface-tab__subtitle">{{ workflowTabSubtitle }}</span>
+        </span>
+        <span class="surface-tab__badge" [class.ready]="hasGeneratedWorkflow">
+          {{ workflowTabStatusLabel }}
+        </span>
+      </button>
+
+      @if (showEmbeddedDigitalTwinPanel) {
+        <button
+          type="button"
+          class="surface-tab"
+          [class.active]="isDigitalTwinSurfaceActive"
+          role="tab"
+          [attr.aria-selected]="isDigitalTwinSurfaceActive"
+          aria-controls="studio-digital-twin-surface"
+          (click)="setActiveSurface('digital-twin')">
+          <span class="surface-tab__traffic twin" aria-hidden="true">
+            <span class="traffic-dot blue"></span>
+            <span class="traffic-dot cyan"></span>
+            <span class="traffic-dot violet"></span>
+          </span>
+          <span class="surface-tab__copy">
+            <span class="surface-tab__title">Digital Twin</span>
+            <span class="surface-tab__subtitle">{{ digitalTwinTabSubtitle }}</span>
+          </span>
+          <span
+            class="surface-tab__badge"
+            [class.live]="agentStatus?.healthy !== false"
+            [class.offline]="agentStatus?.healthy === false">
+            {{ digitalTwinTabStatusLabel }}
+          </span>
+        </button>
+      }
+    </div>
+  }
+
+  <div
+    class="studio-workspace"
+    [class.tabbed]="showSurfaceTabs"
+    [class.workflow-surface]="isWorkflowSurfaceActive"
+    [class.digital-twin-surface]="isDigitalTwinSurfaceActive">
+    @if (isDigitalTwinSurfaceActive) {
+      <section id="studio-digital-twin-surface" class="studio-surface studio-surface-digital-twin">
+        <app-digital-twin-panel [panelState]="digitalTwinPanelState"></app-digital-twin-panel>
+      </section>
+    } @else {
+      <section id="studio-workflow-surface" class="studio-surface studio-surface-workflow">
+      @if (loading) {
+        <div class="studio-empty" [class.chromeless]="isChromelessWorkspace">
+          <h2>正在初始化本地运行时</h2>
+          <p>正在拉起 Tesseract Agent 与本地 n8n。</p>
+        </div>
+      } @else if (isAgentOffline && isN8nOffline) {
+        <div class="studio-empty runtime-failure" [class.chromeless]="isChromelessWorkspace">
+          <h2>本地运行时未就绪</h2>
+          <p>{{ runtimeErrorSummary }}</p>
+          <div class="actions">
+            <button nz-button nzType="primary" (click)="refreshWorkspace()">刷新运行时</button>
+            <button nz-button nzType="default" (click)="openLogDirectory()">打开日志目录</button>
+            <button nz-button nzType="default" (click)="copyRuntimeErrorSummary()">复制最近错误摘要</button>
+          </div>
+        </div>
+      } @else if (showWorkflowPlaceholder) {
+        <div class="studio-empty workflow-placeholder" [class.chromeless]="isChromelessWorkspace">
+          <h2>工作流画布将在这里出现</h2>
+          <p>当前活动工作区还没有目标工作流。</p>
+          <p>当你在右侧完成“创建工作流”后，这个区域会自动切换成对应的 workflow 画布。</p>
+          <p>在此之前，这里不会展示 n8n 主页、默认示例或第三方工作流，避免把别的内容误认为当前结果。</p>
+        </div>
+      } @else if (showWorkflowSyncPending) {
+        <div class="studio-empty workflow-pending" [class.chromeless]="isChromelessWorkspace">
+          <h2>正在对齐工作流画布</h2>
+          <p>客户端已经拿到目标 workflow 引用，正在把左侧工作区切换到对应画布。</p>
+          <p>在切换完成之前，这里不会回退到 n8n 主页或历史流程列表，避免把无关内容误认为创建结果。</p>
+        </div>
+      } @else if (isN8nOffline) {
+        <div class="studio-empty runtime-failure" [class.chromeless]="isChromelessWorkspace">
+          <h2>n8n 编辑器未就绪</h2>
+          <p>{{ runtimeErrorSummary }}</p>
+          <div class="actions">
+            <button nz-button nzType="primary" (click)="retryN8nRuntime()">重试 n8n</button>
+            <button nz-button nzType="default" (click)="refreshWorkspace()">刷新运行时</button>
+            <button nz-button nzType="default" (click)="openLogDirectory()">打开日志目录</button>
+          </div>
+        </div>
+      } @else if (safeEditorUrl) {
+        <div class="studio-frame" [class.chromeless]="isChromelessWorkspace">
+          @if (isAgentOffline) {
+            <div class="runtime-banner">
+              <strong>Agent offline</strong>
+              <span>工作流画布仍可查看，但 AI Chat、workflow 生成、config、deploy 已禁用。</span>
+              <button nz-button nzType="default" nzSize="small" (click)="refreshWorkspace()">重试</button>
+              <button nz-button nzType="default" nzSize="small" (click)="openLogDirectory()">打开日志</button>
+            </div>
+          }
+          <webview #workspaceFrame [attr.src]="editorUrl" allowpopups></webview>
+        </div>
+      } @else {
+        <div class="studio-empty" [class.chromeless]="isChromelessWorkspace">
+          <h2>n8n 编辑器未就绪</h2>
+          <p>{{ runtimeErrorSummary }}</p>
+          <div class="actions">
+            <button nz-button nzType="primary" (click)="refreshWorkspace()">刷新运行时</button>
+            <button nz-button nzType="default" (click)="openLogDirectory()">打开日志目录</button>
+          </div>
+        </div>
+      }
+      </section>
+    }
+  </div>
+</div>

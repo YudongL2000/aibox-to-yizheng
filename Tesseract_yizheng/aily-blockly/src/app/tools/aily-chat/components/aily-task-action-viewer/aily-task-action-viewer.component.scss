@@ -1,0 +1,161 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.aily-task-action-viewer {
+  border-radius: var(--radius-base);
+  padding: 12px 16px;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  margin: 8px 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.action-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.action-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.action-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+
+  .icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+
+    &.warn {
+      color: var(--sem-warning);
+      background-color: color-mix(in srgb, var(--sem-warning) 12%, transparent);
+    }
+
+    &.error {
+      color: var(--sem-danger);
+      background-color: color-mix(in srgb, var(--sem-danger) 12%, transparent);
+    }
+
+    &.info {
+      color: var(--sem-info);
+      background-color: color-mix(in srgb, var(--sem-info) 12%, transparent);
+    }
+
+    &.done {
+      color: var(--sem-success);
+      background-color: color-mix(in srgb, var(--sem-success) 12%, transparent);
+    }
+  }
+}
+
+.action-message {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  padding-top: 2px;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 34px;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  outline: none;
+
+  i {
+    font-size: 12px;
+  }
+
+  &.primary {
+    background: var(--text-primary);
+    color: var(--text-inverse);
+
+    &:hover {
+      background: var(--sem-info);
+      color: var(--text-inverse);
+    }
+  }
+
+  &.secondary {
+    background: var(--surface-muted);
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+
+    &:hover {
+      background: var(--surface-elevated);
+      border-color: var(--text-muted);
+    }
+  }
+
+  &.ghost {
+    background: transparent;
+    color: var(--text-muted);
+    padding: 6px 8px;
+
+    &:hover {
+      color: var(--text-primary);
+      background: var(--surface-muted);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// 响应式调整
+@media (max-width: 480px) {
+  .action-buttons {
+    flex-wrap: wrap;
+    padding-left: 0;
+  }
+
+  .action-btn {
+    flex: 1;
+    justify-content: center;
+    min-width: 80px;
+
+    &.ghost {
+      flex: 0;
+      min-width: auto;
+    }
+  }
+}

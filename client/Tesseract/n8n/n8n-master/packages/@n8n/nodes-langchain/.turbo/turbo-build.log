@@ -1,0 +1,16 @@
+
+> @n8n/n8n-nodes-langchain@2.5.0 build /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/@n8n/nodes-langchain
+> tsup --tsconfig tsconfig.build.json && pnpm copy-nodes-json && tsc-alias -p tsconfig.build.json && pnpm copy-tokenizer-json && pnpm n8n-copy-static-files && pnpm n8n-generate-metadata
+
+
+> @n8n/n8n-nodes-langchain@2.5.0 copy-nodes-json /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/@n8n/nodes-langchain
+> node ../../nodes-base/scripts/copy-nodes-json.js .
+
+
+> @n8n/n8n-nodes-langchain@2.5.0 copy-tokenizer-json /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/@n8n/nodes-langchain
+> node scripts/copy-tokenizer-json.js .
+
+Copied: utils/tokenizer/cl100k_base.json -> dist/utils/tokenizer/cl100k_base.json
+Copied: utils/tokenizer/o200k_base.json -> dist/utils/tokenizer/o200k_base.json
+(node:12542) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)

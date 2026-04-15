@@ -1,0 +1,8 @@
+
+> @n8n/node-cli@0.18.0 build /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/@n8n/node-cli
+> tsc -p tsconfig.build.json && pnpm copy-templates
+
+
+> @n8n/node-cli@0.18.0 copy-templates /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/@n8n/node-cli
+> node scripts/copy-templates.mjs
+

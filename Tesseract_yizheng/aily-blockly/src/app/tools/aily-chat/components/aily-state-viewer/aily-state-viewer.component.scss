@@ -1,0 +1,41 @@
+.aily-state-viewer {
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  overflow: hidden;
+  display: flex;
+}
+
+.state-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  margin-right: 5px;
+
+  .lloading {
+    color: var(--sem-info);
+  }
+
+  .done {
+    color: var(--sem-success);
+  }
+
+  .error {
+    color: var(--sem-danger);
+  }
+
+  .warn {
+    color: var(--sem-warning);
+  }
+
+  .info {
+    color: var(--sem-info);
+  }
+}
+
+.state-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-secondary);
+}

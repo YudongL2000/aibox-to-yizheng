@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>WebRTC 简易播放器</title>
+    <!-- 确保 ZLMRTCClient.js 在同级目录 -->
+    <script src="./ZLMRTCClient.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        video { width: 100%; height: auto; background: #000; border-radius: 4px; margin-top: 10px; }
+        input { width: 70%; padding: 8px; margin-right: 10px; }
+        button { padding: 8px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button.stop { background: #dc3545; }
+        #log { margin-top: 15px; font-size: 12px; color: #666; text-align: left; background: #f8f9fa; padding: 10px; border-radius: 4px; height: 100px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📺 WebRTC 快速播放</h2>
+
+    <div>
+        <input type="text" id="streamUrl" value="https://stream-platform.eye4cloud.com/index/api/webrtc?app=live_1772728443&stream=VSGG508401MZXLP_0_129&type=play&audio=7">
+        <button onclick="startPlay()">播放</button>
+        <button class="stop" onclick="stopPlay()">停止</button>
+    </div>
+
+    <!-- 视频标签：必须加 muted 才能自动播放 -->
+    <video id="videoPlayer" autoplay playsinline controls muted></video>
+
+    <div id="log">等待操作...</div>
+</div>
+
+<script>
+    let player = null;
+    const video = document.getElementById('videoPlayer');
+    const logDiv = document.getElementById('log');
+    const urlInput = document.getElementById('streamUrl');
+
+    function log(msg) {
+        const time = new Date().toLocaleTimeString();
+        logDiv.innerHTML += `[${time}] ${msg}<br>`;
+        logDiv.scrollTop = logDiv.scrollHeight;
+        console.log(msg);
+    }
+
+    function startPlay() {
+        if (!window.ZLMRTCClient) {
+            alert("错误：未找到 ZLMRTCClient.js，请确保文件在同一目录下！");
+            return;
+        }
+
+        stopPlay(); // 先清理
+        const url = urlInput.value.trim();
+        if (!url) return log("请输入地址");
+
+        log("正在连接...");
+
+        try {
+            // 核心配置：仅接收 (recvOnly)，不使用摄像头
+            player = new ZLMRTCClient.Endpoint({
+                element: video,
+                debug: false,
+                zlmsdpUrl: url,
+                simulcast: false,
+                useCamera: false,
+                audioEnable: true,
+                videoEnable: true,
+                recvOnly: true // 关键：设置为纯播放模式
+            });
+
+            // 绑定成功事件
+            player.on(ZLMRTCClient.Events.WEBRTC_ON_REMOTE_STREAMS, () => {
+                log("✅ 播放成功！收到远端流。");
+            });
+
+            // 绑定失败事件
+            player.on(ZLMRTCClient.Events.WEBRTC_OFFER_ANWSER_EXCHANGE_FAILED, (e) => {
+                log("❌ 信令交换失败：" + JSON.stringify(e));
+            });
+
+            player.on(ZLMRTCClient.Events.WEBRTC_ICE_CANDIDATE_ERROR, () => {
+                log("❌ ICE 连接失败 (网络不通或防火墙拦截)");
+            });
+
+            player.on(ZLMRTCClient.Events.WEBRTC_ON_CONNECTION_STATE_CHANGE, (state) => {
+                log("🔄 状态变更: " + state);
+                if(state === 'connected') log("✅ 连接已建立");
+                if(state === 'failed') log("❌ 连接断开");
+            });
+
+        } catch (e) {
+            log("❌ 启动异常: " + e.message);
+        }
+    }
+
+    function stopPlay() {
+        if (player) {
+            player.close();
+            player = null;
+        }
+        video.srcObject = null;
+        video.load();
+        log("🛑 已停止");
+    }
+</script>
+
+</body>
+</html>

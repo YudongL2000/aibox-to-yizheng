@@ -1,0 +1,4 @@
+
+> @n8n/codemirror-lang@0.4.0 build /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/@n8n/codemirror-lang
+> tsc -p tsconfig.build.json
+

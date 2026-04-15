@@ -1,0 +1,278 @@
+.project-setting-form {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 8px;
+
+    .section {
+        margin-bottom: 24px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--shell-shell-divider);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .add-btn {
+            color: var(--shell-shell-info);
+            padding: 0 8px;
+            height: 24px;
+            font-size: 13px;
+
+            &:hover {
+                color: color-mix(in srgb, var(--shell-shell-info) 75%, var(--text-primary));
+            }
+        }
+    }
+
+    .form-item {
+        margin-bottom: 16px;
+
+        &:last-of-type {
+            margin-bottom: 0;
+        }
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: var(--text-primary);
+
+        .required {
+            color: var(--shell-shell-danger);
+            margin-left: 4px;
+        }
+
+        .more {
+            margin-left: 10px;
+            font-size: 12px;
+            color: var(--shell-control-text-muted);
+        }
+    }
+
+    .form-control {
+        width: 100%;
+        background: var(--shell-control);
+        border: 1px solid var(--shell-shell-divider);
+        border-radius: 4px;
+        color: var(--shell-control-text);
+        transition: all 0.3s;
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--shell-control-text-muted) 40%, var(--shell-shell-divider));
+        }
+
+        &:focus {
+            border-color: var(--shell-shell-info);
+            outline: none;
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--shell-shell-info) 20%, transparent);
+        }
+
+        &:disabled {
+            background: var(--shell-control-bg-disabled);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 80px;
+        font-family: inherit;
+        padding: 8px 11px;
+    }
+
+    input.form-control {
+        height: 32px;
+        padding: 4px 11px;
+    }
+
+    // 配置列表样式
+    .config-list,
+    .dependency-list {
+        background: var(--shell-panel);
+        border: 1px solid var(--shell-shell-divider);
+        border-radius: 4px;
+        padding: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .config-item,
+    .dependency-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        background: var(--shell-control);
+        border-radius: 4px;
+        border-left: 3px solid var(--shell-shell-info);
+        transition: all 0.2s;
+
+        &:hover {
+            background: color-mix(in srgb, var(--shell-control) 90%, var(--shell-shell-info));
+            border-left-color: color-mix(in srgb, var(--shell-shell-info) 45%, var(--shell-shell-divider));
+        }
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    // 可编辑的配置项和依赖项
+    .config-item-editable,
+    .dependency-item-editable {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        background: var(--shell-control);
+        border-radius: 4px;
+        border-left: 3px solid var(--shell-shell-info);
+        transition: all 0.2s;
+
+        &:hover {
+            background: color-mix(in srgb, var(--shell-control) 90%, var(--shell-shell-info));
+            border-left-color: color-mix(in srgb, var(--shell-shell-info) 45%, var(--shell-shell-divider));
+        }
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        input {
+            background: var(--shell-control-bg-disabled);
+            border: 1px solid var(--shell-shell-divider);
+            border-radius: 3px;
+            color: var(--shell-control-text);
+            height: 28px;
+            padding: 4px 8px;
+            font-size: 13px;
+            transition: all 0.2s;
+
+            &:hover {
+                border-color: color-mix(in srgb, var(--shell-control-text-muted) 40%, var(--shell-shell-divider));
+            }
+
+            &:focus {
+                border-color: var(--shell-shell-info);
+                outline: none;
+                box-shadow: 0 0 0 2px color-mix(in srgb, var(--shell-shell-info) 20%, transparent);
+            }
+
+            &:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+        }
+
+        .config-key-input,
+        .dependency-name-input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .config-value-input,
+        .dependency-version-input {
+            flex: 0 0 120px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .delete-btn {
+            flex: 0 0 auto;
+            padding: 0;
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: var(--shell-shell-danger);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            transition: all 0.2s;
+
+            &:hover {
+                background: color-mix(in srgb, var(--shell-shell-danger) 10%, transparent);
+                color: color-mix(in srgb, var(--shell-shell-danger) 85%, var(--text-primary));
+            }
+
+            .icon-delete {
+                font-size: 20px;
+                line-height: 1;
+            }
+        }
+    }
+
+    .config-key,
+    .dependency-name {
+        font-size: 14px;
+        color: var(--shell-control-text);
+        font-weight: 500;
+        flex: 0 0 auto;
+        max-width: 60%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .config-value,
+    .dependency-version {
+        font-size: 13px;
+        color: var(--shell-control-text-muted);
+        font-family: 'Courier New', monospace;
+        background: var(--shell-shell-code);
+        padding: 2px 8px;
+        border-radius: 3px;
+        flex: 0 0 auto;
+        max-width: 35%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .empty-message {
+        text-align: center;
+        color: var(--shell-control-text-muted);
+        font-size: 14px;
+        padding: 20px;
+    }
+
+    // 滚动条样式
+    &::-webkit-scrollbar,
+    .config-list::-webkit-scrollbar,
+    .dependency-list::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track,
+    .config-list::-webkit-scrollbar-track,
+    .dependency-list::-webkit-scrollbar-track {
+        background: var(--shell-control-bg-disabled);
+        border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb,
+    .config-list::-webkit-scrollbar-thumb,
+    .dependency-list::-webkit-scrollbar-thumb {
+        background: var(--shell-shell-divider);
+        border-radius: 4px;
+
+        &:hover {
+            background: color-mix(in srgb, var(--shell-shell-divider) 80%, var(--text-secondary));
+        }
+    }
+}

@@ -1,0 +1,8 @@
+
+> @n8n/n8n-extension-insights@0.11.0 build /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/extensions/insights
+> pnpm cleanup && pnpm run "/^build:.*/"
+
+
+> @n8n/n8n-extension-insights@0.11.0 cleanup /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/extensions/insights
+> rimraf dist
+

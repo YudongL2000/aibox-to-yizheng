@@ -1,0 +1,120 @@
+.float-zone {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: max-content;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 30;
+}
+
+.float-sider {
+  transform: translateX(calc(100% + 16px));
+  opacity: 0;
+  transition: transform 0.24s ease, opacity 0.24s ease;
+  background: var(--surface-panel);
+  width: 58px;
+  z-index: 99999;
+  border-radius: var(--radius-md);
+  padding: 8px;
+  border: 1px solid var(--border-solid);
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+
+  .item {
+    appearance: none;
+    border: 1px solid var(--border-subtle);
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    background: var(--bg-base);
+    color: var(--text-muted);
+    border-radius: var(--radius-base);
+    font-size: 16px;
+    position: relative;
+    transition:
+      transform 0.18s ease,
+      background 0.18s ease,
+      border-color 0.18s ease,
+      color 0.18s ease;
+
+    &::before {
+      content: attr(data-label);
+      position: absolute;
+      top: 50%;
+      right: calc(100% + 12px);
+      transform: translateY(-50%) translateX(6px);
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap;
+      padding: 6px 9px;
+      border-radius: var(--radius-base);
+      border: 1px solid var(--border-solid);
+      background: var(--surface-panel);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    &.add {
+      background: transparent !important;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: var(--text-primary);
+      border-color: var(--text-primary);
+      color: var(--text-inverse);
+      transform: translateX(-1px);
+    }
+
+    &:hover::before,
+    &:focus-visible::before {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  &.show {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  .line {
+    width: 26px;
+    height: 1px;
+    margin: 2px 0;
+    background: var(--border-subtle);
+  }
+}
+
+@media (max-width: 1024px) {
+  .float-zone {
+    right: 8px;
+  }
+
+  .float-sider {
+    width: 54px;
+    padding: 7px 6px;
+
+    .item {
+      width: 38px;
+      height: 38px;
+    }
+  }
+}

@@ -1,0 +1,103 @@
+$footer-height: 30px;
+$footer-inner-height: 26px;
+
+.footer-box {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 6px;
+  height: $footer-height;
+  padding: 0 10px 0 8px;
+  background: var(--bg-base);
+  border-top: 1px solid var(--border-solid);
+  position: relative;
+}
+
+.btn {
+  width: $footer-inner-height;
+  height: $footer-inner-height;
+  position: relative;
+  border: 1px solid transparent;
+  border-radius: var(--radius-base);
+  color: var(--text-secondary);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+
+  &:hover {
+    background: var(--surface-muted);
+    border-color: var(--border-solid);
+    color: var(--text-primary);
+  }
+
+  &.active {
+    background: var(--text-primary);
+    border-color: var(--text-primary);
+    color: var(--text-inverse);
+  }
+}
+
+.hardware-btn {
+  .status-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--text-muted);
+    border: 1px solid var(--bg-base);
+
+    &.healthy {
+      background: var(--sem-success);
+    }
+
+    &.warning {
+      background: var(--sem-warning);
+    }
+
+    &.danger {
+      background: var(--sem-danger);
+    }
+  }
+}
+
+.state {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  display: inline-flex;
+  gap: 8px;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--border-solid);
+  border-radius: var(--radius-base);
+  background: var(--surface-panel);
+  align-items: center;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+
+  .icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .fa-circle-xmark{
+    color: var(--sem-danger);
+  }
+
+  .fa-triangle-exclamation{
+    color: var(--sem-warning);
+  }
+
+  .fa-circle-check{
+    color: var(--sem-success);
+  }
+}

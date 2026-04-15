@@ -1,0 +1,437 @@
+
+> n8n-editor-ui@2.5.0 build /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/editor-ui
+> cross-env VUE_APP_PUBLIC_PATH="/{{BASE_PATH}}/" NODE_OPTIONS="--max-old-space-size=8192" vite build
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+`optimizeDeps.rollupOptions` / `ssr.optimizeDeps.rollupOptions` is deprecated. Use `optimizeDeps.rolldownOptions` instead. Note that this option may be set by a plugin. Set VITE_DEPRECATION_TRACE=1 to see where it is called.
+[33mYou or a plugin you are using have set `optimizeDeps.esbuildOptions` but this option is now deprecated. Vite now uses Rolldown to optimize the dependencies. Please use `optimizeDeps.rolldownOptions` instead.[39m
+[36mrolldown-vite v7.3.1 [32mbuilding client environment for production...[36m[39m
+[33mWarning: Invalid input options (1 issue found)
+- For the "inject". Invalid key: Expected never but received "inject". [0m
+<script src="/{{BASE_PATH}}/static/base-path.js"> in "/index.html" can't be bundled without type="module" attribute
+<script src="/{{BASE_PATH}}/static/posthog.init.js"> in "/index.html" can't be bundled without type="module" attribute
+
+/{{BASE_PATH}}/static/prefers-color-scheme.css doesn't exist at build time, it will remain unchanged to be resolved at runtime
+Browserslist: browsers data (caniuse-lite) is 11 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[33m[plugin builtin:vite-import-glob] Invalid glob pattern: `@n8n/i18n/locales/*.json` in file 'src/app/dev/i18nHmr.ts'. Glob patterns must start with:
+  • '/' for absolute paths from project root
+  • './' or '../' for relative paths
+  • '**/' for recursive matching from project root
+  • '#' for subpath imports (with '*' wildcard)[39m
+[33m[plugin rolldown:vite-resolve] Module "os" has been externalized for browser compatibility, imported by "/Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/node_modules/.pnpm/recast@0.22.0/node_modules/recast/lib/util.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[plugin rolldown:vite-resolve] Module "os" has been externalized for browser compatibility, imported by "/Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/node_modules/.pnpm/recast@0.22.0/node_modules/recast/lib/util.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[33m[plugin rolldown:vite-resolve] Module "os" has been externalized for browser compatibility, imported by "/Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/node_modules/.pnpm/recast@0.22.0/node_modules/recast/lib/util.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.[39m
+[2Ktransforming...✓ 6712 modules transformed.
+rendering chunks...
+[33m[plugin builtin:vite-reporter] 
+(!) /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/editor-ui/src/features/ndv/parameters/components/Collection/CollectionParameter.vue is dynamically imported by /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/editor-ui/src/features/ndv/parameters/components/ParameterInputList.vue?vue&type=script&setup=true&lang.ts but also statically imported by /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/editor-ui/src/features/ndv/parameters/components/MultipleParameter.vue?vue&type=script&setup=true&lang.ts, dynamic import will not move module into another chunk.
+[39m
+[36m[vite-plugin-static-copy][39m [32mCopied 4 items.[39m
+computing gzip size...
+dist/assets/worker-BKxLBvS9.js                                          12.51 kB
+dist/index.html                                                         13.70 kB │ gzip:   2.54 kB
+dist/assets/element-icons-B-tDfklg.woff                                 28.20 kB
+dist/assets/element-icons-_lZGOqcG.ttf                                  55.95 kB
+dist/assets/CommitMonoVariable-ytizKI8U.woff2                           86.76 kB
+dist/assets/doppler-B__k0MeW.webp                                      315.06 kB
+dist/assets/InterVariable-DiVDrmQJ.woff2                               352.24 kB
+dist/assets/InterVariable-Italic-FCBEiFp6.woff2                        387.97 kB
+dist/assets/wa-sqlite-DDTbX34h.wasm                                    596.88 kB │ gzip: 295.39 kB
+dist/assets/worker-D3BcQkCf.js                                       2,903.15 kB
+dist/assets/typescript.worker-K9O-9N1m.js                           10,630.99 kB
+dist/assets/EntityNotFound-D6gi5ngN.css                                  0.19 kB │ gzip:   0.16 kB
+dist/assets/EntityUnAuthorised-D3XTbU6Y.css                              0.19 kB │ gzip:   0.16 kB
+dist/assets/ProjectRolesView-CZqQ656d.css                                0.26 kB │ gzip:   0.17 kB
+dist/assets/SeverityTag-C0hCvHeU.css                                     0.27 kB │ gzip:   0.15 kB
+dist/assets/MigrationRuleDetail-4tgkxxhX.css                             0.42 kB │ gzip:   0.28 kB
+dist/assets/NDVEmptyState-Bho0_Ev8.css                                   0.52 kB │ gzip:   0.28 kB
+dist/assets/MyCustomView-DZMEd2tB.css                                    0.53 kB │ gzip:   0.25 kB
+dist/assets/AnimatedSpinner-CoP6Lyme.css                                 0.57 kB │ gzip:   0.19 kB
+dist/assets/ProjectRoleView-Ds9qdhh9.css                                 0.86 kB │ gzip:   0.42 kB
+dist/assets/ResolversView-Bl6WIGF0.css                                   1.02 kB │ gzip:   0.43 kB
+dist/assets/MigrationRules-wMqorxjv.css                                  1.42 kB │ gzip:   0.50 kB
+dist/assets/RunDataHtml-Bu3RZcuV.css                                     2.53 kB │ gzip:   0.46 kB
+dist/assets/CredentialIcon-bZrcXcyJ.css                                  2.56 kB │ gzip:   0.47 kB
+dist/assets/NodeIcon-zqTc5h-V.css                                        2.62 kB │ gzip:   0.50 kB
+dist/assets/TextWithHighlights-BgbTzzK2.css                              2.63 kB │ gzip:   0.51 kB
+dist/assets/KeyboardShortcutTooltip-pRLqnHdh.css                         2.65 kB │ gzip:   0.52 kB
+dist/assets/RunDataJsonActions-CZx7rSSE.css                              2.65 kB │ gzip:   0.52 kB
+dist/assets/ChatLayout-C5Cltxb6.css                                      2.66 kB │ gzip:   0.54 kB
+dist/assets/InsightsPaywall-CE5W3W4m.css                                 2.70 kB │ gzip:   0.56 kB
+dist/assets/Draggable-DfBtatxg.css                                       2.72 kB │ gzip:   0.55 kB
+dist/assets/ExternalSecretsProviderConnectionSwitch-dpp96SMy.css         2.74 kB │ gzip:   0.56 kB
+dist/assets/ModelByIdSelectorModal-CF6s_557.css                          2.86 kB │ gzip:   0.60 kB
+dist/assets/ErrorView-D2OMvGTk.css                                       2.93 kB │ gzip:   0.62 kB
+dist/assets/NodeCreation-CKa3G1zA.css                                    2.93 kB │ gzip:   0.65 kB
+dist/assets/SelectedItemsInfo-DDbNnY7M.css                               2.96 kB │ gzip:   0.64 kB
+dist/assets/WorkflowExecutionsLandingPage-DMldlKod.css                   2.97 kB │ gzip:   0.63 kB
+dist/assets/CredentialSelectorModal-CKQNdS8g.css                         3.05 kB │ gzip:   0.63 kB
+dist/assets/TemplatesCollectionView-klb8FT9y.css                         3.06 kB │ gzip:   0.66 kB
+dist/assets/SigninView-BQgsTN8o.css                                      3.07 kB │ gzip:   0.68 kB
+dist/assets/TemplateCard-DxDBlS6p.css                                    3.10 kB │ gzip:   0.67 kB
+dist/assets/SetupWorkflowFromTemplateView-CU2iGJTa.css                   3.10 kB │ gzip:   0.68 kB
+dist/assets/SettingsExternalSecrets-CaiOf7cD.css                         3.10 kB │ gzip:   0.65 kB
+dist/assets/WorkflowPreview-CYpzxJej.css                                 3.17 kB │ gzip:   0.72 kB
+dist/assets/AgentEditorModal-9v5_7c4M.css                                3.22 kB │ gzip:   0.68 kB
+dist/assets/ChatPersonalAgentsView-BiiyFIRl.css                          3.22 kB │ gzip:   0.70 kB
+dist/assets/SettingsLdapView-BuamZyhu.css                                3.26 kB │ gzip:   0.70 kB
+dist/assets/ProviderSettingsModal-D_yY-993.css                           3.26 kB │ gzip:   0.66 kB
+dist/assets/ChatAgentAvatar-D94COYC_.css                                 3.27 kB │ gzip:   0.68 kB
+dist/assets/ProjectBreadcrumb-CAEDvzuN.css                               3.27 kB │ gzip:   0.71 kB
+dist/assets/DataTableView-ByKnlVtU.css                                   3.28 kB │ gzip:   0.78 kB
+dist/assets/TemplatesWorkflowView-CBjRBbmw.css                           3.29 kB │ gzip:   0.74 kB
+dist/assets/RunDataSearch-BvNE3iVy.css                                   3.29 kB │ gzip:   0.72 kB
+dist/assets/WorkflowExecutionsInfoAccordion-CEOvJ-SX.css                 3.32 kB │ gzip:   0.74 kB
+dist/assets/ResourceFiltersDropdown-Cma1Lj9J.css                         3.32 kB │ gzip:   0.70 kB
+dist/assets/WorkflowLocation-6rp_-CuW.css                                3.33 kB │ gzip:   0.72 kB
+dist/assets/InsightsTableWorkflows-D20Yb7ZW.css                          3.35 kB │ gzip:   0.77 kB
+dist/assets/useTelemetryContext-BpnKRIT7.css                             3.38 kB │ gzip:   0.74 kB
+dist/assets/ChatWorkflowAgentsView-BBfu-g98.css                          3.41 kB │ gzip:   0.76 kB
+dist/assets/ProjectCardBadge-XPHWNQHG.css                                3.41 kB │ gzip:   0.76 kB
+dist/assets/ProjectIcon-DT95ZcDW.css                                     3.50 kB │ gzip:   0.72 kB
+dist/assets/SettingsPersonalView-DEpYU3TT.css                            3.50 kB │ gzip:   0.82 kB
+dist/assets/BaseLayout-DSY3m74K.css                                      3.58 kB │ gzip:   0.78 kB
+dist/assets/ToolsSelectorModal-B2z9ibQ0.css                              3.63 kB │ gzip:   0.73 kB
+dist/assets/ChatFile-DP6aSB_w.css                                        3.63 kB │ gzip:   0.85 kB
+dist/assets/CopyInput-BiDmlr9B.css                                       3.84 kB │ gzip:   0.90 kB
+dist/assets/RunDataParsedAiContent-CvjNCtpG.css                          3.95 kB │ gzip:   0.75 kB
+dist/assets/evaluation-CGxdCHrN.css                                      4.12 kB │ gzip:   0.92 kB
+dist/assets/SettingsSourceControl-DEs9MNB6.css                           4.19 kB │ gzip:   0.92 kB
+dist/assets/OAuthConsentView-CXZbBKS5.css                                4.44 kB │ gzip:   0.95 kB
+dist/assets/TagsDropdown-Do1UB2LF.css                                    4.95 kB │ gzip:   1.12 kB
+dist/assets/InsightsDashboard-CttFeZVb.css                               5.35 kB │ gzip:   1.39 kB
+dist/assets/TemplateDetails-DfyKyMyy.css                                 5.40 kB │ gzip:   0.65 kB
+dist/assets/banners-UK5wWFEI.css                                         5.44 kB │ gzip:   0.67 kB
+dist/assets/CommunityNodeUpdateInfo-kPDiipF5.css                         5.52 kB │ gzip:   0.69 kB
+dist/assets/MCPConnectWorkflowsModal-CS2q8ice.css                        5.67 kB │ gzip:   0.75 kB
+dist/assets/SettingsChatHubView-zBt63VWY.css                             5.72 kB │ gzip:   0.75 kB
+dist/assets/AuthView-Dg9ZkCud.css                                        5.80 kB │ gzip:   0.80 kB
+dist/assets/Modal-DNkRJkUt.css                                           5.90 kB │ gzip:   0.81 kB
+dist/assets/TemplatesView-iSPzXjQB.css                                   5.92 kB │ gzip:   0.82 kB
+dist/assets/SettingsLayout-BGgvOkr0.css                                  5.97 kB │ gzip:   0.84 kB
+dist/assets/SettingsLogStreamingView-xo-rTSA0.css                        6.02 kB │ gzip:   0.91 kB
+dist/assets/CredentialsView-BDOl2A0w.css                                 6.03 kB │ gzip:   0.90 kB
+dist/assets/InsightsSummary-CnaRV949.css                                 6.17 kB │ gzip:   1.35 kB
+dist/assets/ProjectSharing-5AaqsE7p.css                                  6.19 kB │ gzip:   0.86 kB
+dist/assets/CredentialPicker-CWT-qPMn.css                                6.25 kB │ gzip:   0.96 kB
+dist/assets/AddDataTableModal-CZuODwEx.css                               6.36 kB │ gzip:   1.30 kB
+dist/assets/ProjectHeader-DMoL829v.css                                   6.43 kB │ gzip:   1.00 kB
+dist/assets/SettingsCommunityNodesView-m7kLUpJK.css                      6.49 kB │ gzip:   0.98 kB
+dist/assets/useCustomAgent-D8Sw5vcC.css                                  6.57 kB │ gzip:   1.05 kB
+dist/assets/MainSidebarHeader-DrEZoF8C.css                               6.60 kB │ gzip:   0.99 kB
+dist/assets/SettingsApiView-Dtl_N9mK.css                                 6.64 kB │ gzip:   1.05 kB
+dist/assets/NodeView-B_-cLcpL.css                                        6.67 kB │ gzip:   1.10 kB
+dist/assets/RunDataJson-LufoUTRy.css                                     7.26 kB │ gzip:   1.10 kB
+dist/assets/Alert-BA2uuWjw.css                                           7.28 kB │ gzip:   1.11 kB
+dist/assets/SetupTemplateFormStep-n3VY06cx.css                           8.25 kB │ gzip:   0.83 kB
+dist/assets/NodeDetailsViewV2-CgELKnqG.css                               8.30 kB │ gzip:   1.47 kB
+dist/assets/TestRunDetailView-CVGty0j0.css                               8.39 kB │ gzip:   1.49 kB
+dist/assets/ExecutionsView-R9NgBuwA.css                                  8.58 kB │ gzip:   1.00 kB
+dist/assets/ProjectVariables-CYiX9mOB.css                                8.87 kB │ gzip:   1.06 kB
+dist/assets/SettingsUsersView-CfJcVjkl.css                               9.32 kB │ gzip:   1.15 kB
+dist/assets/useCanvasOperations-UKTylU7I.css                             9.61 kB │ gzip:   1.04 kB
+dist/assets/SkeletonAgentCard-zoEiPx0y.css                               9.64 kB │ gzip:   1.14 kB
+dist/assets/ProjectSettings-vir6puPd.css                                 9.72 kB │ gzip:   1.17 kB
+dist/assets/SettingsUsageAndPlan-CpJqCHD_.css                            9.90 kB │ gzip:   1.23 kB
+dist/assets/TemplateList-CNUtq0N7.css                                   10.03 kB │ gzip:   1.21 kB
+dist/assets/VirtualSchema-B20c_4gv.css                                  10.83 kB │ gzip:   2.34 kB
+dist/assets/SettingsSso-DPkEVc10.css                                    11.98 kB │ gzip:   1.16 kB
+dist/assets/RunDataTable-BHEO7axq.css                                   12.05 kB │ gzip:   2.08 kB
+dist/assets/EvaluationsView-CmcDUAS_.css                                12.06 kB │ gzip:   1.28 kB
+dist/assets/EvaluationsRootView-D22182Fd.css                            12.34 kB │ gzip:   1.30 kB
+dist/assets/useLogsTreeExpand-nZMKe2ps.css                              12.61 kB │ gzip:   1.84 kB
+dist/assets/ExecutionsTime-CFf1G0Tu.css                                 12.67 kB │ gzip:   1.38 kB
+dist/assets/ResourcesListLayout-BhnhvHiw.css                            13.20 kB │ gzip:   1.45 kB
+dist/assets/NodeDetailsView-Dy4A-9xj.css                                13.82 kB │ gzip:   1.64 kB
+dist/assets/FixedCollectionParameter-COuGvpZ8.css                       15.17 kB │ gzip:   1.60 kB
+dist/assets/WorkflowExecutionsPreview-BkXT82z5.css                      15.45 kB │ gzip:   1.94 kB
+dist/assets/WorkflowHistory-dUpsKg3Z.css                                15.94 kB │ gzip:   1.84 kB
+dist/assets/ChatLayout-D-hWKn7w.css                                     16.32 kB │ gzip:   1.64 kB
+dist/assets/DefaultLayout-qYnACKTG.css                                  16.32 kB │ gzip:   1.62 kB
+dist/assets/WorkflowExecutionsView-CwvCqpuQ.css                         16.50 kB │ gzip:   1.82 kB
+dist/assets/TemplatesSearchView-BfT0LMil.css                            19.49 kB │ gzip:   1.94 kB
+dist/assets/WorkerView-dRylOW7G.css                                     22.85 kB │ gzip:   1.49 kB
+dist/assets/TriggerPanel-BjsM2DGf.css                                   25.58 kB │ gzip:   2.65 kB
+dist/assets/SettingsMCPView-DIdodQTu.css                                31.21 kB │ gzip:   2.16 kB
+dist/assets/ChatView-BxNM2b5Y.css                                       32.21 kB │ gzip:   3.47 kB
+dist/assets/DataTableDetailsView-BDaCbMuN.css                           32.83 kB │ gzip:   2.83 kB
+dist/assets/NodeSettings-BIOqhOCE.css                                   40.04 kB │ gzip:   3.70 kB
+dist/assets/WorkflowsView-CHz0wegR.css                                  43.53 kB │ gzip:   3.23 kB
+dist/assets/RunData-CA8VWciJ.css                                        48.47 kB │ gzip:   4.13 kB
+dist/assets/DemoLayout-BjsbyiYC.css                                     71.58 kB │ gzip:   5.39 kB
+dist/assets/NodeCreator-DtJ8_uzs.css                                    75.51 kB │ gzip:   4.87 kB
+dist/assets/useCanvasMapping-elelqgOH.css                              144.52 kB │ gzip:   9.57 kB
+dist/assets/ParameterInputList-B_Bj7_Fl.css                            191.97 kB │ gzip:  13.13 kB
+dist/assets/src-BJnYgfB6.css                                           348.03 kB │ gzip:  25.24 kB
+dist/assets/index-CMXeNmXV.css                                         684.62 kB │ gzip:  66.78 kB
+dist/assets/en-C4tPMX0d.js                                               0.08 kB │ gzip:   0.08 kB
+dist/assets/sourceControl.eventBus-WMALsibh.js                           0.14 kB │ gzip:   0.12 kB
+dist/assets/RunDataHtml-DWutttOi.js                                      0.19 kB │ gzip:   0.15 kB
+dist/assets/core-Dy8Lxir_.js                                             0.20 kB │ gzip:   0.16 kB
+dist/assets/_plugin-vue_export-helper-DltO58Gh.js                        0.22 kB │ gzip:   0.16 kB
+dist/assets/smartDecimal-D3Shg2YQ.js                                     0.23 kB │ gzip:   0.17 kB
+dist/assets/auth.eventBus-DFfkDCrL.js                                    0.27 kB │ gzip:   0.15 kB
+dist/assets/sortByProperty-DDQ5Sna3.js                                   0.28 kB │ gzip:   0.20 kB
+dist/assets/RunDataParsedAiContent-Csfag_v6.js                           0.53 kB │ gzip:   0.29 kB
+dist/assets/fileUtils-BiD487HX.js                                        0.60 kB │ gzip:   0.35 kB
+dist/assets/AuthLayout-qq66imE9.js                                       0.63 kB │ gzip:   0.35 kB
+dist/assets/retry-BLsJRFf0.js                                            0.68 kB │ gzip:   0.35 kB
+dist/assets/mcp.constants-BFzLRmms.js                                    0.69 kB │ gzip:   0.36 kB
+dist/assets/orderBy-6bFUFWqK.js                                          0.73 kB │ gzip:   0.36 kB
+dist/assets/useIntersectionObserver-L8ENabgG.js                          0.77 kB │ gzip:   0.36 kB
+dist/assets/pickBy-7nvRteC2.js                                           0.83 kB │ gzip:   0.40 kB
+dist/assets/VueMarkdown-vbbmgjFV.js                                      0.85 kB │ gzip:   0.45 kB
+dist/assets/EnterpriseEdition.ee-DmteQ--_.js                             0.85 kB │ gzip:   0.47 kB
+dist/assets/VirtualSchema-DLAy3YT2.js                                    1.05 kB │ gzip:   0.52 kB
+dist/assets/useMcp-DewBkfts.js                                           1.06 kB │ gzip:   0.49 kB
+dist/assets/flatten-CMCGxvdc.js                                          1.13 kB │ gzip:   0.47 kB
+dist/assets/SignoutView-C73T0BQJ.js                                      1.18 kB │ gzip:   0.63 kB
+dist/assets/userRoleProvisioning.store-aUHTdjzo.js                       1.25 kB │ gzip:   0.45 kB
+dist/assets/RunDataHtml-DOjIlN91.js                                      1.43 kB │ gzip:   0.68 kB
+dist/assets/EmptySharedSectionActionBox-CcODIWJA.js                      1.45 kB │ gzip:   0.73 kB
+dist/assets/useClipboard-DYfn4Fr1.js                                     1.52 kB │ gzip:   0.70 kB
+dist/assets/WorkflowLayout-Cyg2ANhT.js                                   1.54 kB │ gzip:   0.71 kB
+dist/assets/CollectionParameter-Ccpg0OXR.js                              1.57 kB │ gzip:   0.73 kB
+dist/assets/useTelemetryContext-oD_j2HMz.js                              1.60 kB │ gzip:   0.71 kB
+dist/assets/AnimatedSpinner-BbcX8zDl.js                                  1.70 kB │ gzip:   0.62 kB
+dist/assets/InsightsChartFailed-CJwUzxZF.js                              1.77 kB │ gzip:   0.85 kB
+dist/assets/InsightsChartTotal-sLVDuuc5.js                               1.89 kB │ gzip:   0.86 kB
+dist/assets/constants-BQFYPkPH.js                                        1.89 kB │ gzip:   0.78 kB
+dist/assets/KeyboardShortcutTooltip-BvxEF_bQ.js                          1.93 kB │ gzip:   0.78 kB
+dist/assets/apiKeys.store-KvFIuvpM.js                                    1.94 kB │ gzip:   0.69 kB
+dist/assets/dateFormatter-Dt8QDsYb.js                                    1.98 kB │ gzip:   0.68 kB
+dist/assets/insights.constants-CKfuY4E6.js                               2.00 kB │ gzip:   0.72 kB
+dist/assets/InsightsChartFailureRate-DVjz4C3s.js                         2.00 kB │ gzip:   0.93 kB
+dist/assets/chunk-r2Y0G7H8.js                                            2.02 kB │ gzip:   0.89 kB
+dist/assets/SeverityTag-DQot9wrq.js                                      2.07 kB │ gzip:   0.88 kB
+dist/assets/WorkflowTagsDropdown-B33TtNhH.js                             2.11 kB │ gzip:   0.85 kB
+dist/assets/templateTransforms-D5kj4jz-.js                               2.15 kB │ gzip:   0.64 kB
+dist/assets/AnnotationTagsDropdown.ee-ZyNRWkYn.js                        2.16 kB │ gzip:   0.87 kB
+dist/assets/usePageRedirectionHelper-Bp4ubu9E.js                         2.24 kB │ gzip:   0.77 kB
+dist/assets/InsightsChartAverageRuntime-BsKF9aJl.js                      2.24 kB │ gzip:   1.03 kB
+dist/assets/SamlOnboarding-2w1YwGqY.js                                   2.29 kB │ gzip:   1.00 kB
+dist/assets/InsightsChartTimeSaved-CHHHjpxG.js                           2.30 kB │ gzip:   1.06 kB
+dist/assets/WorkflowOnboardingView-VQRGPBs1.js                           2.35 kB │ gzip:   0.94 kB
+dist/assets/roles.store-Daf2qlkw.js                                      2.37 kB │ gzip:   0.80 kB
+dist/assets/nodeTransforms-DXNvjl4V.js                                   2.46 kB │ gzip:   0.78 kB
+dist/assets/ProjectIcon-pegdkRAd.js                                      2.51 kB │ gzip:   1.01 kB
+dist/assets/InsightsPaywall-DDgmWjuG.js                                  2.56 kB │ gzip:   0.97 kB
+dist/assets/SelectedItemsInfo-B4CW3Y8K.js                                2.57 kB │ gzip:   0.94 kB
+dist/assets/ErrorView-CHYiiCkH.js                                        2.64 kB │ gzip:   1.04 kB
+dist/assets/workers-4-phMsVS.js                                          2.65 kB │ gzip:   0.90 kB
+dist/assets/EntityUnAuthorised-6bsHkU80.js                               2.75 kB │ gzip:   1.14 kB
+dist/assets/useKeybindings-B8mfgi8L.js                                   2.83 kB │ gzip:   1.15 kB
+dist/assets/BaseLayout-Y3xdoS4G.js                                       2.87 kB │ gzip:   0.89 kB
+dist/assets/useCredentialResolvers-CJALElS1.js                           2.89 kB │ gzip:   0.94 kB
+dist/assets/TemplatesView-pnypeYSb.js                                    2.94 kB │ gzip:   0.97 kB
+dist/assets/EntityNotFound-171RoG6E.js                                   2.96 kB │ gzip:   1.06 kB
+dist/assets/templateActions-C6r1O7hg.js                                  3.02 kB │ gzip:   1.02 kB
+dist/assets/insights.store-w5ivG8zq.js                                   3.03 kB │ gzip:   0.91 kB
+dist/assets/TextWithHighlights-CK_NLbdZ.js                               3.03 kB │ gzip:   1.11 kB
+dist/assets/NodeIcon-C7QOv9AW.js                                         3.04 kB │ gzip:   1.05 kB
+dist/assets/ForgotMyPasswordView-DHU8HryY.js                             3.13 kB │ gzip:   1.25 kB
+dist/assets/SetupView-BkzEPGHk.js                                        3.14 kB │ gzip:   1.18 kB
+dist/assets/CopyInput-xdaN8vjK.js                                        3.16 kB │ gzip:   1.21 kB
+dist/assets/CredentialIcon-i0fiJiag.js                                   3.22 kB │ gzip:   1.13 kB
+dist/assets/useExecutionHelpers-DTFjKujs.js                              3.23 kB │ gzip:   1.07 kB
+dist/assets/useCalloutHelpers-BSgeeOZH.js                                3.24 kB │ gzip:   1.15 kB
+dist/assets/SetupWorkflowCredentialsButton-ozabStFF.js                   3.46 kB │ gzip:   1.32 kB
+dist/assets/useDebugInfo-DJIvSmMp.js                                     3.47 kB │ gzip:   1.24 kB
+dist/assets/DataTableActions-B9l_QeAt.js                                 3.53 kB │ gzip:   1.21 kB
+dist/assets/ChatAgentAvatar-DDv0vW82.js                                  3.60 kB │ gzip:   1.36 kB
+dist/assets/ProjectBreadcrumb-B14NRRfY.js                                3.70 kB │ gzip:   1.29 kB
+dist/assets/_initCloneObject-B5F2_LWZ.js                                 3.73 kB │ gzip:   1.15 kB
+dist/assets/usage.store-B7SkEF-s.js                                      4.12 kB │ gzip:   1.24 kB
+dist/assets/insights.utils-BsZkLOr2.js                                   4.12 kB │ gzip:   1.30 kB
+dist/assets/Alert-swoamcLA.js                                            4.18 kB │ gzip:   1.34 kB
+dist/assets/WorkflowExecutionsLandingPage-MjPQeFTT.js                    4.18 kB │ gzip:   1.40 kB
+dist/assets/nodeIcon-DCAOFyUj.js                                         4.23 kB │ gzip:   1.27 kB
+dist/assets/externalSecrets.ee.store-QtAXsAjP.js                         4.23 kB │ gzip:   1.27 kB
+dist/assets/chartjs.utils-CwHt7D5e.js                                    4.29 kB │ gzip:   1.06 kB
+dist/assets/TimeAgo-DWa-szhh.js                                          4.30 kB │ gzip:   1.63 kB
+dist/assets/col-B7VKwEsY.js                                              4.33 kB │ gzip:   1.34 kB
+dist/assets/SignupView-Bq7UYm14.js                                       4.38 kB │ gzip:   1.54 kB
+dist/assets/MyCustomView-Coe1neYr.js                                     4.40 kB │ gzip:   1.61 kB
+dist/assets/AuthView-B78CXGxp.js                                         4.51 kB │ gzip:   1.53 kB
+dist/assets/mcp.store-B_81zno5.js                                        4.57 kB │ gzip:   1.34 kB
+dist/assets/dist-fyDwgpQo.js                                             4.60 kB │ gzip:   1.52 kB
+dist/assets/ChangePasswordView-BtjmK6j-.js                               4.61 kB │ gzip:   1.60 kB
+dist/assets/TemplateCard-DRwxIU2Z.js                                     4.70 kB │ gzip:   1.77 kB
+dist/assets/ModelByIdSelectorModal-BtqFesJn.js                           4.73 kB │ gzip:   1.64 kB
+dist/assets/chatPanel.store-DQiAt2KU.js                                  4.77 kB │ gzip:   1.38 kB
+dist/assets/useExecutionDebugging-DVWGLcUO.js                            4.80 kB │ gzip:   1.71 kB
+dist/assets/ChatLayout-DsMzTNlU.js                                       4.89 kB │ gzip:   1.84 kB
+dist/assets/ChatFile-Ddrfvesg.js                                         4.96 kB │ gzip:   1.51 kB
+dist/assets/SettingsLayout-CvwGNYB0.js                                   4.99 kB │ gzip:   1.65 kB
+dist/assets/Draggable-BWs619Zx.js                                        4.99 kB │ gzip:   1.62 kB
+dist/assets/useSettingsItems-DlPV1EHE.js                                 4.99 kB │ gzip:   1.27 kB
+dist/assets/utils-C_uF-3H4.js                                            5.09 kB │ gzip:   1.72 kB
+dist/assets/dateformat-DqegO0le.js                                       5.30 kB │ gzip:   1.99 kB
+dist/assets/RunDataSearch-CTtPKu99.js                                    5.37 kB │ gzip:   1.94 kB
+dist/assets/sso.store-BxRFyO38.js                                        5.51 kB │ gzip:   1.35 kB
+dist/assets/useDebounce-DcGabTQy.js                                      5.60 kB │ gzip:   1.76 kB
+dist/assets/ChatWorkflowAgentsView-BUf8l477.js                           5.70 kB │ gzip:   1.94 kB
+dist/assets/canvas.utils-5q3Oj_ss.js                                     5.79 kB │ gzip:   1.65 kB
+dist/assets/CredentialSelectorModal-CIEjcXws.js                          5.99 kB │ gzip:   1.79 kB
+dist/assets/en-PrU4QUr7.js                                               6.04 kB │ gzip:   2.02 kB
+dist/assets/TemplateDetails-C6WkoT9M.js                                  6.54 kB │ gzip:   1.79 kB
+dist/assets/logStreaming.store-CjUIG69s.js                               6.74 kB │ gzip:   1.73 kB
+dist/assets/ResourceFiltersDropdown-p9DxjdpP.js                          6.84 kB │ gzip:   2.15 kB
+dist/assets/Modal-WKb-bP8x.js                                            7.13 kB │ gzip:   2.27 kB
+dist/assets/ChatPersonalAgentsView-C5dH2LdZ.js                           7.18 kB │ gzip:   2.24 kB
+dist/assets/WorkflowPreview-M0FfCWgE.js                                  7.21 kB │ gzip:   2.10 kB
+dist/assets/banners.store-DAU8T63l.js                                    7.26 kB │ gzip:   2.32 kB
+dist/assets/TemplatesWorkflowView-DyWfvfcV.js                            7.27 kB │ gzip:   2.26 kB
+dist/assets/WorkflowLocation-ggrQ2kFx.js                                 7.28 kB │ gzip:   1.57 kB
+dist/assets/executions.store-sAORumYe.js                                 7.49 kB │ gzip:   1.90 kB
+dist/assets/versions.store-jbsldusp.js                                   7.52 kB │ gzip:   2.27 kB
+dist/assets/TemplatesCollectionView-DP9mMBXL.js                          7.68 kB │ gzip:   2.38 kB
+dist/assets/RunDataParsedAiContent-D4E77cir.js                           7.68 kB │ gzip:   2.50 kB
+dist/assets/pushConnection.store-Cqs8TrY7.js                             7.86 kB │ gzip:   2.05 kB
+dist/assets/comlink-GkpElP9t.js                                          8.04 kB │ gzip:   2.48 kB
+dist/assets/usePinnedData-Q9Fk_H_F.js                                    8.06 kB │ gzip:   2.38 kB
+dist/assets/TagsDropdown-DKAi-l_3.js                                     8.07 kB │ gzip:   2.61 kB
+dist/assets/WorkflowExecutionsInfoAccordion-4m3F65Hp.js                  8.35 kB │ gzip:   2.21 kB
+dist/assets/InsightsSummary-C0yCse90.js                                  8.37 kB │ gzip:   2.53 kB
+dist/assets/SkeletonAgentCard-5kd1Qxjo.js                                8.39 kB │ gzip:   2.31 kB
+dist/assets/folders.store-CsWDUs6S.js                                    8.40 kB │ gzip:   2.29 kB
+dist/assets/dataTable.store-Ba2kBOzA.js                                  8.90 kB │ gzip:   2.26 kB
+dist/assets/RunDataJson-BokYCCSI.js                                      9.05 kB │ gzip:   2.89 kB
+dist/assets/ProjectCardBadge-9RD4Iyty.js                                 9.06 kB │ gzip:   2.29 kB
+dist/assets/InsightsTableWorkflows-BbfEHexq.js                           9.32 kB │ gzip:   2.88 kB
+dist/assets/radio-C96isiCH.js                                            9.40 kB │ gzip:   2.50 kB
+dist/assets/ResolversView-DPLwECFz.js                                    9.41 kB │ gzip:   2.62 kB
+dist/assets/collaboration.store-Dp1OxT4u.js                              9.51 kB │ gzip:   2.28 kB
+dist/assets/NodeCreation-DCfvKYk8.js                                     9.67 kB │ gzip:   3.07 kB
+dist/assets/OAuthConsentView-Bo-YcN2u.js                                 9.78 kB │ gzip:   2.64 kB
+dist/assets/ProjectRolesView-BG8aHH9B.js                                 9.83 kB │ gzip:   2.93 kB
+dist/assets/useActions-CeNdGUKo.js                                       9.90 kB │ gzip:   2.89 kB
+dist/assets/SettingsExternalSecrets-BUpzeTjM.js                         11.00 kB │ gzip:   3.03 kB
+dist/assets/MCPConnectWorkflowsModal-mFUgiUEH.js                        11.20 kB │ gzip:   3.43 kB
+dist/assets/evaluation.constants-B4S0TYya.js                            11.39 kB │ gzip:   3.72 kB
+dist/assets/SetupTemplateFormStep-B5LSWDXq.js                           11.58 kB │ gzip:   3.20 kB
+dist/assets/personalizedTemplatesV3.store-DILTvtpj.js                   11.79 kB │ gzip:   3.09 kB
+dist/assets/CommunityNodeUpdateInfo-YKV6jXcM.js                         11.79 kB │ gzip:   3.25 kB
+dist/assets/ProjectSharing-B3Fa_b_O.js                                  11.84 kB │ gzip:   3.17 kB
+dist/assets/SetupWorkflowFromTemplateView-CHCuE1Ld.js                   11.89 kB │ gzip:   3.32 kB
+dist/assets/SettingsChatHubView-Jkbovrit.js                             12.02 kB │ gzip:   3.30 kB
+dist/assets/DataTableView-CA7L8UHD.js                                   12.06 kB │ gzip:   3.40 kB
+dist/assets/MigrationRuleDetail-BHwiVgTD.js                             12.35 kB │ gzip:   3.65 kB
+dist/assets/TemplateList-B88k7J2T.js                                    12.82 kB │ gzip:   3.09 kB
+dist/assets/ProviderSettingsModal-CGtnDNJ-.js                           13.04 kB │ gzip:   3.16 kB
+dist/assets/CredentialPicker-BY0Xm13P.js                                13.11 kB │ gzip:   3.36 kB
+dist/assets/SigninView-CnmRDM8T.js                                      13.39 kB │ gzip:   3.84 kB
+dist/assets/dialog-BsAAzfYW.js                                          13.65 kB │ gzip:   4.07 kB
+dist/assets/SettingsApiView-gvOPSxq_.js                                 13.77 kB │ gzip:   3.81 kB
+dist/assets/MigrationRules-8jyE-Alt.js                                  14.11 kB │ gzip:   3.07 kB
+dist/assets/AgentEditorModal-Dr_FRmyr.js                                14.36 kB │ gzip:   3.60 kB
+dist/assets/ToolsSelectorModal-D1jnhlZg.js                              15.01 kB │ gzip:   3.86 kB
+dist/assets/SettingsPersonalView-Db6ZxpwD.js                            16.56 kB │ gzip:   3.98 kB
+dist/assets/SettingsCommunityNodesView-D8JhWY1e.js                      16.66 kB │ gzip:   4.15 kB
+dist/assets/ProjectRoleView-CWl8vdXa.js                                 16.93 kB │ gzip:   4.09 kB
+dist/assets/ExternalSecretsProviderConnectionSwitch.ee-DOdwzUVm.js      16.98 kB │ gzip:   8.24 kB
+dist/assets/SettingsLogStreamingView-8gRUDSoE.js                        17.22 kB │ gzip:   4.43 kB
+dist/assets/EvaluationsView-Dz5yDhJH.js                                 18.41 kB │ gzip:   4.83 kB
+dist/assets/SettingsUsageAndPlan-DNHnTGlj.js                            18.88 kB │ gzip:   4.54 kB
+dist/assets/aiTemplatesStarterCollection.store-Bif62YNR.js              19.69 kB │ gzip:   5.08 kB
+dist/assets/ProjectVariables-CTA1vr4t.js                                20.52 kB │ gzip:   5.47 kB
+dist/assets/assistant.store-CVH65TPR.js                                 20.79 kB │ gzip:   5.11 kB
+dist/assets/CredentialsView-B4RxcXma.js                                 20.96 kB │ gzip:   5.74 kB
+dist/assets/ChatLayout-BIAC6I7N.js                                      21.21 kB │ gzip:   5.47 kB
+dist/assets/InsightsDashboard-1VJrxlHV.js                               21.91 kB │ gzip:   5.83 kB
+dist/assets/readyToRun.store-qwoH_Rfl.js                                22.34 kB │ gzip:   6.12 kB
+dist/assets/TestRunDetailView-BGtgBL_j.js                               23.01 kB │ gzip:   5.62 kB
+dist/assets/usePushConnection-CO-Qe8Ur.js                               23.49 kB │ gzip:   5.52 kB
+dist/assets/EvaluationsRootView-DSvTy4QG.js                             23.71 kB │ gzip:   4.93 kB
+dist/assets/useCustomAgent-CqE3n3YR.js                                  23.72 kB │ gzip:   6.41 kB
+dist/assets/ProjectHeader-C0TJ-q6q.js                                   24.37 kB │ gzip:   5.62 kB
+dist/assets/MainSidebarHeader-BYqYvu4h.js                               24.63 kB │ gzip:   5.64 kB
+dist/assets/SettingsSourceControl-D2XEDBZR.js                           24.69 kB │ gzip:   4.79 kB
+dist/assets/useRunWorkflow-D8LbgKCB.js                                  24.84 kB │ gzip:   6.56 kB
+dist/assets/ExecutionsTime-DzghKIl9.js                                  24.89 kB │ gzip:   5.11 kB
+dist/assets/merge-6pup5Abj.js                                           27.11 kB │ gzip:   5.68 kB
+dist/assets/ResourcesListLayout-0dNpisZ8.js                             27.49 kB │ gzip:   6.74 kB
+dist/assets/WorkflowExecutionsPreview-DJdA4QiZ.js                       27.87 kB │ gzip:   5.95 kB
+dist/assets/WorkerView-CiUUG3Qu.js                                      28.33 kB │ gzip:   6.26 kB
+dist/assets/RunDataTable-nsy6l3IS.js                                    31.72 kB │ gzip:   7.71 kB
+dist/assets/chat.store-Ce71IcHi.js                                      33.76 kB │ gzip:   7.48 kB
+dist/assets/WorkflowExecutionsView-B-crvic0.js                          33.84 kB │ gzip:   7.69 kB
+dist/assets/SettingsUsersView-DpyFuE9-.js                               34.52 kB │ gzip:   7.52 kB
+dist/assets/DefaultLayout-CV2EDXVf.js                                   35.13 kB │ gzip:   8.37 kB
+dist/assets/ExecutionsView-Bp7xiYxn.js                                  35.87 kB │ gzip:   7.77 kB
+dist/assets/xml-BAK5rppv.js                                             37.19 kB │ gzip:   7.70 kB
+dist/assets/CalendarDate-D9RS2EZz.js                                    37.38 kB │ gzip:   7.79 kB
+dist/assets/vue-json-pretty-CXgdakBw.js                                 38.13 kB │ gzip:  10.64 kB
+dist/assets/core-D0HtREOq.js                                            38.16 kB │ gzip:  10.82 kB
+dist/assets/useLogsTreeExpand-C_QqR9ex.js                               38.74 kB │ gzip:   9.98 kB
+dist/assets/NodeDetailsViewV2-Ctht3QSr.js                               38.77 kB │ gzip:   9.62 kB
+dist/assets/ProjectSettings-CkZQ594P.js                                 38.88 kB │ gzip:   8.17 kB
+dist/assets/WorkflowHistory-DyJuwbH5.js                                 40.19 kB │ gzip:   8.33 kB
+dist/assets/readyToRunWorkflows.store-CfcbItea.js                       40.26 kB │ gzip:  10.27 kB
+dist/assets/NodeDetailsView-DetR_FA4.js                                 43.34 kB │ gzip:  10.13 kB
+dist/assets/TemplatesSearchView-DXW8bYXu.js                             43.98 kB │ gzip:  10.33 kB
+dist/assets/SettingsMCPView-BecDcWZl.js                                 47.35 kB │ gzip:   9.27 kB
+dist/assets/SettingsSso-DCbY8EDi.js                                     50.31 kB │ gzip:   9.65 kB
+dist/assets/semver-ubkuhStT.js                                          50.92 kB │ gzip:  11.15 kB
+dist/assets/TriggerPanel-XxsZX2uF.js                                    57.45 kB │ gzip:  12.41 kB
+dist/assets/exports-CU53Y-Nn.js                                         61.33 kB │ gzip:  15.85 kB
+dist/assets/AddDataTableModal-DhGNRyUw.js                               61.71 kB │ gzip:  14.49 kB
+dist/assets/NodeView-Becq5aL9.js                                        63.61 kB │ gzip:  16.11 kB
+dist/assets/ChatView-CbRiFg8f.js                                        64.55 kB │ gzip:  14.24 kB
+dist/assets/FixedCollectionParameter-p9s2Pnev.js                        70.37 kB │ gzip:  13.06 kB
+dist/assets/SettingsLdapView-DuQgjmSm.js                                70.80 kB │ gzip:  14.26 kB
+dist/assets/NodeSettings-BlJP3gL3.js                                    82.16 kB │ gzip:  17.81 kB
+dist/assets/useCanvasOperations-yGA-Jvmi.js                             82.78 kB │ gzip:  18.99 kB
+dist/assets/VirtualSchema-C_ZNqXCX.js                                   89.16 kB │ gzip:  23.38 kB
+dist/assets/DemoLayout-BqC4g57V.js                                      96.72 kB │ gzip:  21.89 kB
+dist/assets/NodeCreator-D69hAUuZ.js                                     98.47 kB │ gzip:  20.31 kB
+dist/assets/_baseOrderBy-FBF5m4XW.js                                   104.51 kB │ gzip:  29.66 kB
+dist/assets/nodeCreator.store-CkUcKcrl.js                              112.45 kB │ gzip:  21.28 kB
+dist/assets/router-CTgSr632.js                                         118.92 kB │ gzip:  27.66 kB
+dist/assets/WorkflowsView-Dnox8nhX.js                                  136.96 kB │ gzip:  25.57 kB
+dist/assets/table-DkBghUxn.js                                          153.48 kB │ gzip:  36.88 kB
+dist/assets/vue-J0xycObG.js                                            156.85 kB │ gzip:  39.01 kB
+dist/assets/date-picker-RZDBE62U.js                                    157.62 kB │ gzip:  32.36 kB
+dist/assets/RunDataJsonActions-06hO_uFt.js                             178.64 kB │ gzip:  38.07 kB
+dist/assets/vue.runtime.esm-bundler-XtMkEjzB.js                        280.61 kB │ gzip:  70.32 kB
+dist/assets/languageModules-CfgOJIsU.js                                297.51 kB │ gzip:  83.29 kB
+dist/assets/useImportCurlCommand-C2fVGJHj.js                           313.71 kB │ gzip:  63.42 kB
+dist/assets/chart-DHt0naGD.js                                          348.60 kB │ gzip:  85.91 kB
+dist/assets/sanitize-html-Bm7Ej2cW.js                                  409.65 kB │ gzip: 103.66 kB
+dist/assets/useCanvasMapping-C-0HstSc.js                               475.61 kB │ gzip: 105.88 kB
+dist/assets/_MapCache-BpDQM3eE.js                                      536.52 kB │ gzip: 121.04 kB
+dist/assets/NDVEmptyState-CuzLqtvE.js                                  727.42 kB │ gzip: 183.67 kB
+dist/assets/ui.store-Cpjm3B-h.js                                     1,026.13 kB │ gzip: 246.17 kB
+dist/assets/index-ZYbnIlBV.js                                        1,054.29 kB │ gzip: 219.35 kB
+dist/assets/RunData-DeLu0LmY.js                                      1,063.23 kB │ gzip: 266.21 kB
+dist/assets/es-D6yQPmNt.js                                           1,190.50 kB │ gzip: 324.96 kB
+dist/assets/ParameterInputList-BXbARWot.js                           1,438.27 kB │ gzip: 354.69 kB
+dist/assets/DataTableDetailsView-BSAP4Itz.js                         1,590.85 kB │ gzip: 355.36 kB
+dist/assets/src-Hou_zQaF.js                                          2,028.66 kB │ gzip: 440.28 kB
+dist/assets/constants-CpkFUv1J.js                                    2,863.05 kB │ gzip: 552.82 kB
+[33m[33m[EVAL] Warning:[0m Use of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+      [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../../node_modules/.pnpm/web-tree-sitter@0.24.3/node_modules/web-tree-sitter/tree-sitter.js:1195:37 [38;5;246m][0m
+      [38;5;246m│[0m
+ [38;5;246m1195 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249mA[0m[38;5;249mS[0m[38;5;249mM[0m[38;5;249m_[0m[38;5;249mC[0m[38;5;249mO[0m[38;5;249mN[0m[38;5;249mS[0m[38;5;249mT[0m[38;5;249mS[0m[38;5;249m[[0m[38;5;249ms[0m[38;5;249mt[0m[38;5;249ma[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249m][0m[38;5;249m [0m[38;5;249m=[0m[38;5;249m [0meval[38;5;249m([0m[38;5;249mf[0m[38;5;249mu[0m[38;5;249mn[0m[38;5;249mc[0m[38;5;249m)[0m[38;5;249m;[0m
+ [38;5;240m     │[0m                                     ──┬─  
+ [38;5;240m     │[0m                                       ╰─── Use of direct `eval` here.
+ [38;5;240m     │[0m 
+ [38;5;240m     │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[38;5;246m──────╯[0m
+[39m
+[33m[33m[EVAL] Warning:[0m Use of direct `eval` function is strongly discouraged as it poses security risks and may cause issues with minification.
+      [38;5;246m╭[0m[38;5;246m─[0m[38;5;246m[[0m ../../../node_modules/.pnpm/web-tree-sitter@0.24.3/node_modules/web-tree-sitter/tree-sitter.js:1221:39 [38;5;246m][0m
+      [38;5;246m│[0m
+ [38;5;246m1221 │[0m [38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249m [0m[38;5;249mm[0m[38;5;249mo[0m[38;5;249md[0m[38;5;249mu[0m[38;5;249ml[0m[38;5;249me[0m[38;5;249mE[0m[38;5;249mx[0m[38;5;249mp[0m[38;5;249mo[0m[38;5;249mr[0m[38;5;249mt[0m[38;5;249ms[0m[38;5;249m[[0m[38;5;249mn[0m[38;5;249ma[0m[38;5;249mm[0m[38;5;249me[0m[38;5;249m][0m[38;5;249m [0m[38;5;249m=[0m[38;5;249m [0meval[38;5;249m([0m[38;5;249mf[0m[38;5;249mu[0m[38;5;249mn[0m[38;5;249mc[0m[38;5;249m)[0m[38;5;249m;[0m
+ [38;5;240m     │[0m                                       ──┬─  
+ [38;5;240m     │[0m                                         ╰─── Use of direct `eval` here.
+ [38;5;240m     │[0m 
+ [38;5;240m     │[0m [38;5;115mHelp[0m: Consider using indirect eval. For more information, check the documentation: https://rolldown.rs/guide/troubleshooting#avoiding-direct-eval
+[38;5;246m──────╯[0m
+[39m
+[32m✓ built in 16.81s[39m

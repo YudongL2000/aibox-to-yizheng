@@ -1,0 +1,50 @@
+
+> @n8n/chat@1.5.0 build /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/chat
+> pnpm build:vite && pnpm build:bundle
+
+
+> @n8n/chat@1.5.0 build:vite /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/chat
+> cross-env vite build
+
+[36mrolldown-vite v7.3.1 [32mbuilding client environment for production...[36m[39m
+[2Ktransforming...✓ 2903 modules transformed.
+rendering chunks...
+[33m[plugin builtin:vite-reporter] 
+(!) /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/design-system/src/locale/lang/en.ts is dynamically imported by /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/design-system/src/locale/index.ts but also statically imported by /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/design-system/src/locale/index.ts, dynamic import will not move module into another chunk.
+[39m
+
+[vite:dts] Start generate declaration files...
+[vite:dts] Declaration files built in 16857ms.
+
+computing gzip size...
+dist/chat.css     66.57 kB │ gzip:  10.10 kB
+dist/chat.es.js  955.35 kB │ gzip: 244.16 kB
+[2Ktransforming...✓ 2903 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/chat.css      66.57 kB │ gzip:  10.10 kB
+dist/chat.umd.js  701.06 kB │ gzip: 213.70 kB
+[32m✓ built in 23.23s[39m
+
+> @n8n/chat@1.5.0 build:bundle /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/chat
+> cross-env INCLUDE_VUE=true vite build
+
+[36mrolldown-vite v7.3.1 [32mbuilding client environment for production...[36m[39m
+[2Ktransforming...✓ 2906 modules transformed.
+rendering chunks...
+[33m[plugin builtin:vite-reporter] 
+(!) /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/design-system/src/locale/lang/en.ts is dynamically imported by /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/design-system/src/locale/index.ts but also statically imported by /Users/hanshilian/private/QIALG/projects/AI-tesseract/client/Tesseract/n8n/n8n-master/packages/frontend/@n8n/design-system/src/locale/index.ts, dynamic import will not move module into another chunk.
+[39m
+
+[vite:dts] Start generate declaration files...
+[vite:dts] Declaration files built in 12175ms.
+
+computing gzip size...
+dist/chat.css              66.57 kB │ gzip:  10.10 kB
+dist/chat.bundle.es.js  1,042.93 kB │ gzip: 272.99 kB
+[2Ktransforming...✓ 2906 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/chat.css             66.57 kB │ gzip:  10.10 kB
+dist/chat.bundle.umd.js  706.92 kB │ gzip: 235.21 kB
+[32m✓ built in 16.55s[39m

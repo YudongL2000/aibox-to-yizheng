@@ -1,0 +1,85 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.support-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--bg-base);
+}
+
+.support-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.assistant-pane,
+.support-pane {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  border: 1px solid var(--border-solid);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-panel);
+}
+
+.assistant-pane::before,
+.support-pane::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--panel-topline-accent);
+  opacity: 0.28;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.assistant-pane {
+  z-index: 1;
+  opacity: 1;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+
+  &.inactive {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-8px);
+  }
+
+  &.active {
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+}
+
+.support-pane {
+  z-index: 2;
+}
+
+.skill-pane {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+
+  &::before {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .assistant-pane,
+  .support-pane {
+    border-radius: var(--radius-base);
+  }
+}

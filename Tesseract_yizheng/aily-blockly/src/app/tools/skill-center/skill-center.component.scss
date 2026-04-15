@@ -1,0 +1,330 @@
+:host {
+  display: block;
+}
+
+.skill-center-shell {
+  width: min(1240px, calc(100vw - 72px));
+  height: min(860px, calc(100vh - 72px));
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--border-solid);
+  background: var(--bg-base);
+  box-shadow: 0 24px 60px var(--shell-shell-shadow);
+  color: var(--text-primary);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+
+  h1 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.1;
+    color: var(--text-primary);
+  }
+}
+
+.header-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.close-btn,
+.create-btn,
+.action-btn {
+  border: 0;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font-size: 18px;
+
+  &:hover {
+    background: var(--surface-elevated);
+    border-color: var(--text-muted);
+  }
+}
+
+.create-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--sem-info) 24%, transparent);
+  background: color-mix(in srgb, var(--sem-info) 10%, var(--surface-panel));
+  color: var(--sem-info);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.skill-count {
+  min-width: 0;
+}
+
+.skill-card,
+.empty-state {
+  position: relative;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.skill-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 240px;
+  padding: 18px;
+  background: var(--surface-panel);
+
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.2;
+    color: var(--text-primary);
+  }
+
+  &.incoming {
+    animation: skillFlyIn 700ms cubic-bezier(0.17, 0.84, 0.44, 1) both;
+  }
+}
+
+.delete-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--sem-danger) 28%, transparent);
+    background: color-mix(in srgb, var(--sem-danger) 10%, var(--surface-panel));
+    color: var(--sem-danger);
+  }
+}
+
+.skill-card:hover .delete-btn {
+  opacity: 1;
+}
+
+.skill-pagination {
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
+
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.card-meta span,
+.incoming-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card-summary {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.incoming-pill {
+  position: absolute;
+  top: 18px;
+  right: 62px;
+  border-color: color-mix(in srgb, var(--sem-success) 24%, transparent);
+  background: color-mix(in srgb, var(--sem-success) 10%, var(--surface-panel));
+  color: var(--sem-success);
+}
+
+.card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.action-btn {
+  min-width: 0;
+  flex: 1;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+
+  &.primary {
+    color: var(--text-inverse);
+    border: 1px solid var(--text-primary);
+    background: var(--text-primary);
+
+    &:hover:not(:disabled) {
+      border-color: var(--sem-info);
+      background: var(--sem-info);
+    }
+  }
+
+  &.secondary {
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-muted);
+
+    &:hover:not(:disabled) {
+      background: var(--surface-elevated);
+      border-color: var(--text-muted);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  padding: 24px;
+  background: var(--surface-panel);
+
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    line-height: 1.18;
+    color: var(--text-primary);
+  }
+}
+
+.market-state {
+  justify-content: flex-start;
+}
+
+@keyframes skillFlyIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(160px, -64px, 0) scale(0.84);
+  }
+  70% {
+    opacity: 1;
+    transform: translate3d(-6px, 4px, 0) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@media (max-width: 1360px) {
+  .content-header h1 {
+    font-size: 34px;
+  }
+}
+
+@media (max-width: 1080px) {
+  .skill-center-shell {
+    width: min(100vw - 32px, 1240px);
+    height: min(100vh - 32px, 860px);
+  }
+
+  .content {
+    padding: 20px;
+  }
+
+  .content-header {
+    flex-direction: column;
+  }
+
+  .close-btn {
+    align-self: flex-end;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-actions {
+    flex-direction: column;
+  }
+}

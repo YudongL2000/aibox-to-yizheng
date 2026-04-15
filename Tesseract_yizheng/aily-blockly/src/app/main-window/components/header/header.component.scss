@@ -1,0 +1,337 @@
+$header-height: 40px;
+$header-inner-height: 30px;
+
+.header-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: $header-height;
+  width: 100%;
+  padding: 0 10px 0 8px;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-solid);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 1px;
+    background: var(--panel-topline-accent);
+    opacity: 0.38;
+    pointer-events: none;
+  }
+
+  &.darwin {
+    .win-btns {
+      display: none;
+    }
+  }
+
+  .menu {
+    width: $header-inner-height;
+    height: $header-inner-height;
+  }
+
+  .menu .btn,
+  .toolbox .btn,
+  .win-btns .btn {
+    width: $header-inner-height;
+    height: $header-inner-height;
+    margin-right: 0;
+    padding-top: 1px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-base);
+    background: transparent;
+    color: var(--text-secondary);
+    transition:
+      color 0.18s ease,
+      border-color 0.18s ease,
+      background 0.18s ease,
+      transform 0.18s ease;
+
+    &:hover {
+      background: var(--surface-muted);
+      border-color: var(--border-solid);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    &.selected,
+    &.active {
+      background: var(--text-primary);
+      border-color: var(--text-primary);
+      color: var(--text-inverse);
+    }
+  }
+
+  .board {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: $header-inner-height;
+    padding: 0 12px;
+    border: 1px solid var(--border-solid);
+    border-radius: var(--radius-base);
+    background: var(--surface-panel);
+    color: var(--text-primary);
+    cursor: pointer;
+    min-width: 0;
+
+    * {
+      pointer-events: none;
+    }
+
+    &:hover {
+      background: var(--surface-muted);
+    }
+
+    .board-label {
+      flex-shrink: 0;
+      color: var(--text-secondary);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+    }
+
+    .board-value {
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .down {
+      width: 16px;
+      height: 16px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+  }
+
+  .null-box {
+    flex: 1;
+    height: 100%;
+    position: relative;
+
+    &.drag {
+      -webkit-app-region: drag;
+    }
+  }
+
+  .workbench-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 12px;
+    margin-right: 2px;
+    border-right: 1px dashed var(--border-subtle);
+
+    .page-chip {
+      min-width: 112px;
+    }
+
+    .page-chip__label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+  }
+
+  .project-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: min(38vw, 460px);
+    height: $header-inner-height;
+    padding: 0 12px;
+    border: 1px solid var(--border-solid);
+    border-radius: var(--radius-base);
+    background: var(--surface-panel);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .project-label {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+  }
+
+  .project-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .toolbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+    background: transparent;
+
+    .zone {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0;
+      height: auto;
+    }
+
+    .page-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  .page-chip {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 68px;
+    height: $header-inner-height;
+    padding: 0 10px;
+    border: 1px solid var(--border-solid);
+    border-radius: var(--radius-base);
+    background: var(--surface-panel);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      color 0.18s ease,
+      border-color 0.18s ease,
+      background 0.18s ease,
+      transform 0.18s ease;
+
+    &:hover {
+      background: var(--surface-muted);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    &.selected {
+      background: var(--text-primary);
+      border-color: var(--text-primary);
+      color: var(--text-inverse);
+    }
+  }
+
+  .page-chip__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .page-chip__label {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+}
+
+.more {
+  position: absolute;
+  top: 3px;
+  right: -3px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--sem-danger);
+  color: var(--text-inverse);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  line-height: 12px;
+  text-align: center;
+}
+
+.win-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 2px;
+  font-size: 14px;
+
+  .btn {
+    font-size: 14px;
+  }
+
+  .minimize {
+    font-size: 16px;
+  }
+
+  .close:hover {
+    background: var(--sem-danger) !important;
+    border-color: var(--sem-danger) !important;
+    color: var(--text-inverse) !important;
+  }
+}
+
+@media (max-width: 1480px) {
+  .header-box {
+    .project-box {
+      max-width: min(28vw, 320px);
+    }
+  }
+}
+
+@media (max-width: 1280px) {
+  .header-box {
+    .workbench-nav .page-chip {
+      min-width: 92px;
+    }
+
+    .toolbox .page-chip {
+      min-width: 56px;
+      padding: 0 9px;
+
+      .page-chip__label {
+        font-size: 11px;
+      }
+    }
+  }
+}
+
+@media (max-width: 1024px) {
+  .header-box {
+    .workbench-nav,
+    .toolbox .page-nav {
+      gap: 6px;
+    }
+
+    .page-chip {
+      min-width: 34px !important;
+      padding: 0 !important;
+      justify-content: center;
+    }
+
+    .page-chip__label {
+      display: none;
+    }
+
+    .project-box {
+      display: none;
+    }
+  }
+}

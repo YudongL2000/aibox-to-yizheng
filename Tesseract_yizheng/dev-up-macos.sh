@@ -1,0 +1,258 @@
+#!/usr/bin/env bash
+# [Input] Consume upstream contracts defined by `./.folder.md`[Pos].
+# [Output] Provide dev up macos capability to downstream modules.
+# [Pos] script node in root
+# [Sync] If this file changes, update this header and `./.folder.md`.
+
+# [INPUT]: 依赖 backend/restart-agent-dev.sh、frontend/dev_web_start.sh、aily-blockly package scripts 与 macOS 上可用的 osascript/open。 
+# [OUTPUT]: 对外提供 Apple Silicon macOS 单入口开发启动脚本，按固定顺序拉起 backend、Flutter 数字孪生 Web、Angular dev server 与 Electron 外部 backend 模式。
+# [POS]: 根仓本地 orchestration 入口，服务于 macOS 开发机，把四段启动链压成一个命令，同时保持 backend 与客户端生命周期解耦。
+# [PROTOCOL]: 变更时更新此头部，然后检查 AGENTS.md
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$ROOT_DIR/backend"
+FRONTEND_DIR="$ROOT_DIR/frontend"
+AILY_DIR="$ROOT_DIR/aily-blockly"
+
+OPEN_TERMINALS=1
+RESTART_BACKEND=1
+START_FRONTEND=1
+START_ANGULAR=1
+START_ELECTRON=1
+LEGACY_MODE=0
+PROFILE="full"
+ELECTRON_SCRIPT="npm run electron:reuse:external"
+
+usage() {
+  cat <<'EOF'
+Usage: ./dev-up-macos.sh [options]
+
+Options:
+  --legacy         Use the old multi-tab startup flow
+  --profile <full|compact|desktop>
+                    full: backend + frontend + angular + electron (4 tabs)
+                    compact: backend + frontend + electron (3 tabs; electron tab auto-starts angular)
+                    desktop: backend + electron (2 tabs; no flutter digital-twin preload)
+  --no-backend     Skip backend restart
+  --no-frontend    Skip Flutter digital-twin web startup
+  --no-angular     Skip Angular dev server startup
+  --no-electron    Skip Electron startup
+  --inline         Run commands in current shell sequentially instead of opening Terminal tabs
+  -h, --help       Show this help
+
+Default behavior:
+  1. aily-blockly -> npm run dev:desktop
+
+Legacy behavior:
+  1. backend      -> npm run agent:restart
+  2. frontend     -> ./dev_web_start.sh
+  3. aily-blockly -> npm start -- --host 127.0.0.1 --port 4200
+  4. aily-blockly -> npm run electron:reuse:external
+EOF
+}
+
+apply_profile() {
+  local profile="$1"
+
+  case "$profile" in
+    full)
+      START_FRONTEND=1
+      START_ANGULAR=1
+      START_ELECTRON=1
+      ELECTRON_SCRIPT="npm run electron:reuse:external"
+      ;;
+    compact)
+      START_FRONTEND=1
+      START_ANGULAR=0
+      START_ELECTRON=1
+      ELECTRON_SCRIPT="npm run electron:external"
+      ;;
+    desktop)
+      START_FRONTEND=0
+      START_ANGULAR=0
+      START_ELECTRON=1
+      ELECTRON_SCRIPT="npm run electron:external"
+      ;;
+    *)
+      echo "[dev-up-macos] Unknown profile: $profile" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --profile)
+      [[ $# -ge 2 ]] || {
+        echo "[dev-up-macos] --profile requires a value" >&2
+        usage >&2
+        exit 1
+      }
+      PROFILE="$2"
+      apply_profile "$PROFILE"
+      shift 2
+      ;;
+    --legacy)
+      LEGACY_MODE=1
+      shift
+      ;;
+    --no-backend)
+      RESTART_BACKEND=0
+      shift
+      ;;
+    --no-frontend)
+      START_FRONTEND=0
+      shift
+      ;;
+    --no-angular)
+      START_ANGULAR=0
+      shift
+      ;;
+    --no-electron)
+      START_ELECTRON=0
+      shift
+      ;;
+    --inline)
+      OPEN_TERMINALS=0
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "[dev-up-macos] Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
+
+require_dir() {
+  local dir="$1"
+  [[ -d "$dir" ]] || {
+    echo "[dev-up-macos] Missing directory: $dir" >&2
+    exit 1
+  }
+}
+
+require_command() {
+  local command_name="$1"
+  command -v "$command_name" >/dev/null 2>&1 || {
+    echo "[dev-up-macos] Missing command: $command_name" >&2
+    exit 1
+  }
+}
+
+# Portable path/command quoting (macOS /bin/bash is 3.2 — no ${var@Q})
+sh_quote() {
+  printf '%q' "$1"
+}
+
+build_env_prefix() {
+  local parts=()
+
+  [[ -n "${FLUTTER_BIN:-}" ]] && parts+=("FLUTTER_BIN=$(sh_quote "$FLUTTER_BIN")")
+  [[ -n "${AGENT_API:-}" ]] && parts+=("AGENT_API=$(sh_quote "$AGENT_API")")
+  [[ -n "${NODE_BIN:-}" ]] && parts+=("NODE_BIN=$(sh_quote "$NODE_BIN")")
+
+  if [[ "${#parts[@]}" -eq 0 ]]; then
+    return 0
+  fi
+
+  printf '%s ' "${parts[@]}"
+}
+
+run_in_terminal() {
+  local title="$1"
+  local command="$2"
+  local root_q
+  root_q="$(sh_quote "$ROOT_DIR")"
+
+  osascript <<EOF
+tell application "Terminal"
+  activate
+  do script "printf '\\\\e]1;${title}\\\\a'; cd ${root_q}; ${command}"
+end tell
+EOF
+}
+
+run_inline() {
+  local title="$1"
+  local command="$2"
+  local root_q
+  root_q="$(sh_quote "$ROOT_DIR")"
+  printf '\n[dev-up-macos] === %s ===\n' "$title"
+  bash -lc "cd ${root_q}; ${command}"
+}
+
+dispatch() {
+  local title="$1"
+  local command="$2"
+
+  if [[ "$OPEN_TERMINALS" -eq 1 ]]; then
+    run_in_terminal "$title" "$command"
+  else
+    run_inline "$title" "$command"
+  fi
+}
+
+ENV_PREFIX="$(build_env_prefix)"
+
+require_dir "$BACKEND_DIR"
+require_dir "$FRONTEND_DIR"
+require_dir "$AILY_DIR"
+
+if [[ "$OPEN_TERMINALS" -eq 1 ]]; then
+  require_command osascript
+fi
+
+echo "[dev-up-macos] root=$ROOT_DIR"
+echo "[dev-up-macos] profile=$PROFILE"
+echo "[dev-up-macos] mode=$([[ "$OPEN_TERMINALS" -eq 1 ]] && echo terminal-tabs || echo inline)"
+
+if [[ "$LEGACY_MODE" -eq 0 ]]; then
+  dispatch \
+    "Tesseract Desktop" \
+    "cd $(sh_quote "$AILY_DIR") && ${ENV_PREFIX}npm run dev:desktop"
+
+  if [[ "$OPEN_TERMINALS" -eq 1 ]]; then
+    echo "[dev-up-macos] Launched desktop single-window dev flow."
+  else
+    echo "[dev-up-macos] Inline mode finished."
+  fi
+  exit 0
+fi
+
+if [[ "$RESTART_BACKEND" -eq 1 ]]; then
+  dispatch \
+    "Tesseract Backend" \
+    "cd $(sh_quote "$BACKEND_DIR") && npm run agent:restart"
+fi
+
+if [[ "$START_FRONTEND" -eq 1 ]]; then
+  dispatch \
+    "Tesseract Frontend" \
+    "cd $(sh_quote "$FRONTEND_DIR") && ${ENV_PREFIX}./dev_web_start.sh"
+fi
+
+if [[ "$START_ANGULAR" -eq 1 ]]; then
+  dispatch \
+    "Tesseract Angular" \
+    "cd $(sh_quote "$AILY_DIR") && npm start -- --host 127.0.0.1 --port 4200"
+fi
+
+if [[ "$START_ELECTRON" -eq 1 ]]; then
+  dispatch \
+    "Tesseract Electron" \
+    "sleep 3; cd $(sh_quote "$AILY_DIR") && ${ELECTRON_SCRIPT}"
+fi
+
+if [[ "$OPEN_TERMINALS" -eq 1 ]]; then
+  echo "[dev-up-macos] Launched macOS Terminal tabs."
+else
+  echo "[dev-up-macos] Inline mode finished."
+fi

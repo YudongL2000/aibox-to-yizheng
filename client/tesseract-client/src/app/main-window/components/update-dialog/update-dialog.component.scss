@@ -1,0 +1,16 @@
+.text {
+  min-height: 32px;
+  line-height: 25px;
+}
+
+.progress-container {
+  height: 32px;
+}
+
+.error-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  color: #f5222d;
+}

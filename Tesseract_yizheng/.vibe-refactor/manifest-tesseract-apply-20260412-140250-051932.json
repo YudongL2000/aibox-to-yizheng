@@ -1,0 +1,303 @@
+{
+  "generated_at": "2026-04-12T14:02:50",
+  "workspace": "/Users/skylerwang/Documents/yudong/Tesseract",
+  "mode": "apply",
+  "agent_targets": [
+    "claude",
+    "codex",
+    "copilot",
+    "cursor"
+  ],
+  "include_hidden": true,
+  "sync_user_claude": false,
+  "user_claude_home": "/Users/skylerwang/.claude",
+  "excludes": [
+    ".git",
+    ".hg",
+    ".svn",
+    "node_modules",
+    ".venv",
+    "venv",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".cache",
+    "dist",
+    "build",
+    "target",
+    ".gradle",
+    ".idea",
+    ".next",
+    ".nuxt",
+    ".turbo",
+    "coverage",
+    ".coverage",
+    ".vibe-refactor",
+    "*_backup",
+    "backend/**",
+    "frontend/**",
+    "aily-blockly/**",
+    "n8n/**",
+    "specs/**",
+    "test/**"
+  ],
+  "validate_cmds": [],
+  "validate_on_apply": false,
+  "strict_validate": false,
+  "hardcoding_scan": true,
+  "hardcoding_strict": false,
+  "hardcoding_max_findings": 0,
+  "blocked": false,
+  "changes": [
+    {
+      "scope": "workspace",
+      "path": ".cursor/.folder.md",
+      "action": "create",
+      "reason": "folder_plan_sync",
+      "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_hash": "729419d9a64644617ecf5bc6e6f6378a0eab89129703eb8ccea9727f5e70432a"
+    },
+    {
+      "scope": "workspace",
+      "path": ".folder.md",
+      "action": "update",
+      "reason": "folder_plan_sync",
+      "before_hash": "9f2ca45ef5b907f54fc1577331d27553075844d431f1729c0e261d8bf54d5b70",
+      "after_hash": "ad45342a46265a232dad02452782e50e91a0d136f0e7287a073a5eee7dcc360d"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/.folder.md",
+      "action": "update",
+      "reason": "folder_plan_sync",
+      "before_hash": "46514867fba181d7e9741c54c0ef2dbe598009b3f61a818bfb529930584a0ade",
+      "after_hash": "15a2d21196d9cc016974a0261565fbcb9d814bf90a2d4c6b7a69b0038310e1f0"
+    },
+    {
+      "scope": "workspace",
+      "path": "docs/workspace-structure.md",
+      "action": "update",
+      "reason": "create_workspace_structure_doc",
+      "before_hash": "d3e928a718dee2e62b9725da593963ad6dc9efc90eb21f5f7f64ab04896c0436",
+      "after_hash": "cd8c0cd1b0b1b0975f55e6ab7df9801145c2efc79d707bab8788f298611f13e2"
+    }
+  ],
+  "manual_required": [],
+  "warnings": [
+    "workspace: excluded/pruned paths = 72",
+    "hardcoding: detected 17 finding(s)."
+  ],
+  "rule_checks": [
+    {
+      "rule_id": "workspace.claude_pointer",
+      "status": "pass",
+      "detail": "Root CLAUDE pointer block exists."
+    },
+    {
+      "rule_id": "workspace.root_update_contract",
+      "status": "pass",
+      "detail": "Root update contract exists."
+    },
+    {
+      "rule_id": "workspace.global_first_no_hardcoding",
+      "status": "pass",
+      "detail": "Global-first no-hardcoding rule exists in root CLAUDE."
+    },
+    {
+      "rule_id": "workspace.claude_line_budget",
+      "status": "pass",
+      "detail": "CLAUDE.md lines=21 (target<=200)."
+    },
+    {
+      "rule_id": "workspace.today_rollover",
+      "status": "pass",
+      "detail": "today.md date=2026-04-12 expected=2026-04-12."
+    },
+    {
+      "rule_id": "workspace.today_log_migration",
+      "status": "pass",
+      "detail": "Today logs migrated out of root CLAUDE."
+    },
+    {
+      "rule_id": "workspace.structure_scan_doc",
+      "status": "pass",
+      "detail": "Workspace structure doc exists."
+    },
+    {
+      "rule_id": "workspace.rules_reference_doc",
+      "status": "pass",
+      "detail": "Rules reference doc exists."
+    },
+    {
+      "rule_id": "workspace.no_hardcoding_rule_doc",
+      "status": "pass",
+      "detail": "No-hardcoding rule doc exists."
+    },
+    {
+      "rule_id": "workspace.tech_stack_doc",
+      "status": "pass",
+      "detail": "Tech stack doc exists."
+    },
+    {
+      "rule_id": "workspace.session_start_doc",
+      "status": "pass",
+      "detail": "Session start doc exists."
+    },
+    {
+      "rule_id": "workspace.folder_docs_coverage",
+      "status": "pass",
+      "detail": "Every scanned folder has .folder.md."
+    },
+    {
+      "rule_id": "workspace.folder_function_descriptions",
+      "status": "pass",
+      "detail": "Each folder doc contains Function description line."
+    },
+    {
+      "rule_id": "workspace.cursor_rules",
+      "status": "pass",
+      "detail": "Required .cursor rules exist."
+    },
+    {
+      "rule_id": "workspace.cursor_rule_frontmatter",
+      "status": "pass",
+      "detail": "Cursor rule frontmatter includes alwaysApply/globs."
+    },
+    {
+      "rule_id": "workspace.cursor_folder_docs",
+      "status": "pass",
+      "detail": "Cursor folder docs exist."
+    },
+    {
+      "rule_id": "workspace.agents_entry",
+      "status": "pass",
+      "detail": "AGENTS.md entry exists."
+    },
+    {
+      "rule_id": "workspace.copilot_entry",
+      "status": "pass",
+      "detail": "Copilot instruction file exists."
+    },
+    {
+      "rule_id": "architecture.low_coupling_high_cohesion",
+      "status": "manual",
+      "detail": "Requires semantic review; cannot be safely auto-verified."
+    },
+    {
+      "rule_id": "architecture.no_feature_overlap",
+      "status": "manual",
+      "detail": "Requires domain-level overlap inspection; reported for manual review."
+    },
+    {
+      "rule_id": "automation.hardcoding_scan",
+      "status": "fail",
+      "detail": "17 hardcoding finding(s) detected."
+    }
+  ],
+  "validation_results": [],
+  "hardcoding_findings": [
+    {
+      "path": ".specify/scripts/bash/create-new-feature.sh",
+      "line": 212,
+      "kind": "threshold_literal",
+      "snippet": "local max_words=3"
+    },
+    {
+      "path": ".specify/scripts/bash/create-new-feature.sh",
+      "line": 213,
+      "kind": "threshold_literal",
+      "snippet": "if [ ${#meaningful_words[@]} -eq 4 ]; then max_words=4; fi"
+    },
+    {
+      "path": ".specify/scripts/bash/create-new-feature.sh",
+      "line": 270,
+      "kind": "threshold_literal",
+      "snippet": "MAX_BRANCH_LENGTH=244"
+    },
+    {
+      "path": ".specify/scripts/bash/update-agent-context.sh",
+      "line": 128,
+      "kind": "absolute_path",
+      "snippet": "rm -f /tmp/agent_update_*_$$"
+    },
+    {
+      "path": ".specify/scripts/bash/update-agent-context.sh",
+      "line": 129,
+      "kind": "absolute_path",
+      "snippet": "rm -f /tmp/manual_additions_$$"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 1852,
+      "kind": "threshold_literal",
+      "snippet": "var maxptime = 0;"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 2012,
+      "kind": "threshold_literal",
+      "snippet": "maxMessageSize = 65536;"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 5118,
+      "kind": "threshold_literal",
+      "snippet": "let maxMessageSize = 65536;"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 5125,
+      "kind": "threshold_literal",
+      "snippet": "maxMessageSize = 65535;"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 5137,
+      "kind": "threshold_literal",
+      "snippet": "maxMessageSize = 2147483637;"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 7131,
+      "kind": "threshold_literal",
+      "snippet": "timeout: 0,"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 9136,
+      "kind": "threshold_literal",
+      "snippet": "maxBitrate: 1000000"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 9140,
+      "kind": "threshold_literal",
+      "snippet": "maxBitrate: 500000,"
+    },
+    {
+      "path": "docs/dev/ZLMRTCClient.js",
+      "line": 9145,
+      "kind": "threshold_literal",
+      "snippet": "maxBitrate: 200000,"
+    },
+    {
+      "path": "docs/dev/cloud_mqtt_example.py",
+      "line": 230,
+      "kind": "threshold_literal",
+      "snippet": "self.client.reconnect_delay_set(min_delay=1, max_delay=5)"
+    },
+    {
+      "path": "docs/dev/cloud_mqtt_example.py",
+      "line": 240,
+      "kind": "threshold_literal",
+      "snippet": "if not self.connected_event.wait(timeout=5):"
+    },
+    {
+      "path": "docs/dev/cloud_mqtt_example.py",
+      "line": 401,
+      "kind": "threshold_literal",
+      "snippet": "publish_result.wait_for_publish(timeout=2)"
+    }
+  ],
+  "backup_dir": "/Users/skylerwang/Documents/yudong/Tesseract/.vibe-refactor/backups/tesseract-apply-20260412-140250-051932",
+  "report": "/Users/skylerwang/Documents/yudong/Tesseract/.vibe-refactor/report-tesseract-apply-20260412-140250-051932.md"
+}

@@ -1,0 +1,34 @@
+<app-tool-container [title]="supportWindowTitle" (closeEvent)="close()">
+  <div class="support-shell">
+    <div class="support-stage">
+      <div class="assistant-pane" [class.active]="activeView === 'assistant'" [class.inactive]="activeView !== 'assistant'">
+        <app-aily-chat [embedded]="true"></app-aily-chat>
+      </div>
+
+      @if (activeSkillView; as skillView) {
+      <div class="support-pane skill-pane active">
+        <app-skills-panel
+          [page]="skillView"
+          [highlightSkillId]="highlightedSkillId"
+          (manageRequested)="openSkillManager($event, highlightedSkillId)"
+          (runSkill)="runSkill($event)"
+          (traceRequested)="traceSkill($event)"
+          (publishRequested)="publishSkill($event)">
+        </app-skills-panel>
+      </div>
+      }
+
+      @if (activeView === 'model-store') {
+      <div class="support-pane active">
+        <app-model-store [embedded]="true"></app-model-store>
+      </div>
+      }
+
+      @if (activeView === 'serial-monitor') {
+      <div class="support-pane active">
+        <app-serial-monitor [embedded]="true"></app-serial-monitor>
+      </div>
+      }
+    </div>
+  </div>
+</app-tool-container>

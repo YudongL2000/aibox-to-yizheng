@@ -1,0 +1,37 @@
+
+[2026-04-04 15:14:33.063608] ◀ 收到端侧状态:
+  主题: qsf/aibox001/edge2cloud
+  端侧时间戳: 90169
+  设备数量: 3
+    - cam: online (cam1) @ /dev/video2 | port=3-1.4 | vid_pid=0BDC:8080
+    - hand: online (hand1) @ /dev/tty_hand | port=3-1.6 | vid_pid=1A86:7523
+    - wifi: online (wifi1) @ /dev/tty_wifi | port=3-1.2 | vid_pid=1E0E:9011
+
+[2026-04-04 15:14:34.370407] ◀ 收到端侧状态:
+  主题: qsf/aibox001/edge2cloud
+  端侧时间戳: 90170
+  设备数量: 3
+    - cam: online (cam1) @ /dev/video2 | port=3-1.4 | vid_pid=0BDC:8080
+    - hand: online (hand1) @ /dev/tty_hand | port=3-1.6 | vid_pid=1A86:7523
+    - wifi: online (wifi1) @ /dev/tty_wifi | port=3-1.2 | vid_pid=1E0E:9011
+
+[2026-04-04 15:14:35.570311] ◀ 收到端侧状态:
+  主题: qsf/aibox001/edge2cloud
+  端侧时间戳: 90171
+  设备数量: 3
+    - cam: online (cam1) @ /dev/video2 | port=3-1.4 | vid_pid=0BDC:8080
+    - hand: online (hand1) @ /dev/tty_hand | port=3-1.6 | vid_pid=1A86:7523
+    - wifi: online (wifi1) @ /dev/tty_wifi | port=3-1.2 | vid_pid=1E0E:9011
+
+[2026-04-05 17:25:17.585561] ▶ 发送到 qsf/aibox001/cloud2edge:
+  {"msg_type": "cmd", "msg_content": [{"device_type": "audio", "cmd": "stop"}], "request_id": "2d214324-b271-4e14-923d-bd6db6a3b247"}
+[2026-04-05 17:25:17.586837] ▶ 消息已发送 (mid=3)
+
+[2026-04-05 17:25:17.587770] ◀ 收到命令回包:
+  主题: qsf/aibox001/edge2cloud
+  端侧时间戳: 106897
+  设备: audio
+  命令: stop
+  结果: 成功
+  消息: ok
+[2026-04-05 17:25:17.587834] ✓ 已按 request_id 关联到本次命令回包

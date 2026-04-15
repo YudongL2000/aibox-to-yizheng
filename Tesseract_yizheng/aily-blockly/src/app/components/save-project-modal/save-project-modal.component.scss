@@ -1,0 +1,118 @@
+.save-project-shell {
+  ::ng-deep .save-project-modal {
+    .ant-modal-content {
+      background: var(--surface-panel) !important;
+      opacity: 1 !important;
+      box-shadow: 0 12px 40px var(--shell-shell-shadow) !important;
+      border-radius: var(--radius-base) !important;
+      overflow: hidden;
+    }
+
+    .ant-modal-header {
+      background: transparent;
+      border-bottom: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+      padding: 12px 16px;
+
+      .ant-modal-title {
+        color: var(--text-primary);
+      }
+    }
+
+    .ant-modal-close {
+      color: var(--text-muted);
+
+      &:hover {
+        color: var(--text-primary);
+      }
+    }
+
+    .ant-modal-body {
+      padding: 16px;
+      background: transparent !important;
+      color: var(--text-primary);
+    }
+
+    .ant-modal-footer {
+      border-top: 1px solid color-mix(in srgb, var(--text-primary) 6%, transparent);
+      padding: 12px 16px;
+      background: transparent;
+
+      button {
+        &:not(:last-child) {
+          margin-right: 8px;
+        }
+      }
+    }
+  }
+
+  ::ng-deep .save-project-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 4px 0;
+
+    .form-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      label {
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      input[nz-input] {
+        background: var(--surface-muted) !important;
+        border-color: color-mix(in srgb, var(--text-primary) 6%, transparent) !important;
+        color: var(--text-primary) !important;
+
+        &:hover {
+          border-color: color-mix(in srgb, var(--sem-info) 44%, transparent) !important;
+        }
+
+        &:focus {
+          border-color: var(--sem-info) !important;
+          box-shadow: 0 0 0 2px color-mix(in srgb, var(--sem-info) 16%, transparent);
+        }
+
+        &::placeholder {
+          color: var(--text-muted);
+        }
+
+        &:disabled {
+          background: var(--shell-control-bg-disabled) !important;
+          color: var(--text-muted) !important;
+          cursor: not-allowed;
+        }
+      }
+
+      nz-input-group {
+        ::ng-deep {
+          .ant-input-group-addon {
+            background: var(--surface-muted) !important;
+            border-color: color-mix(in srgb, var(--text-primary) 6%, transparent) !important;
+            padding: 0;
+
+            .btn {
+              width: 32px;
+              height: 30px;
+              color: var(--text-primary);
+              cursor: pointer;
+              transition: all 0.2s;
+
+              &:hover {
+                color: var(--sem-info);
+                background: color-mix(in srgb, var(--sem-info) 10%, transparent);
+              }
+
+              i {
+                font-size: 14px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
